@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { submitApplication } from './actions'
 import { SiteHeader } from '@/components/layout/site-header'
+import { ApplyHero } from '@/components/landing/apply-hero'
 
 export default function ApplicationForm() {
     const [submitted, setSubmitted] = useState(false)
@@ -23,7 +24,7 @@ export default function ApplicationForm() {
     return (
         <div className="min-h-screen bg-[#faf7f0]">
             <SiteHeader />
-
+            <ApplyHero />
             <main className="mx-auto max-w-3xl px-4 py-12">
                 {submitted ? (
                 <p className="text-center text-lg text-[#455442]">
