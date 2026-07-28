@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import  { updateApplicantStatus } from './actions'
+import { StatusDropdown } from './status-dropdown'
 
 export default async function AdminDashboardContent() {
     const db = await createClient()
@@ -25,7 +27,7 @@ export default async function AdminDashboardContent() {
         .order('created_at', {ascending: true})
 
     if (error) {
-        return { success: false, error: error.message}
+        return <p>Error loading applicants: {error.message} </p>
     }
 
     return (
@@ -36,7 +38,7 @@ export default async function AdminDashboardContent() {
             <div key={applicant.id}>
                 <p>Email: {applicant.email}</p>
                 <p>Name: {applicant.name}</p>
-                <p>Status: {applicant.status}</p>
+                <StatusDropdown applicantId={applicant.id} currentStatus={applicant.status} />
                 <pre>{JSON.stringify(applicant.responses, null, 2)}</pre>
             </div>
             ))}
