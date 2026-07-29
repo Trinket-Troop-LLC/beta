@@ -1,47 +1,40 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import  { updateApplicantStatus } from './actions'
-import { StatusDropdown } from './status-dropdown'
+import { AdminDashboardClient } from './admin-dashboard-client'
 
 export default async function AdminDashboardContent() {
     const db = await createClient()
 
-    // checking if the user is an admin
     const { data: { user } } = await db.auth.getUser()
-    // if user doesn't exist
     if (!user) {
         redirect('/auth/login')
     }
 
-    // grabbing the user from db with same id
     const { data: dbUser } = await db.from('users').select('role').eq('id', user.id).single()
-    // if not admin, get booted
     if (dbUser?.role !== 'admin') {
         redirect('/')
     }
 
-    // after verified admin, load in applicants
     const { data: applicants, error } = await db
         .from('applicants')
         .select('*')
-        .order('created_at', {ascending: true})
+        .order('created_at', { ascending: true })
 
     if (error) {
-        return <p>Error loading applicants: {error.message} </p>
+        return <p className="text-center text-red-600 py-10">Error loading applicants: {error.message}</p>
     }
 
     return (
-        <div>
-            <h1>Pending Applications</h1>
-            {applicants?.length === 0 && <p>No pending applications.</p>}
-            {applicants?.map((applicant) => (
-            <div key={applicant.id}>
-                <p>Email: {applicant.email}</p>
-                <p>Name: {applicant.name}</p>
-                <StatusDropdown applicantId={applicant.id} currentStatus={applicant.status} />
-                <pre>{JSON.stringify(applicant.responses, null, 2)}</pre>
+        <div className="min-h-screen bg-[#faf7f0] px-4 py-10">
+            <div className="mx-auto max-w-[1400px]">
+                <h1 className="text-2xl font-bold mb-6 text-center text-[#2c2c2c]">Applications</h1>
+
+                {applicants?.length === 0 ? (
+                    <p className="text-center text-[#7c8072]">No applications yet.</p>
+                ) : (
+                    <AdminDashboardClient applicants={applicants} />
+                )}
             </div>
-            ))}
         </div>
     )
 }
