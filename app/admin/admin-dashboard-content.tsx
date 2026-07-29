@@ -5,16 +5,19 @@ import { AdminDashboardClient } from './admin-dashboard-client'
 export default async function AdminDashboardContent() {
     const db = await createClient()
 
+    // checks if user is real
     const { data: { user } } = await db.auth.getUser()
     if (!user) {
         redirect('/auth/login')
     }
 
+    // checks if user is an admin
     const { data: dbUser } = await db.from('users').select('role').eq('id', user.id).single()
     if (dbUser?.role !== 'admin') {
         redirect('/')
     }
 
+    // queries all applicants
     const { data: applicants, error } = await db
         .from('applicants')
         .select('*')

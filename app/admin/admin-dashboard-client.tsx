@@ -25,6 +25,7 @@ type Applicant = {
     responses: Record<string, unknown>
 }
 
+// loads in each applicant
 export function AdminDashboardClient({ applicants }: { applicants: Applicant[] }) {
     const [selected, setSelected] = useState<Applicant | null>(null)
 
@@ -37,6 +38,7 @@ export function AdminDashboardClient({ applicants }: { applicants: Applicant[] }
             <div className={`overflow-x-auto rounded-2xl border border-[#ded8cc] bg-[#fffdf9] shadow-sm transition-all ${selected ? 'flex-1 min-w-0' : 'w-full'}`}>
                 <table className="min-w-full text-sm border-collapse">
                     <thead>
+                        {/* loads in header */}
                         <tr className="bg-[#f2ede0]">
                             <th className={thClass}>First Name</th>
                             <th className={thClass}>Last Name</th>
@@ -47,6 +49,7 @@ export function AdminDashboardClient({ applicants }: { applicants: Applicant[] }
                         </tr>
                     </thead>
                     <tbody>
+                        {/* loads in each applicant as essentially a card */}
                         {applicants.map((applicant) => (
                             <tr
                                 key={applicant.id}
@@ -73,7 +76,7 @@ export function AdminDashboardClient({ applicants }: { applicants: Applicant[] }
                 </table>
             </div>
 
-            {/* Side panel — only rendered when something is selected */}
+            {/* side panel — only rendered when something is selected */}
             {selected && (
                 <div className="sticky top-6 w-[380px] shrink-0 max-h-[85vh] overflow-y-auto rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-6 shadow-sm">
                     <div className="mb-4 flex items-start justify-between">
