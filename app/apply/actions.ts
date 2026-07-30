@@ -11,6 +11,7 @@ const applicationSchema = z.object({
     preferred_name: z.string().optional(),
     email: z.string().email('Please enter a valid email'),
     phone_number: z.string().min(1, 'Phone number is required'),
+    username: z.string().min(1, 'Username is required'),
     neighborhood: z.string().min(1, 'This field is required'),
     emojis: z.string().min(1, 'This field is required'),
     what_trading: z.string().min(1, 'This field is required'),
@@ -34,6 +35,7 @@ export async function submitApplication(formData: FormData) {
         preferred_name: formData.get('preferred_name'),
         email: formData.get('email'),
         phone_number: formData.get('phone_number'),
+        username: formData.get('username'),
         neighborhood: formData.get('neighborhood'),
         emojis: formData.get('emojis'),
         what_trading: formData.get('what_trading'),
@@ -49,7 +51,7 @@ export async function submitApplication(formData: FormData) {
         return { success: false, error: validationFields.error.issues[0].message }
     }
 
-    const { first_name, last_name, preferred_name, email, phone_number, ...responses } = validationFields.data
+    const { first_name, last_name, preferred_name, email, phone_number, username, ...responses } = validationFields.data
 
     const { error } = await db.from('applicants').insert({
         first_name, 
@@ -57,6 +59,7 @@ export async function submitApplication(formData: FormData) {
         preferred_name, 
         email,
         phone_number,
+        username,
         responses,
     })
 

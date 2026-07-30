@@ -29,7 +29,7 @@ export default function ApplicationForm() {
             <main className="mx-auto max-w-3xl px-4 py-12">
                 {submitted ? (
                 <p className="text-center text-lg text-[#455442]">
-                    Thank you for submitting your application! Keep an eye out for an
+                    thank you for submitting your application! keep an eye out for an
                     email from us.
                 </p>
                 ) : (
@@ -38,32 +38,37 @@ export default function ApplicationForm() {
                     className="flex flex-col gap-6 rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-8 shadow-sm"
                 >
                     <label className={labelClass}>
-                        <span>First Name</span>
+                        <span>first name</span>
                         <input type="text" name="first_name" required className={inputClass} />
                     </label>
 
                     <label className={labelClass}>
-                        <span>Last Name</span>
+                        <span>last name</span>
                         <input type="text" name="last_name" required className={inputClass} />
                     </label>
 
                     <label className={labelClass}>
-                        <span>Preferred Name</span>
+                        <span>preferred name</span>
                         <input type="text" name="preferred_name" className={inputClass} />
                     </label>
 
                     <label className={labelClass}>
-                        <span>Email</span>
+                        <span>email</span>
                         <input type="email" name="email" required className={inputClass} />
                     </label>
 
                     <label className={labelClass}>
-                        <span>Phone Number</span>
+                        <span>phone number</span>
                         <input type="tel" name="phone_number" required className={inputClass} />
                     </label>
 
                     <label className={labelClass}>
-                        <span>Upload a profile picture</span>
+                        <span></span>username
+                        <input type="text" name="username" className={inputClass} />
+                    </label>
+
+                    <label className={labelClass}>
+                        <span>upload a profile picture</span>
                         <input
                             type="file"
                             name="profile_pic"
@@ -73,66 +78,66 @@ export default function ApplicationForm() {
                     </label>
 
                     <label className={labelClass}>
-                        <span>What neighborhood do you frequent? (live, work, or where you're regularly around)</span>
+                        <span>at neighborhood do you frequent? (live, work, or where you're regularly around)</span>
                         <textarea name="neighborhood" required rows={3} className={inputClass} />
                     </label>
 
                     <label className={labelClass}>
-                        <span>Three emojis that describe you</span>
+                        <span>three emojis that describe you</span>
                         <input type="text" name="emojis" required className={inputClass} />
                     </label>
 
-                    <label className={labelClass}>
-                        <span>What are the typical things you like to buy/sell/trade secondhand?</span>
-                        <textarea name="what_trading" required rows={3} className={inputClass} />
-                    </label>
 
                     <fieldset className="flex flex-col gap-2 text-[#2c2c2c]">
-                        <legend className="mb-1 font-medium">Trinket categories (select all that apply)</legend>
+                        <legend className="mb-1 font-medium">trinket categories (select all that apply)</legend>
                         <label className={checkboxLabelClass}>
                             <input type="checkbox" name="categories" value="wearable" />
-                            Wearable
+                            true trinkets
+                        </label>
+                        <label className={checkboxLabelClass}>
+                            <input type="checkbox" name="categories" value="wearable" />
+                            wearable trinkets
                         </label>
                         <label className={checkboxLabelClass}>
                             <input type="checkbox" name="categories" value="home" />
-                            Home
+                            home trinkets
                         </label>
                         <label className={checkboxLabelClass}>
                             <input type="checkbox" name="categories" value="kitchen" />
-                            Kitchen
+                            kitchen trinkets
                         </label>
                         <label className={checkboxLabelClass}>
                             <input type="checkbox" name="categories" value="outdoorsy" />
-                            Outdoorsy
+                            outdoorsy trinkets
                         </label>
                         <label className={checkboxLabelClass}>
                             <input type="checkbox" name="categories" value="hobby" />
-                            Hobby
+                            hooby trinkets
                         </label>
                         <label className={checkboxLabelClass}>
                             <input type="checkbox" name="categories" value="other" />
-                            Other:
+                            other:
                             <input type="text" name="other_category" className={`${inputClass} flex-1`} />
                         </label>
                     </fieldset>
 
                     <label className={labelClass}>
-                        <span>What are the main pain points with NYC person-to-person secondhand exchange?</span>
+                        <span>what are the main pain points with NYC person-to-person secondhand exchange?</span>
                         <textarea name="pain_points" required rows={4} className={inputClass} />
                     </label>
 
                     <label className={labelClass}>
-                        <span>Features you wanna see?</span>
+                        <span>features you wanna see?</span>
                         <textarea name="future_features" required rows={3} className={inputClass} />
                     </label>
 
                     <label className={labelClass}>
-                        <span>Anyone you think might benefit from this platform? (if yes, enter their email)</span>
+                        <span>anyone you think might benefit from this platform? (if yes, enter their email)</span>
                         <input type="email" name="referral_email" className={inputClass} />
                     </label>
 
                     <label className={labelClass}>
-                        <span>Anything else you wanna say?</span>
+                        <span>anything else you wanna say?</span>
                         <textarea name="misc_thoughts" rows={3} className={inputClass} />
                     </label>
 
@@ -140,7 +145,7 @@ export default function ApplicationForm() {
                         type="submit"
                         className="rounded-lg bg-[#7c9272] px-4 py-3 font-medium text-white transition hover:bg-[#667b5f]"
                     >
-                        Submit
+                        submit
                     </button>
                     {error && <p className="text-sm text-red-600">{error}</p>}
                 </form>
