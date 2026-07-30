@@ -18,7 +18,7 @@ export default function Home() {
             <nav className="relative z-20 flex w-full items-center justify-between px-6 py-4">
                 <div className="flex items-center gap-2 font-semibold text-[#2c2c2c]">
                     <Image src="/logo.png" alt="Trinket Troupe logo" width={36} height={36} />
-                    Trinket Troupe
+                    Trinket Troop
                 </div>
                 {!hasEnvVars ? (
                     <EnvVarWarning />
@@ -32,7 +32,7 @@ export default function Home() {
             {/* Hero content */}
             <div className="relative z-10 flex flex-col items-center justify-center px-4 pt-24 pb-64 text-center sm:pt-32">
                 <h1 className="font-[family-name:var(--font-gluten)] text-5xl font-semibold text-[#30392d] sm:text-7xl">
-                    Welcome to Trinket Troupe
+                    Welcome to Trinket Troop
                 </h1>
 
                 <Link
