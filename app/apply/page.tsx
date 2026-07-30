@@ -78,7 +78,7 @@ export default function ApplicationForm() {
                     </label>
 
                     <label className={labelClass}>
-                        <span>at neighborhood do you frequent? (live, work, or where you're regularly around)</span>
+                        <span>what neighborhood do you frequent? (live, work, or where you're regularly around)</span>
                         <textarea name="neighborhood" required rows={3} className={inputClass} />
                     </label>
 
@@ -154,7 +154,7 @@ export default function ApplicationForm() {
             <footer className="mt-10 text-center text-sm text-[#7c8072]">
                 <p>Questions? Reach us at @trinkettroop on Instagram</p>
                 <a href="https://buymeacoffee.com/trinkettroop" target="_blank" rel="noreferrer" className="underline">
-                    Buy us a coffee ☕
+                    Buy us a coffee {"\u2615"}
                 </a>
             </footer>
         </main>

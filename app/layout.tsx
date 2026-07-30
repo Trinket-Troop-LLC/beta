@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
+import { Geist, Gluten } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
 
@@ -19,6 +19,12 @@ const geistSans = Geist({
   subsets: ["latin"],
 });
 
+const gluten = Gluten({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-gluten",
+});
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -26,7 +32,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.className} antialiased`}>
+      <body className={`${geistSans.className} ${gluten.variable}`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="light"
