@@ -73,7 +73,7 @@ export default function ApplicationForm() {
                     </label>
 
                     <label className={labelClass}>
-                        <span>What neighborhood do you frequent? (live, work, or where you're regularly around)</span>
+                        <span>What neighborhood do you frequent? (live, work, or where you&apos;re regularly around)</span>
                         <textarea name="neighborhood" required rows={3} className={inputClass} />
                     </label>
 

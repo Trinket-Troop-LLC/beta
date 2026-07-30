@@ -1,14 +1,23 @@
+import Image from "next/image";
+
 export function ApplyHero() {
     return (
         <section className="px-4 pb-8 pt-12 text-center sm:px-6 sm:pt-16">
             <div className="mx-auto max-w-3xl">
+                <Image
+                    src="/images/logo.png"
+                    alt="Trinket Troop Logo"
+                    width={220}
+                    height={220}
+                    priority
+                    className="mx-auto mb-6"
+                />
+                <h1 className="font-gluten text-5xl font-semibold tracking-tight text-[#30392d] sm:text-6xl">
+                    Join Trinket Troop
+                </h1>
                 <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-[#e4e8d8] px-4 py-2 text-sm font-medium text-[#5f7258]">
                     Beta Access
                 </div>
-
-                <h1 className="font-serif text-5xl font-semibold tracking-tight text-[#30392d] sm:text-6xl">
-                    Join Trinket Troop
-                </h1>
 
                 <div className="my-5 flex items-center justify-center gap-3 text-[#87977d]">
                     <div className="h-px w-12 bg-[#aab7a0]" />
