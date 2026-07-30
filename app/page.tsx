@@ -1,58 +1,62 @@
-import { DeployButton } from "@/components/deploy-button";
-import { EnvVarWarning } from "@/components/env-var-warning";
-import { AuthButton } from "@/components/auth-button";
-import { Hero } from "@/components/hero";
-import { ThemeSwitcher } from "@/components/theme-switcher";
-import { ConnectSupabaseSteps } from "@/components/tutorial/connect-supabase-steps";
-import { SignUpUserSteps } from "@/components/tutorial/sign-up-user-steps";
-import { hasEnvVars } from "@/lib/utils";
 import Link from "next/link";
+import Image from "next/image";
+import { AuthButton } from "@/components/auth-button";
+import { EnvVarWarning } from "@/components/env-var-warning";
+import { hasEnvVars } from "@/lib/utils";
 import { Suspense } from "react";
+import { Gluten } from "next/font/google";
+
+const gluten = Gluten({
+    variable: "--font-gluten",
+    subsets: ["latin"],
+});
 
 export default function Home() {
-  return (
-    <main className="min-h-screen flex flex-col items-center">
-      <div className="flex-1 w-full flex flex-col gap-20 items-center">
-        <nav className="w-full flex justify-center border-b border-b-foreground/10 h-16">
-          <div className="w-full max-w-5xl flex justify-between items-center p-3 px-5 text-sm">
-            <div className="flex gap-5 items-center font-semibold">
-              <Link href={"/"}>Next.js Supabase Starter</Link>
-              <div className="flex items-center gap-2">
-                <DeployButton />
-              </div>
-            </div>
-            {!hasEnvVars ? (
-              <EnvVarWarning />
-            ) : (
-              <Suspense>
-                <AuthButton />
-              </Suspense>
-            )}
-          </div>
-        </nav>
-        <div className="flex-1 flex flex-col gap-20 max-w-5xl p-5">
-          <Hero />
-          <main className="flex-1 flex flex-col gap-6 px-4">
-            <h2 className="font-medium text-xl mb-4">Next steps</h2>
-            {hasEnvVars ? <SignUpUserSteps /> : <ConnectSupabaseSteps />}
-          </main>
-        </div>
+    return (
+        <main className={`${gluten.variable} relative min-h-screen overflow-hidden bg-[#faf7f0]`}>
+            {/* Nav */}
+            <nav className="relative z-20 flex w-full items-center justify-between px-6 py-4">
+                <div className="flex items-center gap-2 font-semibold text-[#2c2c2c]">
+                    <Image src="/logo.png" alt="Trinket Troupe logo" width={36} height={36} />
+                    Trinket Troupe
+                </div>
+                {!hasEnvVars ? (
+                    <EnvVarWarning />
+                ) : (
+                    <Suspense>
+                        <AuthButton />
+                    </Suspense>
+                )}
+            </nav>
 
-        <footer className="w-full flex items-center justify-center border-t mx-auto text-center text-xs gap-8 py-16">
-          <p>
-            Powered by{" "}
-            <a
-              href="https://supabase.com/?utm_source=create-next-app&utm_medium=template&utm_term=nextjs"
-              target="_blank"
-              className="font-bold hover:underline"
-              rel="noreferrer"
-            >
-              Supabase
-            </a>
-          </p>
-          <ThemeSwitcher />
-        </footer>
-      </div>
-    </main>
-  );
+            {/* Hero content */}
+            <div className="relative z-10 flex flex-col items-center justify-center px-4 pt-24 pb-64 text-center sm:pt-32">
+                <h1 className="font-[family-name:var(--font-gluten)] text-5xl font-semibold text-[#30392d] sm:text-7xl">
+                    Welcome to Trinket Troupe
+                </h1>
+
+                <Link
+                    href="/apply"
+                    className="mt-8 rounded-lg bg-[#7c9272] px-6 py-3 font-medium text-white transition hover:bg-[#667b5f]"
+                >
+                    Apply
+                </Link>
+            </div>
+
+            {/* Background video, anchored to bottom, faded upward */}
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-0 h-[60vh] overflow-hidden">
+                <video 
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="h-full w-full object-cover" style={{ objectPosition: 'center 60%' }}
+                >
+                    <source src="/grass.mp4" type="video/mp4" />
+                </video>
+                {/* Fade the top edge of the video into the page background */}
+                <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-[#faf7f0] to-transparent" />
+            </div>
+        </main>
+    );
 }
