@@ -41,6 +41,13 @@ export default function Home() {
                 >
                     Join the waiting list
                 </Link>
+
+                <Link
+                    href="/beta/apply"
+                    className="mt-3 text-sm font-medium text-[#5f7258] underline decoration-[#87977d] underline-offset-4 transition hover:text-[#455442]"
+                >
+                    Invited to the beta? Apply here.
+                </Link>
             </div>
 
             {/* Background video, anchored to bottom, faded upward */}

@@ -33,6 +33,8 @@ export default async function AdminDashboardContent() {
         return <p className="py-10 text-center text-red-600">Error loading applications: {message}</p>
     }
 
+    const applicantsWithProfilePictures = await addProfilePictureUrls(db, applicants ?? [])
+
     return (
         <div className="min-h-screen bg-[#faf7f0] px-4 py-10">
             <div className="mx-auto max-w-[1400px]">
@@ -40,12 +42,57 @@ export default async function AdminDashboardContent() {
                     Community Signups
                 </h1>
                 <AdminDashboardClient
-                    applicants={applicants ?? []}
+                    applicants={applicantsWithProfilePictures}
                     generalInterests={generalInterests ?? []}
                 />
             </div>
         </div>
     )
+}
+
+async function addProfilePictureUrls(
+    db: Awaited<ReturnType<typeof createClient>>,
+    applicants: Applicant[],
+) {
+    const paths = [
+        ...new Set(
+            applicants
+                .map((applicant) => applicant.responses?.profile_picture_path)
+                .filter((path): path is string => typeof path === 'string' && path.length > 0),
+        ),
+    ]
+
+    if (paths.length === 0) {
+        return applicants
+    }
+
+    const urlByPath = new Map<string, string>()
+
+    for (let start = 0; start < paths.length; start += 100) {
+        const { data: signedPictures, error } = await db.storage
+            .from('beta-profile-pictures')
+            .createSignedUrls(paths.slice(start, start + 100), 60 * 60)
+
+        if (error) {
+            console.error('Could not sign a beta profile picture batch:', error.statusCode)
+            continue
+        }
+
+        for (const picture of signedPictures) {
+            if (picture.path && picture.signedUrl && !picture.error) {
+                urlByPath.set(picture.path, picture.signedUrl)
+            }
+        }
+    }
+
+    return applicants.map((applicant) => {
+        const path = applicant.responses?.profile_picture_path
+
+        return {
+            ...applicant,
+            profile_picture_url: typeof path === 'string' ? urlByPath.get(path) ?? null : null,
+        }
+    })
 }
 
 async function loadApplicants(db: Awaited<ReturnType<typeof createClient>>) {

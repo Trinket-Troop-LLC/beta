@@ -15,6 +15,16 @@ const responseLabels: Record<string, string> = {
     misc_thoughts: 'Thoughts',
 }
 
+const categoryLabels: Record<string, string> = {
+    true: 'true trinkets',
+    wearable: 'wearable trinkets',
+    home: 'home trinkets',
+    kitchen: 'kitchen trinkets',
+    outdoorsy: 'outdoorsy trinkets',
+    hobby: 'hobby trinkets',
+    other: 'other',
+}
+
 export type Applicant = {
     id: string
     first_name: string
@@ -22,8 +32,10 @@ export type Applicant = {
     preferred_name: string | null
     email: string
     phone_number: string
+    username: string | null
     status: string
     responses: Record<string, unknown>
+    profile_picture_url?: string | null
 }
 
 export type GeneralInterest = {
@@ -333,6 +345,16 @@ function ApplicantDetails({
     applicant: Applicant
     onClose: () => void
 }) {
+    const visibleResponses = Object.entries(responseLabels).filter(([key]) => {
+        const value = applicant.responses?.[key]
+
+        if (Array.isArray(value)) {
+            return value.length > 0
+        }
+
+        return value !== null && value !== undefined && value !== ''
+    })
+
     return (
         <aside className="max-h-[85vh] w-full shrink-0 overflow-y-auto rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-6 shadow-sm xl:sticky xl:top-6 xl:w-[380px]">
             <DetailsHeader
@@ -342,10 +364,36 @@ function ApplicantDetails({
                 onClose={onClose}
             />
 
+            {applicant.profile_picture_url && (
+                <div className="mb-5">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                        src={applicant.profile_picture_url}
+                        alt={`${applicant.first_name} ${applicant.last_name}'s profile`}
+                        className="aspect-square w-full rounded-xl border border-[#ded8cc] object-cover"
+                    />
+                </div>
+            )}
+
             <dl className="flex flex-col gap-4">
-                {Object.entries(responseLabels).map(([key, label]) => {
+                <div>
+                    <dt className="text-sm font-medium text-[#7c8072]">Username</dt>
+                    <dd className="break-words text-[#2c2c2c]">
+                        {applicant.username || '\u2014'}
+                    </dd>
+                </div>
+
+                {visibleResponses.map(([key, label]) => {
                     const value = applicant.responses?.[key]
-                    const display = Array.isArray(value) ? value.join(', ') : value || '—'
+                    const display = Array.isArray(value)
+                        ? value
+                            .map((item) =>
+                                key === 'categories' && typeof item === 'string'
+                                    ? categoryLabels[item] ?? item
+                                    : item,
+                            )
+                            .join(', ')
+                        : value || '—'
 
                     return (
                         <div key={key}>
