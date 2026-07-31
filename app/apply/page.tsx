@@ -78,18 +78,18 @@ export default function ApplicationForm() {
                     </label>
 
                     <label className={labelClass}>
-                        <span>what neighborhood do you frequent? (live, work, or where you're regularly around)</span>
+                        <span>what neighborhoods do you frequent? (live, work, or where you're regularly around)</span>
                         <textarea name="neighborhood" required rows={3} className={inputClass} />
                     </label>
 
                     <label className={labelClass}>
-                        <span>three emojis that describe you</span>
+                        <span>three emojis that describe you :)</span>
                         <input type="text" name="emojis" required className={inputClass} />
                     </label>
 
 
                     <fieldset className="flex flex-col gap-2 text-[#2c2c2c]">
-                        <legend className="mb-1 font-medium">trinket categories (select all that apply)</legend>
+                        <legend className="mb-1 font-medium">interested in... (select all that apply)</legend>
                         <label className={checkboxLabelClass}>
                             <input type="checkbox" name="categories" value="wearable" />
                             true trinkets
@@ -112,7 +112,7 @@ export default function ApplicationForm() {
                         </label>
                         <label className={checkboxLabelClass}>
                             <input type="checkbox" name="categories" value="hobby" />
-                            hooby trinkets
+                            hobby trinkets
                         </label>
                         <label className={checkboxLabelClass}>
                             <input type="checkbox" name="categories" value="other" />
@@ -122,22 +122,22 @@ export default function ApplicationForm() {
                     </fieldset>
 
                     <label className={labelClass}>
-                        <span>what are the main pain points with NYC person-to-person secondhand exchange?</span>
+                        <span>what are your main pain points with NYC peer-to-peer secondhand exchange?</span>
                         <textarea name="pain_points" required rows={4} className={inputClass} />
                     </label>
 
                     <label className={labelClass}>
-                        <span>features you wanna see?</span>
+                        <span>features you're dreaming of ...</span>
                         <textarea name="future_features" required rows={3} className={inputClass} />
                     </label>
 
                     <label className={labelClass}>
-                        <span>anyone you think might benefit from this platform? (if yes, enter their email)</span>
+                        <span>if you know anyone who would love this platform, enter their email(s) here so we can reach out!</span>
                         <input type="email" name="referral_email" className={inputClass} />
                     </label>
 
                     <label className={labelClass}>
-                        <span>anything else you wanna say?</span>
+                        <span>comments, questions, compliments, or concerns ;)</span>
                         <textarea name="misc_thoughts" rows={3} className={inputClass} />
                     </label>
 
