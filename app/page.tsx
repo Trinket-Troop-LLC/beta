@@ -39,7 +39,7 @@ export default function Home() {
                     href="/apply"
                     className="mt-8 rounded-lg bg-[#7c9272] px-6 py-3 font-medium text-white transition hover:bg-[#667b5f]"
                 >
-                    Apply
+                    Join the waiting list
                 </Link>
             </div>
 

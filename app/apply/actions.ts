@@ -3,69 +3,81 @@
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 
-
-// validating inputs server side
-const applicationSchema = z.object({
-    first_name: z.string().min(1, 'First name is required'),
-    last_name: z.string().min(1, 'Last name is required'),
-    preferred_name: z.string().optional(),
-    email: z.string().email('Please enter a valid email'),
-    phone_number: z.string().min(1, 'Phone number is required'),
-    username: z.string().min(1, 'Username is required'),
-    neighborhood: z.string().min(1, 'This field is required'),
-    emojis: z.string().min(1, 'This field is required'),
-    what_trading: z.string().min(1, 'This field is required'),
-    categories: z.array(z.string()).min(1, 'Select at least one category'),
-    other_category: z.string().optional(),
-    pain_points: z.string().min(1, 'This field is required'),
-    future_features: z.string().min(1, 'This field is required'),
-    referral_email: z.string().email('Please enter a valid email').optional().or(z.literal('')),
-    misc_thoughts: z.string().optional(),
+const generalInterestSchema = z.object({
+    first_name: z.string().trim().min(1, 'First name is required').max(100),
+    last_name: z.string().trim().min(1, 'Last name is required').max(100),
+    email: z.string().trim().email('Please enter a valid email').max(320),
+    phone_number: z.string().trim().min(1, 'Phone number is required').max(50),
+    pain_points: z.string().trim().min(1, 'Pain points are required').max(3000),
+    friend_emails: z.string().max(2000),
+    website: z.string().max(200),
 })
 
-export async function submitApplication(formData: FormData) {
-    const db = await createClient()
-
-    const { data: { user } } = await db.auth.getUser()
-    console.log('Current user:', user)
-
-    const validationFields = applicationSchema.safeParse({
+export async function submitGeneralInterest(formData: FormData) {
+    const validationFields = generalInterestSchema.safeParse({
         first_name: formData.get('first_name'),
         last_name: formData.get('last_name'),
-        preferred_name: formData.get('preferred_name'),
         email: formData.get('email'),
         phone_number: formData.get('phone_number'),
-        username: formData.get('username'),
-        neighborhood: formData.get('neighborhood'),
-        emojis: formData.get('emojis'),
-        what_trading: formData.get('what_trading'),
-        categories: formData.getAll('categories'),
-        other_category: formData.get('other_category'),
         pain_points: formData.get('pain_points'),
-        future_features: formData.get('future_features'),
-        referral_email: formData.get('referral_email'),
-        misc_thoughts: formData.get('misc_thoughts'),
+        friend_emails: formData.get('friend_emails') ?? '',
+        website: formData.get('website') ?? '',
     })
 
     if (!validationFields.success) {
         return { success: false, error: validationFields.error.issues[0].message }
     }
 
-    const { first_name, last_name, preferred_name, email, phone_number, username, ...responses } = validationFields.data
+    if (validationFields.data.website) {
+        return { success: true }
+    }
 
-    const { error } = await db.from('applicants').insert({
-        first_name, 
+    const normalizedEmail = validationFields.data.email.toLowerCase()
+    const friendEmails = [
+        ...new Set(
+            validationFields.data.friend_emails
+                .split(/[\s,;]+/)
+                .map((email) => email.trim().toLowerCase())
+                .filter((email) => email && email !== normalizedEmail),
+        ),
+    ]
+
+    if (friendEmails.length > 20) {
+        return { success: false, error: 'Please enter no more than 20 friend email addresses' }
+    }
+
+    const friendEmailValidation = z.array(z.string().email()).safeParse(friendEmails)
+
+    if (!friendEmailValidation.success) {
+        return {
+            success: false,
+            error: 'Please check the friend email addresses and separate them with commas or new lines',
+        }
+    }
+
+    const db = await createClient()
+    const { first_name, last_name, phone_number, pain_points } = validationFields.data
+
+    const { error } = await db.from('general_interest').insert({
+        first_name,
         last_name,
-        preferred_name, 
-        email,
+        email: normalizedEmail,
         phone_number,
-        username,
-        responses,
+        pain_points,
+        friend_emails: friendEmailValidation.data,
     })
 
     if (error) {
-        return { success: false, error: error.message}
+        if (error.code === '23505') {
+            return { success: true }
+        }
+
+        console.error('General interest submission failed:', error.code)
+        return {
+            success: false,
+            error: 'We could not join the waiting list right now. Please try again.',
+        }
     }
 
-    return {success: true}
+    return { success: true }
 }

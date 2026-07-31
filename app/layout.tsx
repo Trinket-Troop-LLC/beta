@@ -9,8 +9,29 @@ const defaultUrl = process.env.VERCEL_URL
 
 export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
-  title: "Next.js and Supabase Starter Kit",
-  description: "The fastest way to build apps with Next.js and Supabase",
+  title: "Trinket Troop",
+  description:
+    "Join the Trinket Troop waiting list for a friendlier way to buy, sell, trade, and gift secondhand treasures in New York City.",
+  openGraph: {
+    title: "Trinket Troop",
+    description:
+      "Join the waiting list for a friendlier way to exchange secondhand treasures in New York City.",
+    images: [
+      {
+        url: "/og-waitlist.png",
+        width: 1200,
+        height: 630,
+        alt: "Trinket Troop — Join the waiting list",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Trinket Troop",
+    description:
+      "Join the waiting list for a friendlier way to exchange secondhand treasures in New York City.",
+    images: ["/og-waitlist.png"],
+  },
 };
 
 const geistSans = Geist({
