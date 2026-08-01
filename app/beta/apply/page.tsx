@@ -7,10 +7,13 @@ export const metadata: Metadata = {
     openGraph: {
         title: 'Trinket Troop — Beta Access',
         description: 'Apply to help shape the first Trinket Troop beta community.',
+        images: ['/opengraph-image.png'],
     },
     twitter: {
+        card: 'summary_large_image',
         title: 'Trinket Troop — Beta Access',
         description: 'Apply to help shape the first Trinket Troop beta community.',
+        images: ['/twitter-image.png'],
     },
     robots: {
         index: false,
