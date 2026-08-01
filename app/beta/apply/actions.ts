@@ -121,32 +121,34 @@ export async function submitBetaApplication(formData: FormData) {
     let profilePicturePath: string | null = null
     const db = await createClient()
 
-    if (profilePicture instanceof File && profilePicture.size > 0) {
-        const verifiedImage = await getVerifiedImageExtension(profilePicture)
-
-        if ('error' in verifiedImage) {
-            return { success: false, error: verifiedImage.error }
-        }
-
-        profilePicturePath = `submissions/${crypto.randomUUID()}.${verifiedImage.extension}`
-
-        const { error: uploadError } = await db.storage
-            .from(profilePictureBucket)
-            .upload(profilePicturePath, profilePicture, {
-                cacheControl: '3600',
-                contentType: verifiedImage.contentType,
-                upsert: false,
-            })
-
-        if (uploadError) {
-            console.error('Beta profile picture upload failed:', uploadError.statusCode)
-            return {
-                success: false,
-                error: 'We could not upload the profile picture right now. Please try again.',
-            }
-        }
+    if (!(profilePicture instanceof File) || profilePicture.size === 0) {
+        return { success: false, error: 'A profile picture is required' }
     }
 
+    const verifiedImage = await getVerifiedImageExtension(profilePicture)
+
+    if ('error' in verifiedImage) {
+        return { success: false, error: verifiedImage.error }
+    }
+
+    profilePicturePath = `submissions/${crypto.randomUUID()}.${verifiedImage.extension}`
+
+    const { error: uploadError } = await db.storage
+        .from(profilePictureBucket)
+        .upload(profilePicturePath, profilePicture, {
+            cacheControl: '3600',
+            contentType: verifiedImage.contentType,
+            upsert: false,
+        })
+
+    if (uploadError) {
+        console.error('Beta profile picture upload failed:', uploadError.statusCode)
+        return {
+            success: false,
+            error: 'We could not upload the profile picture right now. Please try again.',
+        }
+    }
+    
     const {
         first_name,
         last_name,

@@ -158,10 +158,11 @@ export function BetaApplicationForm() {
                                 name="profile_pic"
                                 accept="image/png,image/jpeg"
                                 aria-describedby="profile-picture-help"
+                                required
                                 className={`${inputClass} file:mr-4 file:rounded-md file:border-0 file:bg-[#7c9272] file:px-3 file:py-2 file:text-white`}
                             />
                             <span id="profile-picture-help" className="text-sm text-[#7c8072]">
-                                optional; PNG or JPEG, up to 3 MB
+                                required; PNG or JPEG, up to 3 MB
                             </span>
                         </label>
 
