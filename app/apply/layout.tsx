@@ -7,10 +7,13 @@ export const metadata: Metadata = {
     openGraph: {
         title: 'Trinket Troop — General Interest',
         description: 'Join the waiting list for a friendlier way to exchange secondhand treasures in New York City.',
+        images: ['/opengraph-image.png'],
     },
     twitter: {
+        card: 'summary_large_image',
         title: 'Trinket Troop — General Interest',
         description: 'Join the waiting list for a friendlier way to exchange secondhand treasures in New York City.',
+        images: ['/twitter-image.png'],
     },
 }
 
