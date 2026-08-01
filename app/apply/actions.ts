@@ -9,9 +9,11 @@ const generalInterestSchema = z.object({
     email: z.string().trim().email('Please enter a valid email').max(320),
     phone_number: z.string().trim().min(1, 'Phone number is required').max(50),
     pain_points: z.string().trim().min(1, 'Pain points are required').max(3000),
-    friend_emails: z.string().max(2000),
+    friend_phone_numbers: z.string().max(2000),
     website: z.string().max(200),
 })
+
+const phoneNumberPattern = /^[0-9+\-.() ]{7,50}$/
 
 export async function submitGeneralInterest(formData: FormData) {
     const validationFields = generalInterestSchema.safeParse({
@@ -20,7 +22,7 @@ export async function submitGeneralInterest(formData: FormData) {
         email: formData.get('email'),
         phone_number: formData.get('phone_number'),
         pain_points: formData.get('pain_points'),
-        friend_emails: formData.get('friend_emails') ?? '',
+        friend_phone_numbers: formData.get('friend_phone_numbers') ?? '',
         website: formData.get('website') ?? '',
     })
 
@@ -33,25 +35,26 @@ export async function submitGeneralInterest(formData: FormData) {
     }
 
     const normalizedEmail = validationFields.data.email.toLowerCase()
-    const friendEmails = [
+    const normalizedPhoneNumber = validationFields.data.phone_number.replace(/\D/g, '')
+    const friendPhoneNumbers = [
         ...new Set(
-            validationFields.data.friend_emails
-                .split(/[\s,;]+/)
-                .map((email) => email.trim().toLowerCase())
-                .filter((email) => email && email !== normalizedEmail),
+            validationFields.data.friend_phone_numbers
+                .split(/[,;\n]+/)
+                .map((phone) => phone.trim())
+                .filter((phone) => phone && phone.replace(/\D/g, '') !== normalizedPhoneNumber),
         ),
     ]
 
-    if (friendEmails.length > 20) {
-        return { success: false, error: 'Please enter no more than 20 friend email addresses' }
+    if (friendPhoneNumbers.length > 20) {
+        return { success: false, error: 'Please enter no more than 20 friend phone numbers' }
     }
 
-    const friendEmailValidation = z.array(z.string().email()).safeParse(friendEmails)
+    const friendPhoneValidation = z.array(z.string().regex(phoneNumberPattern)).safeParse(friendPhoneNumbers)
 
-    if (!friendEmailValidation.success) {
+    if (!friendPhoneValidation.success) {
         return {
             success: false,
-            error: 'Please check the friend email addresses and separate them with commas or new lines',
+            error: 'Please check the friend phone numbers and separate them with commas or new lines',
         }
     }
 
@@ -64,7 +67,7 @@ export async function submitGeneralInterest(formData: FormData) {
         email: normalizedEmail,
         phone_number,
         pain_points,
-        friend_emails: friendEmailValidation.data,
+        friend_phone_numbers: friendPhoneValidation.data,
     })
 
     if (error) {

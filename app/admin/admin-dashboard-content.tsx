@@ -123,7 +123,7 @@ async function loadGeneralInterests(db: Awaited<ReturnType<typeof createClient>>
     for (let from = 0; ; from += pageSize) {
         const { data, error } = await db
             .from('general_interest')
-            .select('id, first_name, last_name, email, phone_number, pain_points, friend_emails, created_at')
+            .select('id, first_name, last_name, email, phone_number, pain_points, friend_phone_numbers, created_at')
             .order('created_at', { ascending: false })
             .range(from, from + pageSize - 1)
 
