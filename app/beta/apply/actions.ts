@@ -118,32 +118,33 @@ export async function submitBetaApplication(formData: FormData) {
     }
 
     const profilePicture = formData.get('profile_pic')
-    let profilePicturePath: string | null = null
+
+    if (!(profilePicture instanceof File) || profilePicture.size === 0) {
+        return { success: false, error: 'Please upload a profile picture' }
+    }
+
     const db = await createClient()
+    const verifiedImage = await getVerifiedImageExtension(profilePicture)
 
-    if (profilePicture instanceof File && profilePicture.size > 0) {
-        const verifiedImage = await getVerifiedImageExtension(profilePicture)
+    if ('error' in verifiedImage) {
+        return { success: false, error: verifiedImage.error }
+    }
 
-        if ('error' in verifiedImage) {
-            return { success: false, error: verifiedImage.error }
-        }
+    const profilePicturePath = `submissions/${crypto.randomUUID()}.${verifiedImage.extension}`
 
-        profilePicturePath = `submissions/${crypto.randomUUID()}.${verifiedImage.extension}`
+    const { error: uploadError } = await db.storage
+        .from(profilePictureBucket)
+        .upload(profilePicturePath, profilePicture, {
+            cacheControl: '3600',
+            contentType: verifiedImage.contentType,
+            upsert: false,
+        })
 
-        const { error: uploadError } = await db.storage
-            .from(profilePictureBucket)
-            .upload(profilePicturePath, profilePicture, {
-                cacheControl: '3600',
-                contentType: verifiedImage.contentType,
-                upsert: false,
-            })
-
-        if (uploadError) {
-            console.error('Beta profile picture upload failed:', uploadError.statusCode)
-            return {
-                success: false,
-                error: 'We could not upload the profile picture right now. Please try again.',
-            }
+    if (uploadError) {
+        console.error('Beta profile picture upload failed:', uploadError.statusCode)
+        return {
+            success: false,
+            error: 'We could not upload the profile picture right now. Please try again.',
         }
     }
 
