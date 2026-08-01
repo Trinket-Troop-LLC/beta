@@ -18,21 +18,12 @@ export const metadata: Metadata = {
     title: "Trinket Troop",
     description:
       "Join the waiting list for a friendlier way to exchange secondhand treasures in New York City.",
-    images: [
-      {
-        url: "/og-waitlist.png",
-        width: 1200,
-        height: 630,
-        alt: "Trinket Troop — Join the waiting list",
-      },
-    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Trinket Troop",
     description:
       "Join the waiting list for a friendlier way to exchange secondhand treasures in New York City.",
-    images: ["/og-waitlist.png"],
   },
 };
 
