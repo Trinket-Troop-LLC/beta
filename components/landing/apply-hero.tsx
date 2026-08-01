@@ -43,10 +43,10 @@ export function GeneralInterestHero() {
                     </p>
 
                     <p>
-                        as we build out the future of peer-to-peer second-hand exchange in the city we love, join the waiting list by filling out your information below. when the app is ready to launch, we will send you the link to download and start exchanging!
+                        as we build out the future of peer-to-peer second-hand exchange in the city we love, join the waiting list by filling out your information below. stay up to date on new developments by following our instagram and support our mission by buying us a coffee (both linked at the bottom of this page)! when the app is ready to launch, we will send you the link to download and start exchanging!
                     </p>
 
-                    <p>xoxo caro and martina</p>
+                    <p>xoxo caro & martina</p>
                 </div>
             </div>
         </section>
