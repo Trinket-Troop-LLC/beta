@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { SiteHeader } from '@/components/layout/site-header'
 import { BetaApplicationForm } from './beta-application-form'
 
 export const metadata: Metadata = {
@@ -22,5 +23,10 @@ export const metadata: Metadata = {
 }
 
 export default function BetaApplicationPage() {
-    return <BetaApplicationForm />
+    return (
+        <>
+            <SiteHeader />
+            <BetaApplicationForm />
+        </>
+    )
 }

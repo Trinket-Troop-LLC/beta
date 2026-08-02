@@ -52,6 +52,17 @@ function getText(formData: FormData, name: string) {
     return typeof value === 'string' ? value : ''
 }
 
+function buildFieldErrors(error: z.ZodError): Record<string, string> {
+    const fieldErrors: Record<string, string> = {}
+    for (const issue of error.issues) {
+        const field = issue.path[0]?.toString()
+        if (field && !fieldErrors[field]) {
+            fieldErrors[field] = issue.message
+        }
+    }
+    return fieldErrors
+}
+
 async function getVerifiedImageExtension(file: File) {
     if (file.size > maxProfilePictureBytes) {
         return { error: 'Profile pictures must be 3 MB or smaller' } as const
@@ -110,7 +121,11 @@ export async function submitBetaApplication(formData: FormData) {
     })
 
     if (!validationFields.success) {
-        return { success: false, error: validationFields.error.issues[0].message }
+        return {
+            success: false,
+            error: 'Please fix the errors below',
+            fieldErrors: buildFieldErrors(validationFields.error),
+        }
     }
 
     if (validationFields.data.website) {
@@ -121,29 +136,39 @@ export async function submitBetaApplication(formData: FormData) {
     let profilePicturePath: string | null = null
     const db = await createClient()
 
-    if (profilePicture instanceof File && profilePicture.size > 0) {
-        const verifiedImage = await getVerifiedImageExtension(profilePicture)
-
-        if ('error' in verifiedImage) {
-            return { success: false, error: verifiedImage.error }
+    if (!(profilePicture instanceof File) || profilePicture.size === 0) {
+        return {
+            success: false,
+            error: 'Please fix the errors below',
+            fieldErrors: { profile_pic: 'A profile picture is required' },
         }
+    }
 
-        profilePicturePath = `submissions/${crypto.randomUUID()}.${verifiedImage.extension}`
+    const verifiedImage = await getVerifiedImageExtension(profilePicture)
 
-        const { error: uploadError } = await db.storage
-            .from(profilePictureBucket)
-            .upload(profilePicturePath, profilePicture, {
-                cacheControl: '3600',
-                contentType: verifiedImage.contentType,
-                upsert: false,
-            })
+    if ('error' in verifiedImage) {
+        return {
+            success: false,
+            error: 'Please fix the errors below',
+            fieldErrors: { profile_pic: verifiedImage.error },
+        }
+    }
 
-        if (uploadError) {
-            console.error('Beta profile picture upload failed:', uploadError.statusCode)
-            return {
-                success: false,
-                error: 'We could not upload the profile picture right now. Please try again.',
-            }
+    profilePicturePath = `submissions/${crypto.randomUUID()}.${verifiedImage.extension}`
+
+    const { error: uploadError } = await db.storage
+        .from(profilePictureBucket)
+        .upload(profilePicturePath, profilePicture, {
+            cacheControl: '3600',
+            contentType: verifiedImage.contentType,
+            upsert: false,
+        })
+
+    if (uploadError) {
+        console.error('Beta profile picture upload failed:', uploadError.statusCode)
+        return {
+            success: false,
+            error: 'We could not upload the profile picture right now. Please try again.',
         }
     }
 
