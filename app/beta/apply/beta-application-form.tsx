@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { BetaHero } from '@/components/landing/beta-hero'
-import { SiteHeader } from '@/components/layout/site-header'
 import { submitBetaApplication } from './actions'
 
 const inputClass =
@@ -109,7 +108,6 @@ export function BetaApplicationForm() {
 
     return (
         <div className="min-h-screen bg-[#faf7f0]">
-            <SiteHeader />
             <BetaHero />
 
             <main className="mx-auto max-w-3xl px-4 py-12">
