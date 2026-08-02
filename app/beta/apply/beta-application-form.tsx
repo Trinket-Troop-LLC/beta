@@ -2,13 +2,50 @@
 
 import { useState } from 'react'
 import { BetaHero } from '@/components/landing/beta-hero'
-import { SiteHeader } from '@/components/layout/site-header'
 import { submitBetaApplication } from './actions'
 
 const inputClass =
     'rounded-lg border border-[#d8d1c5] bg-white px-4 py-3 text-black outline-none transition focus:border-[#7c9272] focus:ring-2 focus:ring-[#7c9272]/20'
 const labelClass = 'flex flex-col gap-2 text-[#2c2c2c]'
 const checkboxLabelClass = 'flex items-center gap-2 text-[#2c2c2c]'
+
+const maxProfilePictureDimension = 1600
+const profilePictureQuality = 0.85
+
+async function compressProfilePicture(file: File): Promise<File> {
+    const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' })
+
+    try {
+        const scale = Math.min(1, maxProfilePictureDimension / Math.max(bitmap.width, bitmap.height))
+        const width = Math.round(bitmap.width * scale)
+        const height = Math.round(bitmap.height * scale)
+
+        const canvas = document.createElement('canvas')
+        canvas.width = width
+        canvas.height = height
+
+        const context = canvas.getContext('2d')
+
+        if (!context) {
+            throw new Error('Canvas is not supported')
+        }
+
+        context.drawImage(bitmap, 0, 0, width, height)
+
+        const blob = await new Promise<Blob>((resolve, reject) => {
+            canvas.toBlob(
+                (result) => (result ? resolve(result) : reject(new Error('Could not compress image'))),
+                'image/jpeg',
+                profilePictureQuality,
+            )
+        })
+
+        const baseName = file.name.replace(/\.[^./]+$/, '') || 'profile-picture'
+        return new File([blob], `${baseName}.jpg`, { type: 'image/jpeg' })
+    } finally {
+        bitmap.close()
+    }
+}
 
 const categories = [
     { value: 'true', label: 'true trinkets' },
@@ -23,6 +60,32 @@ export function BetaApplicationForm() {
     const [submitted, setSubmitted] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [isCompressingPhoto, setIsCompressingPhoto] = useState(false)
+    const [photoError, setPhotoError] = useState<string | null>(null)
+
+    async function handleProfilePicChange(event: React.ChangeEvent<HTMLInputElement>) {
+        const input = event.currentTarget
+        const file = input.files?.[0]
+
+        if (!file) {
+            return
+        }
+
+        setPhotoError(null)
+        setIsCompressingPhoto(true)
+
+        try {
+            const compressed = await compressProfilePicture(file)
+            const transfer = new DataTransfer()
+            transfer.items.add(compressed)
+            input.files = transfer.files
+        } catch {
+            input.value = ''
+            setPhotoError('We could not process that image. Please try a different photo.')
+        } finally {
+            setIsCompressingPhoto(false)
+        }
+    }
 
     async function handleSubmit(formData: FormData) {
         setError(null)
@@ -45,7 +108,6 @@ export function BetaApplicationForm() {
 
     return (
         <div className="min-h-screen bg-[#faf7f0]">
-            <SiteHeader />
             <BetaHero />
 
             <main className="mx-auto max-w-3xl px-4 py-12">
@@ -158,12 +220,20 @@ export function BetaApplicationForm() {
                                 name="profile_pic"
                                 accept="image/png,image/jpeg"
                                 aria-describedby="profile-picture-help"
+                                onChange={handleProfilePicChange}
                                 required
                                 className={`${inputClass} file:mr-4 file:rounded-md file:border-0 file:bg-[#7c9272] file:px-3 file:py-2 file:text-white`}
                             />
                             <span id="profile-picture-help" className="text-sm text-[#7c8072]">
-                                required; PNG or JPEG, up to 3 MB
+                                {isCompressingPhoto
+                                    ? 'preparing your photo...'
+                                    : 'PNG or JPEG — we’ll resize it automatically before uploading'}
                             </span>
+                            {photoError && (
+                                <p className="text-sm text-red-600" role="alert">
+                                    {photoError}
+                                </p>
+                            )}
                         </label>
 
                         <label className={labelClass}>
@@ -259,10 +329,10 @@ export function BetaApplicationForm() {
 
                         <button
                             type="submit"
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || isCompressingPhoto}
                             className="rounded-lg bg-[#7c9272] px-4 py-3 font-medium text-white transition hover:bg-[#667b5f] disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                            {isSubmitting ? 'submitting...' : 'submit'}
+                            {isSubmitting ? 'submitting...' : isCompressingPhoto ? 'preparing photo...' : 'submit'}
                         </button>
 
                         {error && (

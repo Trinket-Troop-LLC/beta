@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { submitGeneralInterest } from './actions'
-import { SiteHeader } from '@/components/layout/site-header'
 import { GeneralInterestHero } from '@/components/landing/apply-hero'
 
 export default function GeneralInterestForm() {
@@ -35,7 +34,6 @@ export default function GeneralInterestForm() {
 
     return (
         <div className="min-h-screen bg-[#faf7f0]">
-            <SiteHeader />
             <GeneralInterestHero />
 
             <main className="mx-auto max-w-3xl px-4 py-12">
