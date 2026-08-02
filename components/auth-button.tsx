@@ -10,10 +10,26 @@ export async function AuthButton() {
   const { data } = await supabase.auth.getClaims();
 
   const user = data?.claims;
+  let isAdmin = false;
+
+  if (user?.sub) {
+    const { data: dbUser } = await supabase
+      .from("users")
+      .select("role")
+      .eq("id", user.sub)
+      .maybeSingle();
+
+    isAdmin = dbUser?.role === "admin";
+  }
 
   return user ? (
     <div className="flex items-center gap-4">
       Hey, {user.email}!
+      {isAdmin && (
+        <Button asChild size="sm" variant="outline">
+          <Link href="/admin">Admin dashboard</Link>
+        </Button>
+      )}
       <LogoutButton />
     </div>
   ) : (
