@@ -110,10 +110,12 @@ export async function submitBetaApplication(formData: FormData) {
     })
 
     if (!validationFields.success) {
+        console.error('Zod validation failed:', JSON.stringify(validationFields.error.issues, null, 2))
         return { success: false, error: validationFields.error.issues[0].message }
     }
 
     if (validationFields.data.website) {
+        console.log('Honeypot triggered, silently accepting')
         return { success: true }
     }
 
@@ -122,12 +124,14 @@ export async function submitBetaApplication(formData: FormData) {
     const db = await createClient()
 
     if (!(profilePicture instanceof File) || profilePicture.size === 0) {
+        console.error('Profile picture missing or empty. Type:', typeof profilePicture, 'Is File:', profilePicture instanceof File)
         return { success: false, error: 'A profile picture is required' }
     }
 
     const verifiedImage = await getVerifiedImageExtension(profilePicture)
 
     if ('error' in verifiedImage) {
+        console.error('Image verification failed:', verifiedImage.error, 'File type:', profilePicture.type, 'File size:', profilePicture.size)
         return { success: false, error: verifiedImage.error }
     }
 
@@ -142,13 +146,13 @@ export async function submitBetaApplication(formData: FormData) {
         })
 
     if (uploadError) {
-        console.error('Beta profile picture upload failed:', uploadError.statusCode)
+        console.error('Storage upload failed. Full error:', JSON.stringify(uploadError, null, 2))
         return {
             success: false,
             error: 'We could not upload the profile picture right now. Please try again.',
         }
     }
-    
+
     const {
         first_name,
         last_name,
@@ -186,6 +190,8 @@ export async function submitBetaApplication(formData: FormData) {
     })
 
     if (error) {
+        console.error('Insert failed. Full error:', JSON.stringify(error, null, 2))
+
         if (error.code === '23505') {
             return {
                 success: false,
@@ -193,7 +199,6 @@ export async function submitBetaApplication(formData: FormData) {
             }
         }
 
-        console.error('Beta application submission failed:', error.code)
         return {
             success: false,
             error: 'We could not submit the beta application right now. Please try again.',
