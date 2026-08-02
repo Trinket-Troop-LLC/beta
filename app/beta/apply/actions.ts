@@ -4,7 +4,13 @@ import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 
 const profilePictureBucket = 'beta-profile-pictures'
-const maxProfilePictureBytes = 8 * 1024 * 1024
+const maxProfilePictureBytes = 3 * 1024 * 1024
+
+type SubmitResult = {
+    success: boolean
+    error?: string
+    fieldErrors?: Record<string, string>
+}
 
 const categorySchema = z.enum([
     'true',
@@ -32,8 +38,8 @@ const betaApplicationSchema = z
             .max(7)
             .transform((categories) => [...new Set(categories)]),
         other_category: z.string().trim().max(200),
-        pain_points: z.string().trim().min(1, 'Pain points are required').max(3000),
-        future_features: z.string().trim().min(1, 'Future features are required').max(3000),
+        pain_points: z.string().trim().max(3000),
+        future_features: z.string().trim().max(3000),
         misc_thoughts: z.string().trim().max(3000),
         website: z.string().max(200),
     })
@@ -52,9 +58,20 @@ function getText(formData: FormData, name: string) {
     return typeof value === 'string' ? value : ''
 }
 
+function buildFieldErrors(error: z.ZodError): Record<string, string> {
+    const fieldErrors: Record<string, string> = {}
+    for (const issue of error.issues) {
+        const field = issue.path[0]?.toString()
+        if (field && !fieldErrors[field]) {
+            fieldErrors[field] = issue.message
+        }
+    }
+    return fieldErrors
+}
+
 async function getVerifiedImageExtension(file: File) {
     if (file.size > maxProfilePictureBytes) {
-        return { error: 'Profile pictures must be 8 MB or smaller' } as const
+        return { error: 'Profile pictures must be 3 MB or smaller' } as const
     }
 
     if (file.type !== 'image/jpeg' && file.type !== 'image/png') {
@@ -89,7 +106,7 @@ async function getVerifiedImageExtension(file: File) {
     return { error: 'Please choose a valid PNG or JPEG image' } as const
 }
 
-export async function submitBetaApplication(formData: FormData) {
+export async function submitBetaApplication(formData: FormData): Promise<SubmitResult> {
     const validationFields = betaApplicationSchema.safeParse({
         first_name: getText(formData, 'first_name'),
         last_name: getText(formData, 'last_name'),
@@ -110,12 +127,13 @@ export async function submitBetaApplication(formData: FormData) {
     })
 
     if (!validationFields.success) {
-        console.error('Zod validation failed:', JSON.stringify(validationFields.error.issues, null, 2))
-        return { success: false, error: validationFields.error.issues[0].message }
+        return {
+            success: false,
+            fieldErrors: buildFieldErrors(validationFields.error),
+        }
     }
 
     if (validationFields.data.website) {
-        console.log('Honeypot triggered, silently accepting')
         return { success: true }
     }
 
@@ -124,15 +142,19 @@ export async function submitBetaApplication(formData: FormData) {
     const db = await createClient()
 
     if (!(profilePicture instanceof File) || profilePicture.size === 0) {
-        console.error('Profile picture missing or empty. Type:', typeof profilePicture, 'Is File:', profilePicture instanceof File)
-        return { success: false, error: 'A profile picture is required' }
+        return {
+            success: false,
+            fieldErrors: { profile_pic: 'A profile picture is required' },
+        }
     }
 
     const verifiedImage = await getVerifiedImageExtension(profilePicture)
 
     if ('error' in verifiedImage) {
-        console.error('Image verification failed:', verifiedImage.error, 'File type:', profilePicture.type, 'File size:', profilePicture.size)
-        return { success: false, error: verifiedImage.error }
+        return {
+            success: false,
+            fieldErrors: { profile_pic: verifiedImage.error } as Record<string, string>,
+        }
     }
 
     profilePicturePath = `submissions/${crypto.randomUUID()}.${verifiedImage.extension}`
@@ -146,7 +168,7 @@ export async function submitBetaApplication(formData: FormData) {
         })
 
     if (uploadError) {
-        console.error('Storage upload failed. Full error:', JSON.stringify(uploadError, null, 2))
+        console.error('Beta profile picture upload failed:', uploadError.statusCode)
         return {
             success: false,
             error: 'We could not upload the profile picture right now. Please try again.',
@@ -190,8 +212,6 @@ export async function submitBetaApplication(formData: FormData) {
     })
 
     if (error) {
-        console.error('Insert failed. Full error:', JSON.stringify(error, null, 2))
-
         if (error.code === '23505') {
             return {
                 success: false,
@@ -199,6 +219,7 @@ export async function submitBetaApplication(formData: FormData) {
             }
         }
 
+        console.error('Beta application submission failed:', error.code)
         return {
             success: false,
             error: 'We could not submit the beta application right now. Please try again.',

@@ -9,44 +9,6 @@ const inputClass =
 const labelClass = 'flex flex-col gap-2 text-[#2c2c2c]'
 const checkboxLabelClass = 'flex items-center gap-2 text-[#2c2c2c]'
 
-const maxProfilePictureDimension = 1600
-const profilePictureQuality = 0.85
-
-async function compressProfilePicture(file: File): Promise<File> {
-    const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' })
-
-    try {
-        const scale = Math.min(1, maxProfilePictureDimension / Math.max(bitmap.width, bitmap.height))
-        const width = Math.round(bitmap.width * scale)
-        const height = Math.round(bitmap.height * scale)
-
-        const canvas = document.createElement('canvas')
-        canvas.width = width
-        canvas.height = height
-
-        const context = canvas.getContext('2d')
-
-        if (!context) {
-            throw new Error('Canvas is not supported')
-        }
-
-        context.drawImage(bitmap, 0, 0, width, height)
-
-        const blob = await new Promise<Blob>((resolve, reject) => {
-            canvas.toBlob(
-                (result) => (result ? resolve(result) : reject(new Error('Could not compress image'))),
-                'image/jpeg',
-                profilePictureQuality,
-            )
-        })
-
-        const baseName = file.name.replace(/\.[^./]+$/, '') || 'profile-picture'
-        return new File([blob], `${baseName}.jpg`, { type: 'image/jpeg' })
-    } finally {
-        bitmap.close()
-    }
-}
-
 const categories = [
     { value: 'true', label: 'true trinkets' },
     { value: 'wearable', label: 'wearable trinkets' },
@@ -56,39 +18,20 @@ const categories = [
     { value: 'hobby', label: 'hobby trinkets' },
 ]
 
+function FieldError({ message }: { message?: string }) {
+    if (!message) return null
+    return <span className="text-sm text-red-600">{message}</span>
+}
+
 export function BetaApplicationForm() {
     const [submitted, setSubmitted] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
     const [isSubmitting, setIsSubmitting] = useState(false)
-    const [isCompressingPhoto, setIsCompressingPhoto] = useState(false)
-    const [photoError, setPhotoError] = useState<string | null>(null)
-
-    async function handleProfilePicChange(event: React.ChangeEvent<HTMLInputElement>) {
-        const input = event.currentTarget
-        const file = input.files?.[0]
-
-        if (!file) {
-            return
-        }
-
-        setPhotoError(null)
-        setIsCompressingPhoto(true)
-
-        try {
-            const compressed = await compressProfilePicture(file)
-            const transfer = new DataTransfer()
-            transfer.items.add(compressed)
-            input.files = transfer.files
-        } catch {
-            input.value = ''
-            setPhotoError('We could not process that image. Please try a different photo.')
-        } finally {
-            setIsCompressingPhoto(false)
-        }
-    }
 
     async function handleSubmit(formData: FormData) {
         setError(null)
+        setFieldErrors({})
         setIsSubmitting(true)
 
         try {
@@ -97,14 +40,17 @@ export function BetaApplicationForm() {
             if (result.success) {
                 setSubmitted(true)
             } else {
-                setError(result.error ?? 'Something went wrong')
+                setFieldErrors(result.fieldErrors ?? {})
+                if (result.error) {
+                    setError(result.error)
+                }
             }
         } catch {
             setError('We could not submit the beta application right now. Please try again.')
         } finally {
             setIsSubmitting(false)
-        }
     }
+}
 
     return (
         <div className="min-h-screen bg-[#faf7f0]">
@@ -131,18 +77,17 @@ export function BetaApplicationForm() {
                         <div className="sr-only" aria-hidden="true">
                             <label>
                                 Leave this field blank
-                                <input
-                                    type="text"
-                                    name="website"
-                                    tabIndex={-1}
-                                    autoComplete="off"
-                                />
+                                <input type="text" name="website" tabIndex={-1} autoComplete="off" />
                             </label>
                         </div>
 
+                        <span id="required-indicator" className="text-sm text-[#7c8072]">
+                            * required
+                        </span>
+
                         <div className="grid gap-6 sm:grid-cols-2">
                             <label className={labelClass}>
-                                <span>first name</span>
+                                <span>first name *</span>
                                 <input
                                     type="text"
                                     name="first_name"
@@ -151,10 +96,11 @@ export function BetaApplicationForm() {
                                     required
                                     className={inputClass}
                                 />
+                                <FieldError message={fieldErrors.first_name} />
                             </label>
 
                             <label className={labelClass}>
-                                <span>last name</span>
+                                <span>last name *</span>
                                 <input
                                     type="text"
                                     name="last_name"
@@ -163,6 +109,7 @@ export function BetaApplicationForm() {
                                     required
                                     className={inputClass}
                                 />
+                                <FieldError message={fieldErrors.last_name} />
                             </label>
                         </div>
 
@@ -175,10 +122,11 @@ export function BetaApplicationForm() {
                                 maxLength={100}
                                 className={inputClass}
                             />
+                            <FieldError message={fieldErrors.preferred_name} />
                         </label>
 
                         <label className={labelClass}>
-                            <span>email</span>
+                            <span>email *</span>
                             <input
                                 type="email"
                                 name="email"
@@ -187,10 +135,11 @@ export function BetaApplicationForm() {
                                 required
                                 className={inputClass}
                             />
+                            <FieldError message={fieldErrors.email} />
                         </label>
 
                         <label className={labelClass}>
-                            <span>phone number</span>
+                            <span>phone number *</span>
                             <input
                                 type="tel"
                                 name="phone_number"
@@ -199,10 +148,11 @@ export function BetaApplicationForm() {
                                 required
                                 className={inputClass}
                             />
+                            <FieldError message={fieldErrors.phone_number} />
                         </label>
 
                         <label className={labelClass}>
-                            <span>username</span>
+                            <span>username *</span>
                             <input
                                 type="text"
                                 name="username"
@@ -211,59 +161,41 @@ export function BetaApplicationForm() {
                                 required
                                 className={inputClass}
                             />
+                            <FieldError message={fieldErrors.username} />
                         </label>
 
                         <label className={labelClass}>
-                            <span>upload a profile picture</span>
+                            <span>upload a profile picture *</span>
                             <input
                                 type="file"
                                 name="profile_pic"
                                 accept="image/png,image/jpeg"
-                                aria-describedby="profile-picture-help"
-                                onChange={handleProfilePicChange}
                                 required
+                                aria-describedby="profile-picture-help"
                                 className={`${inputClass} file:mr-4 file:rounded-md file:border-0 file:bg-[#7c9272] file:px-3 file:py-2 file:text-white`}
                             />
                             <span id="profile-picture-help" className="text-sm text-[#7c8072]">
-                                {isCompressingPhoto
-                                    ? 'preparing your photo...'
-                                    : 'PNG or JPEG — we’ll resize it automatically before uploading'}
+                                required; PNG or JPEG, up to 3 MB
                             </span>
-                            {photoError && (
-                                <p className="text-sm text-red-600" role="alert">
-                                    {photoError}
-                                </p>
-                            )}
+                            <FieldError message={fieldErrors.profile_pic} />
                         </label>
 
                         <label className={labelClass}>
                             <span>
-                                what neighborhoods do you frequent? (live, work, or where you&apos;re regularly around)
+                                what neighborhoods do you frequent? (live, work, or where you&apos;re regularly around) *
                             </span>
-                            <textarea
-                                name="neighborhood"
-                                maxLength={2000}
-                                required
-                                rows={3}
-                                className={inputClass}
-                            />
+                            <textarea name="neighborhood" maxLength={2000} required rows={3} className={inputClass} />
+                            <FieldError message={fieldErrors.neighborhood} />
                         </label>
 
                         <label className={labelClass}>
-                            <span>three emojis that describe you :)</span>
-                            <input
-                                type="text"
-                                name="emojis"
-                                maxLength={100}
-                                required
-                                className={inputClass}
-                            />
+                            <span>three emojis that describe you :) *</span>
+                            <input type="text" name="emojis" maxLength={100} required className={inputClass} />
+                            <FieldError message={fieldErrors.emojis} />
                         </label>
 
                         <fieldset className="flex flex-col gap-2 text-[#2c2c2c]">
-                            <legend className="mb-1 font-medium">
-                                interested in... (select all that apply)
-                            </legend>
+                            <legend className="mb-1 font-medium">interested in... (select all that apply) *</legend>
                             {categories.map((category) => (
                                 <label key={category.value} className={checkboxLabelClass}>
                                     <input
@@ -276,12 +208,7 @@ export function BetaApplicationForm() {
                                 </label>
                             ))}
                             <label className={checkboxLabelClass}>
-                                <input
-                                    type="checkbox"
-                                    name="categories"
-                                    value="other"
-                                    className="size-4 accent-[#7c9272]"
-                                />
+                                <input type="checkbox" name="categories" value="other" className="size-4 accent-[#7c9272]" />
                                 <span>other:</span>
                                 <input
                                     type="text"
@@ -291,48 +218,34 @@ export function BetaApplicationForm() {
                                     className={`${inputClass} min-w-0 flex-1`}
                                 />
                             </label>
+                            <FieldError message={fieldErrors.categories} />
+                            <FieldError message={fieldErrors.other_category} />
                         </fieldset>
 
                         <label className={labelClass}>
-                            <span>
-                                what are your main pain points with NYC peer-to-peer secondhand exchange?
-                            </span>
-                            <textarea
-                                name="pain_points"
-                                maxLength={3000}
-                                required
-                                rows={4}
-                                className={inputClass}
-                            />
+                            <span>what are your main pain points with NYC peer-to-peer secondhand exchange?</span>
+                            <textarea name="pain_points" maxLength={3000} rows={4} className={inputClass} />
+                            <FieldError message={fieldErrors.pain_points} />
                         </label>
 
                         <label className={labelClass}>
                             <span>features you&apos;re dreaming of ...</span>
-                            <textarea
-                                name="future_features"
-                                maxLength={3000}
-                                required
-                                rows={3}
-                                className={inputClass}
-                            />
+                            <textarea name="future_features" maxLength={3000} rows={3} className={inputClass} />
+                            <FieldError message={fieldErrors.future_features} />
                         </label>
 
                         <label className={labelClass}>
                             <span>comments, questions, compliments, or concerns ;)</span>
-                            <textarea
-                                name="misc_thoughts"
-                                maxLength={3000}
-                                rows={3}
-                                className={inputClass}
-                            />
+                            <textarea name="misc_thoughts" maxLength={3000} rows={3} className={inputClass} />
+                            <FieldError message={fieldErrors.misc_thoughts} />
                         </label>
 
                         <button
                             type="submit"
-                            disabled={isSubmitting || isCompressingPhoto}
+                            disabled={isSubmitting}
                             className="rounded-lg bg-[#7c9272] px-4 py-3 font-medium text-white transition hover:bg-[#667b5f] disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                            {isSubmitting ? 'submitting...' : isCompressingPhoto ? 'preparing photo...' : 'submit'}
+                            {isSubmitting ? 'submitting...' : 'submit'}
                         </button>
 
                         {error && (
@@ -346,22 +259,12 @@ export function BetaApplicationForm() {
                 <footer className="mt-10 text-center text-sm text-[#7c8072]">
                     <p className="flex flex-wrap items-center justify-center gap-1">
                         Questions? Reach us at
-                        <a
-                            href="https://www.instagram.com/trinkettroop/"
-                            target="_blank"
-                            rel="noreferrer"
-                            className="underline"
-                        >
+                        <a href="https://www.instagram.com/trinkettroop/" target="_blank" rel="noreferrer" className="underline">
                             @trinkettroop
                         </a>
                         on Instagram
                     </p>
-                    <a
-                        href="https://buymeacoffee.com/trinkettroop"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="underline"
-                    >
+                    <a href="https://buymeacoffee.com/trinkettroop" target="_blank" rel="noreferrer" className="underline">
                         Buy us a coffee {'\u2615'}
                     </a>
                 </footer>
