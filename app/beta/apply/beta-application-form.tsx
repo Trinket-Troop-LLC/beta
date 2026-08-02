@@ -221,14 +221,14 @@ export function BetaApplicationForm() {
                         </fieldset>
 
                         <label className={labelClass}>
-                            <span>what are your main pain points with NYC peer-to-peer secondhand exchange? *</span>
-                            <textarea name="pain_points" maxLength={3000} required rows={4} className={inputClass} />
+                            <span>what are your main pain points with NYC peer-to-peer secondhand exchange?</span>
+                            <textarea name="pain_points" maxLength={3000} rows={4} className={inputClass} />
                             <FieldError message={fieldErrors.pain_points} />
                         </label>
 
                         <label className={labelClass}>
-                            <span>features you&apos;re dreaming of ... *</span>
-                            <textarea name="future_features" maxLength={3000} required rows={3} className={inputClass} />
+                            <span>features you&apos;re dreaming of ... </span>
+                            <textarea name="future_features" maxLength={3000} rows={3} className={inputClass} />
                             <FieldError message={fieldErrors.future_features} />
                         </label>
 

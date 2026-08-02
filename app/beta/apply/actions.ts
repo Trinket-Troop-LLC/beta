@@ -32,8 +32,8 @@ const betaApplicationSchema = z
             .max(7)
             .transform((categories) => [...new Set(categories)]),
         other_category: z.string().trim().max(200),
-        pain_points: z.string().trim().min(1, 'Pain points are required').max(3000),
-        future_features: z.string().trim().min(1, 'Future features are required').max(3000),
+        pain_points: z.string().trim().max(3000),
+        future_features: z.string().trim().max(3000),
         misc_thoughts: z.string().trim().max(3000),
         website: z.string().max(200),
     })
