@@ -228,6 +228,7 @@ export function BetaApplicationForm() {
                                 {isCompressingPhoto
                                     ? 'preparing your photo...'
                                     : 'PNG or JPEG — we’ll resize it automatically before uploading'}
+                                required; PNG or JPEG, up to 3 MB
                             </span>
                             {photoError && (
                                 <p className="text-sm text-red-600" role="alert">

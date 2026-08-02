@@ -43,10 +43,10 @@ export default function GeneralInterestForm() {
                         role="status"
                     >
                         <h2 className="text-xl font-semibold text-[#30392d]">
-                            you&apos;re on the waiting list!
+                            you're on the waiting list!
                         </h2>
                         <p className="mt-2 text-[#625f58]">
-                            thank you for your interest in trinket troop. we&apos;ll email you when the app is ready to download.
+                            thank you for your interest in trinket troop. we'll email you when the app is ready to download.
                         </p>
                     </div>
                 ) : (
