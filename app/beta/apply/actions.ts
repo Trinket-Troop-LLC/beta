@@ -6,6 +6,7 @@ import { z } from 'zod'
 const profilePictureBucket = 'beta-profile-pictures'
 const maxProfilePictureBytes = 3 * 1024 * 1024
 
+
 const categorySchema = z.enum([
     'true',
     'wearable',
@@ -150,7 +151,7 @@ export async function submitBetaApplication(formData: FormData) {
         return {
             success: false,
             error: 'Please fix the errors below',
-            fieldErrors: { profile_pic: verifiedImage.error },
+            fieldErrors: { profile_pic: verifiedImage.error } as Record<string, string>,
         }
     }
 
