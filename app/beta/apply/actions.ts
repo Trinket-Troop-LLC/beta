@@ -120,7 +120,9 @@ export async function submitBetaApplication(formData: FormData) {
     }
 
     const profilePicture = formData.get('profile_pic')
-
+    let profilePicturePath: string | null = null
+    const db = await createClient()
+    
     if (!(profilePicture instanceof File) || profilePicture.size === 0) {
         console.error('Profile picture missing or empty. Type:', typeof profilePicture, 'Is File:', profilePicture instanceof File)
         return { success: false, error: 'A profile picture is required' }
