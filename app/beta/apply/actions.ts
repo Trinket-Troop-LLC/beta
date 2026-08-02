@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 
 const profilePictureBucket = 'beta-profile-pictures'
-const maxProfilePictureBytes = 3 * 1024 * 1024
+const maxProfilePictureBytes = 8 * 1024 * 1024
 
 const categorySchema = z.enum([
     'true',
@@ -54,7 +54,7 @@ function getText(formData: FormData, name: string) {
 
 async function getVerifiedImageExtension(file: File) {
     if (file.size > maxProfilePictureBytes) {
-        return { error: 'Profile pictures must be 3 MB or smaller' } as const
+        return { error: 'Profile pictures must be 8 MB or smaller' } as const
     }
 
     if (file.type !== 'image/jpeg' && file.type !== 'image/png') {
@@ -120,8 +120,6 @@ export async function submitBetaApplication(formData: FormData) {
     }
 
     const profilePicture = formData.get('profile_pic')
-    let profilePicturePath: string | null = null
-    const db = await createClient()
 
     if (!(profilePicture instanceof File) || profilePicture.size === 0) {
         console.error('Profile picture missing or empty. Type:', typeof profilePicture, 'Is File:', profilePicture instanceof File)

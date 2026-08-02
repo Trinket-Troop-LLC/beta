@@ -45,7 +45,7 @@ export type GeneralInterest = {
     email: string
     phone_number: string
     pain_points: string
-    friend_emails: string[] | null
+    friend_phone_numbers: string[] | null
     created_at: string
 }
 
@@ -101,7 +101,7 @@ export function AdminDashboardClient({
             'Email',
             'Phone Number',
             'Pain Points',
-            'Friend Emails',
+            'Friend Phone Numbers',
             'Joined At',
         ]
         const rows = generalInterests.map((interest) => [
@@ -110,7 +110,7 @@ export function AdminDashboardClient({
             interest.email,
             interest.phone_number,
             interest.pain_points,
-            interest.friend_emails ?? [],
+            interest.friend_phone_numbers ?? [],
             interest.created_at,
         ])
         const csv = [
@@ -416,7 +416,7 @@ function GeneralInterestDetails({
     interest: GeneralInterest
     onClose: () => void
 }) {
-    const friendEmails = interest.friend_emails ?? []
+    const friendPhoneNumbers = interest.friend_phone_numbers ?? []
 
     return (
         <aside className="max-h-[85vh] w-full shrink-0 overflow-y-auto rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-6 shadow-sm xl:sticky xl:top-6 xl:w-[380px]">
@@ -438,9 +438,9 @@ function GeneralInterestDetails({
                     </dd>
                 </div>
                 <div>
-                    <dt className="text-sm font-medium text-[#7c8072]">Friend Emails</dt>
+                    <dt className="text-sm font-medium text-[#7c8072]">Friend Phone Numbers</dt>
                     <dd className="text-[#2c2c2c]">
-                        {friendEmails.length > 0 ? friendEmails.join(', ') : '—'}
+                        {friendPhoneNumbers.length > 0 ? friendPhoneNumbers.join(', ') : '—'}
                     </dd>
                 </div>
             </dl>

@@ -131,17 +131,17 @@ export default function GeneralInterestForm() {
 
                         <label className={labelClass}>
                             <span>
-                                if you know anyone who would love this platform, add their email(s) here so we can reach out!
+                                if you know anyone who would love this platform, add their phone number(s) here so we can reach out!
                             </span>
                             <textarea
-                                name="friend_emails"
-                                aria-describedby="friend-emails-help"
+                                name="friend_phone_numbers"
+                                aria-describedby="friend-phone-numbers-help"
                                 maxLength={2000}
                                 rows={3}
                                 className={inputClass}
                             />
-                            <span id="friend-emails-help" className="text-sm text-[#7c8072]">
-                                separate multiple email addresses with commas or new lines. please only share friends who would be happy to hear from us.
+                            <span id="friend-phone-numbers-help" className="text-sm text-[#7c8072]">
+                                separate multiple phone numbers with commas or new lines. please only share friends who would be happy to hear from us.
                             </span>
                         </label>
 
