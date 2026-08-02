@@ -1,9 +1,5 @@
 import Link from "next/link";
 import Image from "next/image";
-import { AuthButton } from "@/components/auth-button";
-import { EnvVarWarning } from "@/components/env-var-warning";
-import { hasEnvVars } from "@/lib/utils";
-import { Suspense } from "react";
 import { Gluten } from "next/font/google";
 
 const gluten = Gluten({
@@ -14,21 +10,6 @@ const gluten = Gluten({
 export default function Home() {
     return (
         <main className={`${gluten.variable} relative min-h-screen overflow-hidden bg-[#faf7f0]`}>
-            {/* Nav */}
-            <nav className="relative z-20 flex w-full items-center justify-between px-6 py-4">
-                <div className="flex items-center gap-2 font-semibold text-[#2c2c2c]">
-                    <Image src="/logo.png" alt="Trinket Troupe logo" width={36} height={36} />
-                    Trinket Troop
-                </div>
-                {!hasEnvVars ? (
-                    <EnvVarWarning />
-                ) : (
-                    <Suspense>
-                        <AuthButton />
-                    </Suspense>
-                )}
-            </nav>
-
             {/* Hero content */}
             <div className="relative z-10 flex flex-col items-center justify-center px-4 pt-24 pb-24 text-center sm:pt-32">
                 <h1 className="font-[family-name:var(--font-gluten)] text-5xl font-semibold text-[#30392d] sm:text-7xl">
