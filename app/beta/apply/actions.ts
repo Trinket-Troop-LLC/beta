@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 
 const profilePictureBucket = 'beta-profile-pictures'
-const maxProfilePictureBytes = 3 * 1024 * 1024
+const maxProfilePictureBytes = 8 * 1024 * 1024
 
 type SubmitResult = {
     success: boolean
@@ -71,7 +71,7 @@ function buildFieldErrors(error: z.ZodError): Record<string, string> {
 
 async function getVerifiedImageExtension(file: File) {
     if (file.size > maxProfilePictureBytes) {
-        return { error: 'Profile pictures must be 3 MB or smaller' } as const
+        return { error: 'Profile pictures must be 8 MB or smaller' } as const
     }
 
     if (file.type !== 'image/jpeg' && file.type !== 'image/png') {
