@@ -32,12 +32,59 @@ async function ensureAccountExists(applicant: {
         email_confirm: false,
     })
 
-    if (createError || !created.user) {
-        throw new Error(createError?.message ?? 'Could not create an account for this applicant.')
+    let authUserId = created?.user?.id
+
+    if (createError) {
+        // Someone can be approved while already having an auth account under this
+        // email (most commonly an admin testing with their own email, but also a
+        // real possible edge case). Rather than failing, link the existing auth
+        // account to this applicant instead of creating a duplicate.
+        if (createError.code !== 'email_exists') {
+            throw new Error(createError.message)
+        }
+
+        const { data: existing, error: lookupError } = await admin.auth.admin.generateLink({
+            type: 'magiclink',
+            email: applicant.email,
+        })
+
+        if (lookupError || !existing) {
+            throw new Error(
+                lookupError?.message ?? 'An account with this email already exists, but it could not be linked.',
+            )
+        }
+
+        authUserId = existing.user.id
+    }
+
+    if (!authUserId) {
+        throw new Error('Could not create an account for this applicant.')
+    }
+
+    // The auth account may already have its own public.users row (e.g. it's an
+    // existing admin's account) — link this applicant to it via an update rather
+    // than an insert, so we never overwrite an existing role or username.
+    const { data: existingProfile } = await admin
+        .from('users')
+        .select('id')
+        .eq('id', authUserId)
+        .maybeSingle()
+
+    if (existingProfile) {
+        const { error: linkError } = await admin
+            .from('users')
+            .update({ applicant_id: applicant.id })
+            .eq('id', authUserId)
+
+        if (linkError) {
+            throw new Error(`Account already existed but could not be linked: ${linkError.message}`)
+        }
+
+        return
     }
 
     const { error: insertUserError } = await admin.from('users').insert({
-        id: created.user.id,
+        id: authUserId,
         email: applicant.email,
         username: applicant.username,
         role: 'user',
