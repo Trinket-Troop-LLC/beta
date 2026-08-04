@@ -57,10 +57,13 @@ begin
 end;
 $$;
 
--- No INSERT policy exists. Rows are created via a privileged path only (a database
--- trigger on auth.users, or the service-role key directly) — not a client-side insert.
--- This is deliberate: the beta-app account-creation flow should use that same
--- privileged path, not add a client-facing insert policy.
+-- No INSERT policy exists, and no trigger on auth.users creates a row here either
+-- (verified: the only triggers on this table are Postgres's automatic FK integrity
+-- checks for applicant_id and id, nothing custom). Existing rows were created by hand
+-- with the service-role key. The beta-app account-creation flow needs to do the same,
+-- explicitly, as two steps: auth.admin.inviteUserByEmail(...) to create the auth user,
+-- then a separate service-role insert into public.users (id, email, username,
+-- role: 'user', applicant_id) — nothing does either of these automatically.
 
 -- No SELECT policy exists for viewing another user's row. Any beta-app screen that shows
 -- someone else's profile (a listing's owner, a chat participant) needs a new policy for
