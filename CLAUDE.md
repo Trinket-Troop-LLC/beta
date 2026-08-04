@@ -39,8 +39,14 @@ why (no designer is hired yet; this is what makes the whole UI swappable later w
   `createImageBitmap` + canvas, max 1600px edge, JPEG q0.85). Both write to Supabase tables (`general_interest`,
   `applicants`) via server actions in their respective `actions.ts`.
 - `app/admin/` — dashboard for reviewing/approving applicants, gated on `public.users.role === 'admin'`. Approving an
-  applicant currently just sends an email saying "we'll be in touch" — it does not yet create a real account. That's the
-  first thing the beta-app build fixes.
+  applicant now creates the real account (`app/admin/actions.ts`: `ensureAccountExists` — service-role `createUser` +
+  insert into `public.users`, linked via `applicant_id`). Deliberately doesn't email or generate a sign-in link yet —
+  that happens later, once the beta app is ready, since a link generated now would expire before it's sent.
+- `public.users.role` is `'guest' | 'user' | 'admin'` (single value, not a set of flags — schema documented in
+  `supabase/migrations/20260805000000_document_existing_users_table.sql`). No trigger creates a row on signup; rows are
+  only ever created by this project's own privileged code or by hand. When the beta app's own access check gets built,
+  gate it on "has a profile," not strictly `role === 'user'` — treat `'admin'` as a superset so admin accounts aren't
+  locked out of the app they should also be able to use themselves.
 - Storage buckets: `beta-profile-pictures` (private, signed URLs, admin-only read). The beta app will add
   `listing-photos` — public vs. signed-URL-private is an open decision, see the Day 0 kickoff issue.
 - No middleware.ts exists in this project — auth session handling happens per-route via `lib/supabase/server.ts`.
