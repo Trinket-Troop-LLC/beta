@@ -1,16 +1,11 @@
 import type { Metadata } from "next";
 import { Geist, Gluten } from "next/font/google";
 import { ThemeProvider } from "next-themes";
+import { getAppUrl } from "@/lib/utils";
 import "./globals.css";
 
-const defaultUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
-  ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-  : process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : "http://localhost:3000";
-
 export const metadata: Metadata = {
-  metadataBase: new URL(defaultUrl),
+  metadataBase: new URL(getAppUrl()),
   title: "Trinket Troop",
   description:
     "Join the Trinket Troop waiting list for a friendlier way to buy, sell, trade, and gift secondhand treasures in New York City.",

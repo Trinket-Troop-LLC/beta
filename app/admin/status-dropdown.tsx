@@ -33,7 +33,7 @@ export function StatusDropdown({ applicantId, currentStatus }: { applicantId: st
         return
       }
 
-      setMessage(result.emailSent ? 'Approval email sent.' : 'Status updated.')
+      setMessage(result.accountCreated ? 'Account created.' : 'Status updated.')
     })
   }
 
@@ -55,7 +55,7 @@ export function StatusDropdown({ applicantId, currentStatus }: { applicantId: st
 
       {isPending && (
         <p className="text-xs text-[#7c8072]" role="status">
-          {status === 'approved' ? 'Approving and sending email…' : 'Updating status…'}
+          {status === 'approved' ? 'Approving and creating account…' : 'Updating status…'}
         </p>
       )}
       {!isPending && message && (

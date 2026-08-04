@@ -1,12 +1,56 @@
 'use server'
 import { createClient } from '@/lib/supabase/server'
-import { sendApprovalEmail } from '@/lib/email/approval-email'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { type ApplicantStatus, isApplicantStatus } from './applicant-status'
 
+// Creates the real account for an approved applicant, but doesn't email them —
+// that happens separately, later, once the beta app is actually ready to use.
+// (Deliberately not generating a sign-in link here either: Supabase invite/magic
+// links expire, so one generated now would be dead by the time it's sent. The
+// future "notify approved users" flow should generate a fresh link at send time.)
+async function ensureAccountExists(applicant: {
+    id: string
+    email: string
+    username: string
+}): Promise<void> {
+    const admin = createAdminClient()
+
+    const { data: existingUser } = await admin
+        .from('users')
+        .select('id')
+        .eq('applicant_id', applicant.id)
+        .maybeSingle()
+
+    if (existingUser) {
+        return
+    }
+
+    const { data: created, error: createError } = await admin.auth.admin.createUser({
+        email: applicant.email,
+        email_confirm: false,
+    })
+
+    if (createError || !created.user) {
+        throw new Error(createError?.message ?? 'Could not create an account for this applicant.')
+    }
+
+    const { error: insertUserError } = await admin.from('users').insert({
+        id: created.user.id,
+        email: applicant.email,
+        username: applicant.username,
+        role: 'user',
+        applicant_id: applicant.id,
+    })
+
+    if (insertUserError) {
+        throw new Error(`Account was created but the profile could not be saved: ${insertUserError.message}`)
+    }
+}
+
 type UpdateApplicantStatusResult =
-    | { success: true; emailSent: boolean }
+    | { success: true; accountCreated: boolean }
     | { success: false; error: string }
 
 export async function updateApplicantStatus(
@@ -31,7 +75,7 @@ export async function updateApplicantStatus(
 
     const { data: applicant, error: applicantError } = await db
         .from('applicants')
-        .select('id, email, first_name, preferred_name, status')
+        .select('id, email, first_name, preferred_name, username, status')
         .eq('id', applicantId)
         .single()
 
@@ -49,7 +93,7 @@ export async function updateApplicantStatus(
     const previousStatus = applicant.status
 
     if (previousStatus === status) {
-        return { success: true, emailSent: false }
+        return { success: true, accountCreated: false }
     }
 
     // The current-status filter prevents one admin from overwriting another
@@ -75,15 +119,14 @@ export async function updateApplicantStatus(
 
     if (status === 'approved') {
         try {
-            await sendApprovalEmail({
-                applicantId: applicant.id,
+            await ensureAccountExists({
+                id: applicant.id,
                 email: applicant.email,
-                firstName: applicant.first_name,
-                preferredName: applicant.preferred_name,
+                username: applicant.username,
             })
         } catch (error) {
-            // Restore the previous state so a failed email can be retried by
-            // approving the applicant again.
+            // Restore the previous state so a failed account-creation step can
+            // be retried by approving the applicant again.
             const { error: rollbackError } = await db
                 .from('applicants')
                 .update({ status: previousStatus })
@@ -92,27 +135,27 @@ export async function updateApplicantStatus(
 
             revalidatePath('/admin')
 
-            const emailError = error instanceof Error
+            const approvalError = error instanceof Error
                 ? error.message
-                : 'The approval email could not be sent.'
+                : 'The applicant could not be approved.'
 
             if (rollbackError) {
-                console.error('Could not restore applicant status after email failure', {
+                console.error('Could not restore applicant status after approval failure', {
                     applicantId,
                     rollbackError,
                 })
 
                 return {
                     success: false,
-                    error: `${emailError} The applicant status could not be restored; refresh before retrying.`,
+                    error: `${approvalError} The applicant status could not be restored; refresh before retrying.`,
                 }
             }
 
-            return { success: false, error: emailError }
+            return { success: false, error: approvalError }
         }
     }
 
     revalidatePath('/admin')
 
-    return { success: true, emailSent: status === 'approved' }
+    return { success: true, accountCreated: status === 'approved' }
 }

@@ -5,6 +5,7 @@ type ApprovalEmailParams = {
   email: string;
   firstName: string;
   preferredName: string | null;
+  inviteLink: string;
 };
 
 function escapeHtml(value: string) {
@@ -39,6 +40,7 @@ export async function sendApprovalEmail({
   email,
   firstName,
   preferredName,
+  inviteLink,
 }: ApprovalEmailParams) {
   const apiKey = process.env.RESEND_API_KEY;
   const fromEmail = process.env.RESEND_FROM_EMAIL;
@@ -68,9 +70,10 @@ export async function sendApprovalEmail({
         "",
         "Your application to join the Trinket Troop beta has been approved!",
         "",
-        "We’re excited to welcome you into the community",
+        "We’re excited to welcome you into the community. Set up your account here:",
+        inviteLink,
         "",
-        "Please keep an eye on your inbox. We’ll be in touch soon with the next steps.",
+        "This link is just for you — don't share it.",
         "",
         "Sincerely,",
         "The Trinket Troop team",
@@ -92,7 +95,15 @@ export async function sendApprovalEmail({
               We’re excited to welcome you into a friendlier way to buy, sell, and trade secondhand treasures with people in your neighborhood.
             </p>
             <p style="margin:0 0 28px;font-size:17px;line-height:1.7">
-              Keep an eye on your inbox. We’ll be in touch soon with the next steps.
+              Set up your account to get started:
+            </p>
+            <p style="margin:0 0 28px;text-align:center">
+              <a href="${inviteLink}" style="display:inline-block;background:#7c9272;color:#fffdf9;padding:14px 28px;border-radius:10px;font-size:16px;font-weight:600;text-decoration:none">
+                Set up your account
+              </a>
+            </p>
+            <p style="margin:0 0 28px;font-size:14px;color:#7c8072">
+              This link is just for you — don't share it.
             </p>
             <p style="margin:0;color:#625f58;font-size:16px;line-height:1.6">
               Warmly,<br />
