@@ -28,6 +28,7 @@ async function ensureAccountExists(applicant: {
     }
 
     if (existingUser) {
+        await markApplicantConverted(admin, applicant.id)
         return
     }
 
@@ -88,6 +89,7 @@ async function ensureAccountExists(applicant: {
             throw new Error(`Account already existed but could not be linked: ${linkError.message}`)
         }
 
+        await markApplicantConverted(admin, applicant.id)
         return
     }
 
@@ -101,6 +103,22 @@ async function ensureAccountExists(applicant: {
 
     if (insertUserError) {
         throw new Error(`Account was created but the profile could not be saved: ${insertUserError.message}`)
+    }
+
+    await markApplicantConverted(admin, applicant.id)
+}
+
+// applicants.converted exists in the schema but nothing has ever set it — keep it
+// truthful now that account creation actually happens. Not a hard failure if this
+// write fails: the account itself is already real, this is just a status flag.
+async function markApplicantConverted(admin: ReturnType<typeof createAdminClient>, applicantId: string) {
+    const { error } = await admin
+        .from('applicants')
+        .update({ converted: true })
+        .eq('id', applicantId)
+
+    if (error) {
+        console.error('Could not mark applicant as converted', { applicantId, error })
     }
 }
 
