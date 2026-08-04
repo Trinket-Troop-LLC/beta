@@ -17,11 +17,15 @@ async function ensureAccountExists(applicant: {
 }): Promise<void> {
     const admin = createAdminClient()
 
-    const { data: existingUser } = await admin
+    const { data: existingUser, error: existingUserError } = await admin
         .from('users')
         .select('id')
         .eq('applicant_id', applicant.id)
         .maybeSingle()
+
+    if (existingUserError) {
+        throw new Error(`Could not check for an existing account: ${existingUserError.message}`)
+    }
 
     if (existingUser) {
         return
@@ -64,11 +68,15 @@ async function ensureAccountExists(applicant: {
     // The auth account may already have its own public.users row (e.g. it's an
     // existing admin's account) — link this applicant to it via an update rather
     // than an insert, so we never overwrite an existing role or username.
-    const { data: existingProfile } = await admin
+    const { data: existingProfile, error: existingProfileError } = await admin
         .from('users')
         .select('id')
         .eq('id', authUserId)
         .maybeSingle()
+
+    if (existingProfileError) {
+        throw new Error(`Could not check for an existing profile: ${existingProfileError.message}`)
+    }
 
     if (existingProfile) {
         const { error: linkError } = await admin
