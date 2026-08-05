@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { formatDateLabel } from './date-utils'
 import { StatusDropdown } from './status-dropdown'
 
 const responseLabels: Record<string, string> = {
@@ -50,16 +51,6 @@ export type GeneralInterest = {
 }
 
 type DashboardTab = 'beta' | 'general-interest'
-
-const dateFormatter = new Intl.DateTimeFormat('en-US', {
-    dateStyle: 'medium',
-    timeZone: 'America/New_York',
-})
-
-function formatDate(value: string) {
-    const date = new Date(value)
-    return Number.isNaN(date.getTime()) ? '—' : dateFormatter.format(date)
-}
 
 function escapeCsvCell(value: unknown) {
     let text = Array.isArray(value) ? value.join('; ') : String(value ?? '')
@@ -299,7 +290,7 @@ export function AdminDashboardClient({
                                                 <td className={tdClass}>{interest.email}</td>
                                                 <td className={tdClass}>{interest.phone_number}</td>
                                                 <td className={tdClass}>
-                                                    {formatDate(interest.created_at)}
+                                                    {formatDateLabel(interest.created_at)}
                                                 </td>
                                                 <td className={tdClass}>
                                                     <button
@@ -429,7 +420,7 @@ function GeneralInterestDetails({
             <dl className="flex flex-col gap-4">
                 <div>
                     <dt className="text-sm font-medium text-[#7c8072]">Joined</dt>
-                    <dd className="text-[#2c2c2c]">{formatDate(interest.created_at)}</dd>
+                    <dd className="text-[#2c2c2c]">{formatDateLabel(interest.created_at)}</dd>
                 </div>
                 <div>
                     <dt className="text-sm font-medium text-[#7c8072]">Pain Points</dt>
