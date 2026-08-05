@@ -38,7 +38,13 @@ export function ForgotPasswordForm({
       if (error) throw error;
       setSuccess(true);
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred");
+      const message =
+        error instanceof Error
+          ? error.message.includes("Failed to fetch")
+            ? "We couldn’t reach the password reset service. Please check your connection and try again."
+            : error.message
+          : "An error occurred";
+      setError(message);
     } finally {
       setIsLoading(false);
     }
