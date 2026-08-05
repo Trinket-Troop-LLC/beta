@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { submitGeneralInterest } from './actions'
 import { GeneralInterestHero } from '@/components/landing/apply-hero'
 
-export default function GeneralInterestForm() {
+export default function WaitlistPage() {
     const [submitted, setSubmitted] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [isSubmitting, setIsSubmitting] = useState(false)

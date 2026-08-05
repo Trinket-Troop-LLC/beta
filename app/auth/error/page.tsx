@@ -23,7 +23,7 @@ async function ErrorContent({
   );
 }
 
-export default function Page({
+export default function AuthErrorPage({
   searchParams,
 }: {
   searchParams: Promise<{ error: string }>;
