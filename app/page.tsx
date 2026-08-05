@@ -1,7 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Gluten } from "next/font/google";
-import { BetaOnboardingModal } from "@/components/beta-onboarding-modal";
 
 const gluten = Gluten({
     variable: "--font-gluten",
@@ -11,7 +10,6 @@ const gluten = Gluten({
 export default function WelcomePage() {
     return (
         <main className={`${gluten.variable} relative min-h-screen overflow-hidden bg-[#faf7f0]`}>
-            <BetaOnboardingModal />
             {/* Hero content */}
             <div className="relative z-10 flex flex-col items-center justify-center px-4 pt-24 pb-24 text-center sm:pt-32">
                 <h1 className="font-[family-name:var(--font-gluten)] text-5xl font-semibold text-[#30392d] sm:text-7xl">

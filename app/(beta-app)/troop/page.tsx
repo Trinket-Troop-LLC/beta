@@ -1,5 +1,7 @@
 import { Suspense } from 'react'
 import { requireMember } from '@/lib/supabase/require-member'
+import { BetaOnboardingModal } from '@/components/beta-onboarding-modal'
+import { BetaBottomNav } from '@/components/beta-bottom-nav'
 
 async function TroopHomeContent() {
     const { profile } = await requireMember()
@@ -21,10 +23,12 @@ async function TroopHomeContent() {
 
 export default function TroopHome() {
     return (
-        <main className="flex min-h-screen flex-col items-center justify-center bg-[#faf7f0] px-4 text-center">
+        <main className="relative flex min-h-screen flex-col items-center justify-center bg-[#faf7f0] px-4 pb-28 text-center">
+            <BetaOnboardingModal />
             <Suspense fallback={null}>
                 <TroopHomeContent />
             </Suspense>
+            <BetaBottomNav />
         </main>
     )
 }
