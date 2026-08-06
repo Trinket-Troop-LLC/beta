@@ -6,10 +6,10 @@ import { Home, MessageCircleMore, MessageCircle, SquarePlus, UserRound } from "l
 
 const tabs = [
   { id: "home", label: "Home", icon: Home, href: "/troop" },
-  { id: "thoughts", label: "Thoughts", icon: MessageCircleMore, href: "/troop/thoughts" },
-  { id: "posts", label: "Posts", icon: SquarePlus, href: "/troop/posts" },
-  { id: "messages", label: "Messages", icon: MessageCircle, href: "/troop/messages" },
-  { id: "profile", label: "Profile", icon: UserRound, href: "/troop/profile" },
+  { id: "thoughts", label: "Thoughts", icon: MessageCircleMore, href: "/thoughts" },
+  { id: "posts", label: "Posts", icon: SquarePlus, href: "/posts" },
+  { id: "messages", label: "Messages", icon: MessageCircle, href: "/messages" },
+  { id: "profile", label: "Profile", icon: UserRound, href: "/profile" },
 ] as const;
 
 export function BetaBottomNav() {
