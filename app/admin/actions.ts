@@ -15,9 +15,15 @@ async function ensureAccountExists(applicant: {
     id: string
     email: string
     username: string
+    responses: unknown,
+    first_name: string,
+    last_name: string,
+    phone_number: string,
+    preferred_name: string
 }): Promise<void> {
     const admin = createAdminClient()
 
+    // checks if this person is an existing user
     const { data: existingUser, error: existingUserError } = await admin
         .from('users')
         .select('id')
@@ -100,6 +106,11 @@ async function ensureAccountExists(applicant: {
         username: applicant.username,
         role: 'user',
         applicant_id: applicant.id,
+        responses: applicant.responses,
+        first_name: applicant.first_name,
+        last_name: applicant.last_name,
+        phone_number: applicant.phone_number,
+        preferred_name: applicant.preferred_name
     })
 
     if (insertUserError) {
@@ -149,7 +160,7 @@ export async function updateApplicantStatus(
 
     const { data: applicant, error: applicantError } = await db
         .from('applicants')
-        .select('id, email, first_name, preferred_name, username, status')
+        .select('id, email, phone_number, first_name, last_name, preferred_name, username, status, responses')
         .eq('id', applicantId)
         .single()
 
@@ -197,6 +208,11 @@ export async function updateApplicantStatus(
                 id: applicant.id,
                 email: applicant.email,
                 username: applicant.username,
+                responses: applicant.responses,
+                first_name: applicant.first_name,
+                last_name: applicant.last_name,
+                phone_number: applicant.phone_number,
+                preferred_name: applicant.preferred_name,
             })
 
             // link generation to sign up
