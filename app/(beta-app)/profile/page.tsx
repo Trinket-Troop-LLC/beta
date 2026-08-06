@@ -5,7 +5,12 @@ import { BetaBottomNav } from '@/components/beta-bottom-nav'
 import { SwitchProfileTab } from './profile-tabs'
 
 async function ProfileContent() {
-    const { profile } = await requireMember()
+    const { profile, db, user } = await requireMember()
+    const { data: fullProfile} = await db
+        .from('users')
+        .select('email, username, responses, created_at')
+        .eq('id', user.id)
+        .single()
 
     return (
         <>
@@ -13,7 +18,7 @@ async function ProfileContent() {
             <p className="max-w-md text-[#625f58]">
                 Welcome { profile.username }
             </p>
-            <SwitchProfileTab userId={profile.id}/>
+            <SwitchProfileTab userId={profile.id} aboutData={fullProfile}/>
         </>
     )
 }

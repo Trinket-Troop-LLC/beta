@@ -1,7 +1,14 @@
 'use client'
 import { useState } from 'react'
 
-export function SwitchProfileTab({ userId }: { userId: string }) {
+type AboutData = {
+    email: string
+    username: string
+    responses: Record<string, unknown> | null
+    created_at: string
+}
+
+export function SwitchProfileTab({ userId , aboutData }: { userId: string; aboutData: AboutData | null }) {
     const [view, setView] = useState<'about' | 'listings'>('about')
 
     return (
