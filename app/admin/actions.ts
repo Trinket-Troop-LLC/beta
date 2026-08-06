@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { type ApplicantStatus, isApplicantStatus } from './applicant-status'
+import { sendApprovalEmail } from '../../lib/email/approval-email'
 
 // Creates the real account for an approved applicant, but doesn't email them —
 // that happens separately, later, once the beta app is actually ready to use.
@@ -197,6 +198,27 @@ export async function updateApplicantStatus(
                 email: applicant.email,
                 username: applicant.username,
             })
+
+            // link generation to sign up
+            const admin = createAdminClient()
+            const { data: linkData, error: linkError} = await admin.auth.admin.generateLink({
+                type: 'invite',
+                email: applicant.email,
+            })
+            if (linkError || !linkData) {
+                throw new Error(linkError?.message ?? 'Could not generate an invite link.')
+            }
+
+            const inviteLink = `${process.env.NEXT_PUBLIC_SITE_URL}/auth/confirm?token_hash=${linkData.properties.hashed_token}&type=invite&next=/auth/update-password`
+            console.log('INVITE LINK (testing):', inviteLink)
+            // NEED TO SET UP RESEND
+            // await sendApprovalEmail({
+            //     applicantId: applicant.id,
+            //     email: applicant.email,
+            //     firstName: applicant.first_name,
+            //     preferredName: applicant.preferred_name, 
+            //     inviteLink
+            // })
         } catch (error) {
             // Restore the previous state so a failed account-creation step can
             // be retried by approving the applicant again.
