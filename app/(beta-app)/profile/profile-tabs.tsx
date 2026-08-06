@@ -4,11 +4,25 @@ import { useState } from 'react'
 type AboutData = {
     email: string
     username: string
-    responses: Record<string, unknown> | null
+    responses: {
+        neighborhood?: string
+        emojis?: string
+        categories?: string[]
+    } | null
     created_at: string
 }
 
-export function SwitchProfileTab({ userId , aboutData }: { userId: string; aboutData: AboutData | null }) {
+const categoryLabels: Record<string, string> = {
+    true: 'true trinkets',
+    wearable: 'wearable trinkets',
+    home: 'home trinkets',
+    kitchen: 'kitchen trinkets',
+    outdoorsy: 'outdoorsy trinkets',
+    hobby: 'hobby trinkets',
+    other: 'other trinkets',
+}
+
+export function SwitchProfileTab({ userId, aboutData }: { userId: string; aboutData: AboutData | null }) {
     const [view, setView] = useState<'about' | 'listings'>('about')
 
     return (
@@ -37,8 +51,27 @@ export function SwitchProfileTab({ userId , aboutData }: { userId: string; about
             </div>
 
             {view === 'about' ? (
-                <div className="rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-6 text-left shadow-sm">
-                    <p className="text-sm text-[#625f58]">About content coming soon.</p>
+                <div className="flex flex-col gap-4 rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-6 text-left shadow-sm">
+                    <div>
+                        <p className="text-sm font-medium text-[#7c8072]">Neighborhood</p>
+                        <p className="text-[#2c2c2c]">{aboutData?.responses?.neighborhood || '—'}</p>
+                    </div>
+
+                    <div>
+                        <p className="text-sm font-medium text-[#7c8072]">Emojis</p>
+                        <p className="text-[#2c2c2c]">{aboutData?.responses?.emojis || '—'}</p>
+                    </div>
+
+                    <div>
+                        <p className="text-sm font-medium text-[#7c8072]">Trading categories</p>
+                        <p className="text-[#2c2c2c]">
+                            {aboutData?.responses?.categories?.length
+                                ? aboutData.responses.categories
+                                      .map((category) => categoryLabels[category] ?? category)
+                                      .join(', ')
+                                : '—'}
+                        </p>
+                    </div>
                 </div>
             ) : (
                 <div className="rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-6 text-left shadow-sm">
