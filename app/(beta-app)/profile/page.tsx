@@ -3,21 +3,35 @@ import { Suspense } from 'react'
 import { requireMember } from '@/lib/supabase/require-member'
 import { BetaBottomNav } from '@/components/beta-bottom-nav'
 import { SwitchProfileTab } from './profile-tabs'
+import { ProfileHeader } from '@/components/profile-header'
 
 async function ProfileContent() {
     const { profile, db, user } = await requireMember()
     const { data: fullProfile} = await db
         .from('users')
-        .select('email, username, responses, created_at')
+        .select('email, first_name, preferred_name, username, responses, created_at')
         .eq('id', user.id)
         .single()
+    
+    let profilePictureUrl: string | null = null
+    const picturePath = fullProfile?.responses?.profile_picture_path
+
+    // temp window to see pfp from db
+    if (picturePath) {
+        const { data: signedUrlData } = await db.storage
+            .from('beta-profile-pictures')
+            .createSignedUrl(picturePath, 60 * 60)
+        profilePictureUrl = signedUrlData?.signedUrl ?? null
+    }
 
     return (
         <>
-            <h1 className="mb-3 text-3xl font-semibold text-[#30392d]">Profile</h1>
-            <p className="max-w-md text-[#625f58]">
-                Welcome { profile.username }
-            </p>
+            <ProfileHeader
+                username={fullProfile?.username ?? profile.username}
+                preferredName={fullProfile?.preferred_name ?? fullProfile?.first_name}
+                profilePictureUrl={profilePictureUrl}
+
+            />
             <SwitchProfileTab userId={profile.id} aboutData={fullProfile}/>
         </>
     )
