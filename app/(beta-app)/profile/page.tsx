@@ -28,7 +28,7 @@ async function ProfileContent() {
         <>
             <ProfileHeader
                 username={fullProfile?.username ?? profile.username}
-                preferredName={fullProfile?.preferred_name ?? fullProfile?.first_name}
+                preferredName={fullProfile?.preferred_name || fullProfile?.first_name}
                 profilePictureUrl={profilePictureUrl}
 
             />
