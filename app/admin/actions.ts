@@ -15,15 +15,14 @@ async function ensureAccountExists(applicant: {
     id: string
     email: string
     username: string
-    responses: unknown,
-    first_name: string,
-    last_name: string,
-    phone_number: string,
+    responses: unknown
+    first_name: string
+    last_name: string
+    phone_number: string
     preferred_name: string
-}): Promise<void> {
+}): Promise<{ isNewAccount: boolean; authUserId: string | null }> {
     const admin = createAdminClient()
 
-    // checks if this person is an existing user
     const { data: existingUser, error: existingUserError } = await admin
         .from('users')
         .select('id')
@@ -36,7 +35,7 @@ async function ensureAccountExists(applicant: {
 
     if (existingUser) {
         await markApplicantConverted(admin, applicant.id)
-        return
+        return { isNewAccount: false, authUserId: null }
     }
 
     const { data: created, error: createError } = await admin.auth.admin.createUser({
@@ -45,15 +44,14 @@ async function ensureAccountExists(applicant: {
     })
 
     let authUserId = created?.user?.id
+    let isNewAccount = true
 
     if (createError) {
-        // Someone can be approved while already having an auth account under this
-        // email (most commonly an admin testing with their own email, but also a
-        // real possible edge case). Rather than failing, link the existing auth
-        // account to this applicant instead of creating a duplicate.
         if (createError.code !== 'email_exists') {
             throw new Error(createError.message)
         }
+
+        isNewAccount = false
 
         const { data: existing, error: lookupError } = await admin.auth.admin.generateLink({
             type: 'magiclink',
@@ -73,9 +71,6 @@ async function ensureAccountExists(applicant: {
         throw new Error('Could not create an account for this applicant.')
     }
 
-    // The auth account may already have its own public.users row (e.g. it's an
-    // existing admin's account) — link this applicant to it via an update rather
-    // than an insert, so we never overwrite an existing role or username.
     const { data: existingProfile, error: existingProfileError } = await admin
         .from('users')
         .select('id')
@@ -97,7 +92,7 @@ async function ensureAccountExists(applicant: {
         }
 
         await markApplicantConverted(admin, applicant.id)
-        return
+        return { isNewAccount: false, authUserId: null }
     }
 
     const { error: insertUserError } = await admin.from('users').insert({
@@ -110,7 +105,7 @@ async function ensureAccountExists(applicant: {
         first_name: applicant.first_name,
         last_name: applicant.last_name,
         phone_number: applicant.phone_number,
-        preferred_name: applicant.preferred_name
+        preferred_name: applicant.preferred_name,
     })
 
     if (insertUserError) {
@@ -118,6 +113,28 @@ async function ensureAccountExists(applicant: {
     }
 
     await markApplicantConverted(admin, applicant.id)
+
+    // Only report an authUserId for rollback purposes if we actually created
+    // the auth account ourselves in this call — never report one for an
+    // already-existing account, so a later failure can't delete someone
+    // else's real, pre-existing account.
+    return { isNewAccount, authUserId: isNewAccount ? authUserId : null }
+}
+
+async function rollbackNewAccount(admin: ReturnType<typeof createAdminClient>, authUserId: string) {
+    // public.users first — its foreign key doesn't matter for auth.users deletion,
+    // but cleaning up our own table before touching auth is the safer order.
+    const { error: usersError } = await admin.from('users').delete().eq('id', authUserId)
+
+    if (usersError) {
+        console.error('Could not roll back users row after failed approval', { authUserId, usersError })
+    }
+
+    const { error: authError } = await admin.auth.admin.deleteUser(authUserId)
+
+    if (authError) {
+        console.error('Could not roll back auth account after failed approval', { authUserId, authError })
+    }
 }
 
 // applicants.converted exists in the schema but nothing has ever set it — keep it
@@ -203,8 +220,10 @@ export async function updateApplicantStatus(
     }
 
     if (status === 'approved') {
+        let createdAuthUserId: string | null = null
+
         try {
-            await ensureAccountExists({
+            const { isNewAccount, authUserId } = await ensureAccountExists({
                 id: applicant.id,
                 email: applicant.email,
                 username: applicant.username,
@@ -215,17 +234,19 @@ export async function updateApplicantStatus(
                 preferred_name: applicant.preferred_name,
             })
 
-            // link generation to sign up
+            createdAuthUserId = authUserId
+
             const admin = createAdminClient()
-            const { data: linkData, error: linkError} = await admin.auth.admin.generateLink({
-                type: 'invite',
+            const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
+                type: isNewAccount ? 'invite' : 'magiclink',
                 email: applicant.email,
             })
+
             if (linkError || !linkData) {
                 throw new Error(linkError?.message ?? 'Could not generate an invite link.')
             }
 
-            const inviteLink = `${process.env.NEXT_PUBLIC_SITE_URL}/auth/confirm?token_hash=${linkData.properties.hashed_token}&type=invite&next=/auth/update-password`
+            const inviteLink = `${process.env.NEXT_PUBLIC_SITE_URL}/auth/confirm?token_hash=${linkData.properties.hashed_token}&type=${isNewAccount ? 'invite' : 'magiclink'}&next=/auth/update-password`
             console.log('INVITE LINK (testing):', inviteLink)
             // NEED TO SET UP RESEND
             // await sendApprovalEmail({
@@ -236,8 +257,12 @@ export async function updateApplicantStatus(
             //     inviteLink
             // })
         } catch (error) {
-            // Restore the previous state so a failed account-creation step can
-            // be retried by approving the applicant again.
+            const admin = createAdminClient()
+
+            if (createdAuthUserId) {
+                await rollbackNewAccount(admin, createdAuthUserId)
+            }
+
             const { error: rollbackError } = await db
                 .from('applicants')
                 .update({ status: previousStatus })
