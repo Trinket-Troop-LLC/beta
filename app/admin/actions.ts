@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { type ApplicantStatus, isApplicantStatus } from './applicant-status'
 import { sendApprovalEmail } from '../../lib/email/approval-email'
+import { sendApprovalText } from '@/lib/sms/notifications/approval'
 
 // Creates the real account for an approved applicant, but doesn't email them —
 // that happens separately, later, once the beta app is actually ready to use.
@@ -255,6 +256,13 @@ export async function updateApplicantStatus(
             //     firstName: applicant.first_name,
             //     preferredName: applicant.preferred_name, 
             //     inviteLink
+            // })
+            // // NEED TO SET UP TWILIO
+            // await sendApprovalText({
+            //     phoneNumber: applicant.phone_number,
+            //     firstName: applicant.first_name,
+            //     preferredName: applicant.preferred_name,
+            //     inviteLink,
             // })
         } catch (error) {
             const admin = createAdminClient()
