@@ -4,6 +4,8 @@ import { requireMember } from '@/lib/supabase/require-member'
 import { BetaBottomNav } from '@/components/beta-bottom-nav'
 import { SwitchProfileTab } from './profile-tabs'
 import { ProfileHeader } from '@/components/profile-header'
+import { ProfileViewSwitcher } from './profile-view-switcher'
+import { MyTroop } from './my-troop'
 
 async function ProfileContent() {
     const { profile, db, user } = await requireMember()
@@ -26,13 +28,21 @@ async function ProfileContent() {
 
     return (
         <>
-            <ProfileHeader
-                username={fullProfile?.username ?? profile.username}
-                preferredName={fullProfile?.preferred_name || fullProfile?.first_name}
-                profilePictureUrl={profilePictureUrl}
+            <ProfileViewSwitcher
+                profileView={
+                    <>
+                        <ProfileHeader
+                            username={fullProfile?.username ?? profile.username}
+                            preferredName={fullProfile?.preferred_name || fullProfile?.first_name}
+                            profilePictureUrl={profilePictureUrl}
+                        />
+                        <SwitchProfileTab userId={profile.id} aboutData={fullProfile}/>
+                    </>
+                }
+                troopView={<MyTroop userId={profile.id} />}
+
 
             />
-            <SwitchProfileTab userId={profile.id} aboutData={fullProfile}/>
         </>
     )
 }
