@@ -5,6 +5,15 @@ import { revalidatePath } from 'next/cache'
 
 type ActionResult = { success: boolean; error?: string }
 
+export type SearchResult = {
+    id: string
+    username: string
+    profilePictureUrl: string | null
+    relationship: 'friend' | 'sent' | 'received' | 'none'
+    friendshipId: string | null
+}
+
+
 async function getCurrentUserId() {
     const db = await createClient()
     const { data: { user } } = await db.auth.getUser()
@@ -100,4 +109,85 @@ export async function removeFriendship(friendshipId: string): Promise<ActionResu
 
     revalidatePath('/profile')
     return { success: true }
+}
+
+export async function searchUsers(query: string): Promise<{ success: true; results: SearchResult[] } | { success: false; error: string }> {
+    const { db, userId } = await getCurrentUserId()
+
+    if (!userId) {
+        return { success: false, error: 'You must be logged in.' }
+    }
+
+    const trimmed = query.trim()
+
+    if (trimmed.length === 0) {
+        return { success: true, results: [] }
+    }
+
+    const { data: matchedUsers, error: matchError } = await db
+        .from('users')
+        .select('id, username, responses')
+        .ilike('username', `${trimmed}%`)
+        .neq('id', userId)
+        .limit(20)
+
+    if (matchError) {
+        return { success: false, error: 'Could not search right now. Please try again.' }
+    }
+
+    if (!matchedUsers || matchedUsers.length === 0) {
+        return { success: true, results: [] }
+    }
+
+    const matchedIds = matchedUsers.map((u) => u.id)
+
+    const { data: relatedFriendships } = await db
+        .from('friendships')
+        .select('id, requester_id, addressee_id, status')
+        .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`)
+        .or(`requester_id.in.(${matchedIds.join(',')}),addressee_id.in.(${matchedIds.join(',')})`)
+
+    const paths = matchedUsers.map((u) => u.responses?.profile_picture_path).filter((path): path is string => Boolean(path))
+
+    const { data: signedUrlResults } = paths.length > 0
+        ? await db.storage.from('beta-profile-pictures').createSignedUrls(paths, 3600)
+        : { data: [] }
+
+    const results: SearchResult[] = matchedUsers.map((matched) => {
+        const path = matched.responses?.profile_picture_path
+        const pictureMatch = signedUrlResults?.find((r) => r.path === path)
+
+        const relatedRow = relatedFriendships?.find((row) =>
+            (row.requester_id === userId && row.addressee_id === matched.id) ||
+            (row.addressee_id === userId && row.requester_id === matched.id)
+        )
+
+        let relationship: SearchResult['relationship'] = 'none'
+        if (relatedRow) {
+            if (relatedRow.status === 'accepted') {
+                relationship = 'friend'
+            } else if (relatedRow.requester_id === userId) {
+                relationship = 'sent'
+            } else {
+                relationship = 'received'
+            }
+        }
+
+        return {
+            id: matched.id,
+            username: matched.username,
+            profilePictureUrl: pictureMatch?.signedUrl ?? null,
+            relationship,
+            friendshipId: relatedRow?.id ?? null,
+        }
+    })
+
+    // Friends first, 
+    results.sort((a, b) => {
+        if (a.relationship === 'friend' && b.relationship !== 'friend') return -1
+        if (b.relationship === 'friend' && a.relationship !== 'friend') return 1
+        return a.username.localeCompare(b.username)
+    })
+
+    return { success: true, results }
 }
