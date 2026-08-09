@@ -1,8 +1,7 @@
 import { Suspense } from 'react'
 import { requireMember } from '@/lib/supabase/require-member'
 import { BetaBottomNav } from '@/components/beta-bottom-nav'
-import { SwitchProfileTab } from './profile-tabs'
-import { ProfileHeader } from '@/components/profile-header'
+import { ProfileSection } from './profile-section'
 import { ProfileViewSwitcher } from './profile-view-switcher'
 import { MyTroop } from './my-troop'
 
@@ -63,14 +62,12 @@ async function ProfileContent() {
         <>
             <ProfileViewSwitcher
                 profileView={
-                    <>
-                        <ProfileHeader
-                            username={fullProfile?.username ?? profile.username}
-                            preferredName={fullProfile?.preferred_name || fullProfile?.first_name}
-                            profilePictureUrl={profilePictureUrl}
-                        />
-                        <SwitchProfileTab userId={profile.id} aboutData={fullProfile} />
-                    </>
+                    <ProfileSection
+                        username={fullProfile?.username ?? profile.username}
+                        preferredName={fullProfile?.preferred_name || fullProfile?.first_name || null}
+                        profilePictureUrl={profilePictureUrl}
+                        responses={fullProfile?.responses ?? null}
+                    />
                 }
                 troopView={
                     <MyTroop

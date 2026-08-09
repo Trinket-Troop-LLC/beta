@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { getVerifiedImageExtension } from '@/lib/validate-image'
 import { z } from 'zod'
 
 const profilePictureBucket = 'beta-profile-pictures'
@@ -69,43 +70,6 @@ function buildFieldErrors(error: z.ZodError): Record<string, string> {
     return fieldErrors
 }
 
-async function getVerifiedImageExtension(file: File) {
-    if (file.size > maxProfilePictureBytes) {
-        return { error: 'Profile pictures must be 8 MB or smaller' } as const
-    }
-
-    if (file.type !== 'image/jpeg' && file.type !== 'image/png') {
-        return { error: 'Profile pictures must be a PNG or JPEG image' } as const
-    }
-
-    const bytes = new Uint8Array(await file.slice(0, 8).arrayBuffer())
-    const isPng =
-        bytes.length >= 8 &&
-        bytes[0] === 0x89 &&
-        bytes[1] === 0x50 &&
-        bytes[2] === 0x4e &&
-        bytes[3] === 0x47 &&
-        bytes[4] === 0x0d &&
-        bytes[5] === 0x0a &&
-        bytes[6] === 0x1a &&
-        bytes[7] === 0x0a
-    const isJpeg =
-        bytes.length >= 3 &&
-        bytes[0] === 0xff &&
-        bytes[1] === 0xd8 &&
-        bytes[2] === 0xff
-
-    if (file.type === 'image/png' && isPng) {
-        return { extension: 'png', contentType: 'image/png' } as const
-    }
-
-    if (file.type === 'image/jpeg' && isJpeg) {
-        return { extension: 'jpg', contentType: 'image/jpeg' } as const
-    }
-
-    return { error: 'Please choose a valid PNG or JPEG image' } as const
-}
-
 export async function submitBetaApplication(formData: FormData): Promise<SubmitResult> {
     const validationFields = betaApplicationSchema.safeParse({
         first_name: getText(formData, 'first_name'),
@@ -148,7 +112,7 @@ export async function submitBetaApplication(formData: FormData): Promise<SubmitR
         }
     }
 
-    const verifiedImage = await getVerifiedImageExtension(profilePicture)
+    const verifiedImage = await getVerifiedImageExtension(profilePicture, maxProfilePictureBytes)
 
     if ('error' in verifiedImage) {
         return {
