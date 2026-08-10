@@ -5,8 +5,9 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { PackagePlus, UserRound } from 'lucide-react'
 import { useEffect, useState, useTransition } from 'react'
-import { ListingCard, type ListingCardData } from '@/components/listings/listing-card'
+import type { ListingCardData } from '@/components/listings/listing-card'
 import { compressProfilePicture } from '@/lib/compress-profile-picture'
+import { OwnerListingCard } from './owner-listing-card'
 import { updateProfile } from './profile-actions'
 
 type Responses = {
@@ -70,6 +71,11 @@ export function ProfileSection({
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+    const [takenDownListingIds, setTakenDownListingIds] = useState<string[]>([])
+    const [listingStatusMessage, setListingStatusMessage] = useState<string | null>(null)
+    const visibleListings = listings.filter(
+        (listing) => !takenDownListingIds.includes(listing.id),
+    )
 
     useEffect(() => {
         setTab(initialTab)
@@ -78,6 +84,13 @@ export function ProfileSection({
     function selectTab(nextTab: 'about' | 'listings') {
         setTab(nextTab)
         router.replace(`/profile?tab=${nextTab}`, { scroll: false })
+    }
+
+    function handleListingTakenDown(listingId: string, title: string) {
+        setTakenDownListingIds((current) => current.includes(listingId)
+            ? current
+            : [...current, listingId])
+        setListingStatusMessage(`“${title}” was taken down.`)
     }
 
     async function handleProfilePicChange(event: React.ChangeEvent<HTMLInputElement>) {
@@ -363,6 +376,15 @@ export function ProfileSection({
                 </div>
             ) : (
                 <div className="flex flex-col gap-4">
+                    {listingStatusMessage && (
+                        <p
+                            className="rounded-xl border border-primary/20 bg-primary/10 px-4 py-3 text-sm text-foreground"
+                            role="status"
+                        >
+                            {listingStatusMessage}
+                        </p>
+                    )}
+
                     {listingsLoadError && (
                         <p
                             className="rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive"
@@ -372,16 +394,20 @@ export function ProfileSection({
                         </p>
                     )}
 
-                    {listings.length > 0 ? (
+                    {visibleListings.length > 0 ? (
                         <div className="grid gap-4 sm:grid-cols-2">
-                            {listings.map((listing) => (
-                                <ListingCard key={listing.id} listing={listing} />
+                            {visibleListings.map((listing) => (
+                                <OwnerListingCard
+                                    key={listing.id}
+                                    listing={listing}
+                                    onTakenDown={handleListingTakenDown}
+                                />
                             ))}
                         </div>
                     ) : !listingsLoadError ? (
                         <div className="rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
                             <PackagePlus className="mx-auto size-8 text-primary" />
-                            <p className="mt-3 font-medium text-foreground">No listings yet.</p>
+                            <p className="mt-3 font-medium text-foreground">No active listings.</p>
                             <p className="mt-1 text-sm text-muted-foreground">
                                 Post a trinket and it will show up here.
                             </p>

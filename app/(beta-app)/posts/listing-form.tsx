@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { Images, LoaderCircle } from 'lucide-react'
+import { AlertCircle, Images, LoaderCircle } from 'lucide-react'
 import { compressListingPhoto } from '@/lib/compress-image'
 import {
     LISTING_CATEGORIES,
@@ -14,6 +14,10 @@ import {
     LISTING_TRANSACTION_TYPE_LABELS,
     type ListingTransactionType,
 } from '@/lib/listings/domain'
+import {
+    createPostingError,
+    type PostingError,
+} from '@/lib/listings/posting-errors'
 import { createClient } from '@/lib/supabase/client'
 import {
     createListingDraft,
@@ -33,7 +37,118 @@ const labelClass = 'flex flex-col gap-2 text-left text-foreground'
 
 function FieldError({ id, message }: { id: string; message?: string }) {
     if (!message) return null
-    return <span id={id} className="text-sm text-destructive" role="alert">{message}</span>
+    return <span id={id} className="text-sm text-destructive">{message}</span>
+}
+
+class PostingFlowError extends Error {
+    reason: PostingError
+
+    constructor(reason: PostingError) {
+        super(reason.message)
+        this.name = 'PostingFlowError'
+        this.reason = reason
+    }
+}
+
+function getSafePhotoName(file: File) {
+    const name = file.name.trim()
+    if (!name) return ''
+    return name.length > 48 ? `${name.slice(0, 45)}...` : name
+}
+
+function getPhotoLabel(index: number, file?: File) {
+    const name = file ? getSafePhotoName(file) : ''
+    return name ? `Photo ${index + 1} (${name})` : `Photo ${index + 1}`
+}
+
+function mapPhotoUploadError(error: unknown, index: number): PostingError {
+    const providerError = typeof error === 'object' && error !== null
+        ? error as { status?: number; statusCode?: string; message?: string }
+        : {}
+    const status = providerError.status ?? Number(providerError.statusCode)
+    const statusCode = providerError.statusCode?.toLowerCase() ?? ''
+    const message = providerError.message?.toLowerCase() ?? ''
+    const photo = `Photo ${index + 1}`
+
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+        return createPostingError(
+            'PHOTO_UPLOAD_UNAVAILABLE',
+            `${photo} could not upload because this device is offline. Reconnect and submit again.`,
+            true,
+        )
+    }
+
+    if (status === 401) {
+        return createPostingError(
+            'UPLOAD_SESSION_EXPIRED',
+            `Your session expired before ${photo.toLowerCase()} uploaded. Sign in and submit the listing again.`,
+            true,
+        )
+    }
+
+    if (status === 403) {
+        return createPostingError(
+            'POSTING_PERMISSION_DENIED',
+            `${photo} was refused by listing photo permissions. Sign in and submit it once more; if this continues, ask an administrator to check the listing-photo upload policy.`,
+            true,
+        )
+    }
+
+    if (status === 404 || message.includes('bucket not found')) {
+        return createPostingError(
+            'PHOTO_STORAGE_SETUP_REQUIRED',
+            'Listing photo storage has not been set up yet. Ask an administrator to apply the posting migration.',
+        )
+    }
+
+    if (status === 409 || statusCode.includes('duplicate')) {
+        return createPostingError(
+            'PHOTO_UPLOAD_CONFLICT',
+            `${photo}'s upload slot was already used. Nothing was posted; submit the form again.`,
+            true,
+        )
+    }
+
+    if (status === 413 || statusCode.includes('too_large') || message.includes('too large')) {
+        return createPostingError(
+            'PHOTO_OUTPUT_TOO_LARGE',
+            `${photo} exceeds the 5 MB upload limit after resizing. Choose a smaller image.`,
+        )
+    }
+
+    if (status === 415 || message.includes('mime') || message.includes('content type')) {
+        return createPostingError(
+            'PHOTO_TYPE_UNSUPPORTED',
+            `${photo} was rejected because it is not a valid JPEG after processing. Choose another image.`,
+        )
+    }
+
+    if (status === 429) {
+        return createPostingError(
+            'PHOTO_UPLOAD_RATE_LIMITED',
+            `Too many photo uploads were attempted. ${photo} was not uploaded; wait a moment and submit again.`,
+            true,
+        )
+    }
+
+    return createPostingError(
+        'PHOTO_UPLOAD_UNAVAILABLE',
+        `${photo} could not upload because the photo service is unavailable. Check your connection and submit again.`,
+        true,
+    )
+}
+
+function combineWithCleanupError(
+    primary: PostingError,
+    cleanup: PostingError | null,
+) {
+    if (!cleanup) return primary
+
+    return createPostingError(
+        primary.code,
+        `${primary.message} We also could not clear the previous attempt: ${cleanup.message}`,
+        primary.retryable || cleanup.retryable,
+    )
 }
 
 export function ListingForm() {
@@ -43,12 +158,19 @@ export function ListingForm() {
     const [photos, setPhotos] = useState<File[]>([])
     const [photoPreviews, setPhotoPreviews] = useState<string[]>([])
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
-    const [error, setError] = useState<string | null>(null)
+    const [error, setError] = useState<PostingError | null>(null)
     const [isPreparingPhotos, setIsPreparingPhotos] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [progress, setProgress] = useState<string | null>(null)
     const mounted = useRef(true)
     const pendingDraftId = useRef<string | null>(null)
+    const errorSummaryRef = useRef<HTMLDivElement | null>(null)
+    const fieldErrorMessages = [...new Set(Object.values(fieldErrors).filter(Boolean))]
+    const summaryFieldMessages = fieldErrorMessages.filter(
+        (message) => message !== error?.message,
+    )
+    const hasErrors = Boolean(error) || fieldErrorMessages.length > 0
+    const errorSummaryKey = [error?.code, error?.message, ...fieldErrorMessages].join('|')
 
     useEffect(() => {
         mounted.current = true
@@ -70,6 +192,12 @@ export function ListingForm() {
         }
     }, [photoPreviews])
 
+    useEffect(() => {
+        if (hasErrors) {
+            errorSummaryRef.current?.focus()
+        }
+    }, [errorSummaryKey, hasErrors])
+
     function replacePreparedPhotos(prepared: File[]) {
         setPhotos(prepared)
         setPhotoPreviews(prepared.map((photo) => URL.createObjectURL(photo)))
@@ -83,13 +211,11 @@ export function ListingForm() {
         setError(null)
 
         if (selected.length === 0) {
-            replacePreparedPhotos([])
             return
         }
 
         if (selected.length > maxPhotoCount) {
             input.value = ''
-            replacePreparedPhotos([])
             setFieldErrors((current) => ({
                 ...current,
                 photos: `Choose no more than ${maxPhotoCount} photos.`,
@@ -100,21 +226,58 @@ export function ListingForm() {
         setIsPreparingPhotos(true)
 
         try {
+            if (typeof createImageBitmap !== 'function') {
+                throw new PostingFlowError(createPostingError(
+                    'PHOTO_PROCESSING_UNSUPPORTED',
+                    'This browser cannot prepare listing photos. Update it or use another browser.',
+                ))
+            }
+
             const prepared: File[] = []
 
-            for (const photo of selected) {
+            for (const [index, photo] of selected.entries()) {
+                const photoLabel = getPhotoLabel(index, photo)
+
                 if (photo.type !== 'image/jpeg' && photo.type !== 'image/png') {
-                    throw new Error('Photos must be PNG or JPEG images.')
+                    throw new PostingFlowError(createPostingError(
+                        'PHOTO_TYPE_UNSUPPORTED',
+                        `${photoLabel} is not a PNG or JPEG image. Choose a JPG or PNG file.`,
+                    ))
                 }
 
                 if (photo.size > maxOriginalPhotoBytes) {
-                    throw new Error('Each original photo must be 20 MB or smaller.')
+                    throw new PostingFlowError(createPostingError(
+                        'PHOTO_ORIGINAL_TOO_LARGE',
+                        `${photoLabel} is larger than the 20 MB selection limit. Choose a smaller file.`,
+                    ))
                 }
 
-                const compressed = await compressListingPhoto(photo)
+                let compressed: File
+
+                try {
+                    compressed = await compressListingPhoto(photo)
+                } catch (compressionError) {
+                    if (
+                        compressionError instanceof Error
+                        && compressionError.message === 'Canvas is not supported'
+                    ) {
+                        throw new PostingFlowError(createPostingError(
+                            'PHOTO_PROCESSING_UNSUPPORTED',
+                            'This browser cannot prepare listing photos. Update it or use another browser.',
+                        ))
+                    }
+
+                    throw new PostingFlowError(createPostingError(
+                        'PHOTO_PROCESSING_FAILED',
+                        `${photoLabel} could not be opened or resized. Choose a valid, uncorrupted JPG or PNG.`,
+                    ))
+                }
 
                 if (compressed.size > maxCompressedPhotoBytes) {
-                    throw new Error('One photo is still too large after resizing. Please choose a smaller image.')
+                    throw new PostingFlowError(createPostingError(
+                        'PHOTO_OUTPUT_TOO_LARGE',
+                        `${photoLabel} is still larger than 5 MB after resizing. Choose a smaller image.`,
+                    ))
                 }
 
                 prepared.push(compressed)
@@ -123,12 +286,15 @@ export function ListingForm() {
             replacePreparedPhotos(prepared)
         } catch (photoError) {
             input.value = ''
-            replacePreparedPhotos([])
+            const reason = photoError instanceof PostingFlowError
+                ? photoError.reason
+                : createPostingError(
+                    'PHOTO_PROCESSING_FAILED',
+                    'The selected photos could not be prepared. Choose valid JPG or PNG files and try again.',
+                )
             setFieldErrors((current) => ({
                 ...current,
-                photos: photoError instanceof Error
-                    ? photoError.message
-                    : 'We could not prepare those photos. Please try again.',
+                photos: reason.message,
             }))
         } finally {
             setIsPreparingPhotos(false)
@@ -163,9 +329,9 @@ export function ListingForm() {
         }
     }
 
-    function finishWithError(message: string) {
+    function finishWithError(reason: PostingError) {
         if (!mounted.current) return
-        setError(message)
+        setError(reason)
         setIsSubmitting(false)
         setProgress(null)
     }
@@ -177,6 +343,29 @@ export function ListingForm() {
         router.refresh()
     }
 
+    async function finishRejectedDraft(listingId: string, primary: PostingError) {
+        const cleanupResult = await tryDiscardDraft(listingId)
+
+        if (cleanupResult?.success && cleanupResult.state === 'published') {
+            finishPublishedPost()
+            return
+        }
+
+        if (cleanupResult?.success) {
+            rememberPendingDraft(null)
+            finishWithError(primary)
+            return
+        }
+
+        const cleanupError = cleanupResult?.error ?? createPostingError(
+            'CLEANUP_UNAVAILABLE',
+            'The listing service did not respond while clearing the previous attempt. Wait a moment before posting again.',
+            true,
+        )
+
+        finishWithError(combineWithCleanupError(primary, cleanupError))
+    }
+
     async function handleSubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault()
         const formData = new FormData(event.currentTarget)
@@ -185,7 +374,15 @@ export function ListingForm() {
         setFieldErrors({})
 
         if (photos.length < 1 || photos.length > maxPhotoCount) {
-            setFieldErrors({ photos: 'Choose at least one photo.' })
+            setFieldErrors({
+                photos: photos.length < 1
+                    ? 'Choose at least one photo.'
+                    : `Choose no more than ${maxPhotoCount} photos.`,
+            })
+            setError(createPostingError(
+                'PHOTO_COUNT_INVALID',
+                'This listing was not posted because it needs between 1 and 5 photos.',
+            ))
             return
         }
 
@@ -204,8 +401,11 @@ export function ListingForm() {
 
             if (!previousCleanup?.success) {
                 finishWithError(
-                    previousCleanup?.error
-                        ?? 'The previous hidden draft could not be cleaned up yet. Please try again.',
+                    previousCleanup?.error ?? createPostingError(
+                        'CLEANUP_UNAVAILABLE',
+                        'The previous posting attempt could not be cleared because the listing service did not respond. Wait a moment and try again.',
+                        true,
+                    ),
                 )
                 return
             }
@@ -219,14 +419,21 @@ export function ListingForm() {
         try {
             draftResult = await createListingDraft(formData, photos.length)
         } catch {
-            finishWithError('We could not start this post right now. Please try again.')
+            finishWithError(createPostingError(
+                'CONNECTION_FAILED',
+                'The posting service did not respond, so no listing was created. Check your connection and try again.',
+                true,
+            ))
             return
         }
 
         if (!draftResult.success) {
             if (mounted.current) {
                 setFieldErrors(draftResult.fieldErrors ?? {})
-                setError(draftResult.error ?? null)
+                setError(draftResult.error ?? createPostingError(
+                    'LISTING_DETAILS_REJECTED',
+                    'This listing was not posted because some highlighted details need to be corrected.',
+                ))
                 setIsSubmitting(false)
                 setProgress(null)
             }
@@ -239,7 +446,11 @@ export function ListingForm() {
             const db = createClient()
 
             if (draftResult.photoPaths.length !== photos.length) {
-                throw new Error('The photo upload slots were not prepared correctly.')
+                throw new PostingFlowError(createPostingError(
+                    'PHOTO_SLOT_MISMATCH',
+                    `The service prepared ${draftResult.photoPaths.length} photo uploads, but ${photos.length} photos were selected. Nothing was posted; submit again.`,
+                    true,
+                ))
             }
 
             for (const [index, photo] of photos.entries()) {
@@ -256,64 +467,53 @@ export function ListingForm() {
                     })
 
                 if (uploadError) {
-                    throw new Error('A photo could not be uploaded.')
+                    throw new PostingFlowError(mapPhotoUploadError(uploadError, index))
                 }
             }
-
-            if (mounted.current) {
-                setProgress('publishing your post...')
-            }
-            const publishResult = await finalizeListing(draftResult.listingId)
-
-            if (!publishResult.success) {
-                const cleanupResult = await tryDiscardDraft(draftResult.listingId)
-
-                if (cleanupResult?.success && cleanupResult.state === 'published') {
-                    finishPublishedPost()
-                    return
-                }
-
-                if (cleanupResult?.success) {
-                    rememberPendingDraft(null)
-                }
-
-                finishWithError(
-                    cleanupResult?.success
-                        ? publishResult.error
-                        : cleanupResult
-                            ? `${publishResult.error} ${cleanupResult.error}`
-                            : `${publishResult.error} The hidden draft could not be cleaned up yet.`,
-                )
-                return
-            }
-
-            finishPublishedPost()
         } catch (uploadError) {
-            const cleanupResult = await tryDiscardDraft(draftResult.listingId)
-
-            if (cleanupResult?.success && cleanupResult.state === 'published') {
-                finishPublishedPost()
-                return
-            }
-
-            if (cleanupResult?.success) {
-                rememberPendingDraft(null)
-            }
-
-            finishWithError(
-                cleanupResult?.success
-                    ? uploadError instanceof Error
-                        ? uploadError.message
-                        : 'We could not upload the photos. Please try again.'
-                    : cleanupResult?.error
-                        ?? 'The upload stopped and the hidden draft could not be cleaned up yet.',
-            )
+            const reason = uploadError instanceof PostingFlowError
+                ? uploadError.reason
+                : createPostingError(
+                    'PHOTO_UPLOAD_UNAVAILABLE',
+                    'The photo upload could not start because the photo service did not respond. Check your connection and submit again.',
+                    true,
+                )
+            await finishRejectedDraft(draftResult.listingId, reason)
+            return
         }
+
+        if (mounted.current) {
+            setProgress('publishing your post...')
+        }
+
+        let publishResult: Awaited<ReturnType<typeof finalizeListing>>
+
+        try {
+            publishResult = await finalizeListing(draftResult.listingId)
+        } catch {
+            await finishRejectedDraft(
+                draftResult.listingId,
+                createPostingError(
+                    'PUBLISH_UNAVAILABLE',
+                    'The posting service stopped responding while confirming publication. Check My Listings before submitting again.',
+                    true,
+                ),
+            )
+            return
+        }
+
+        if (!publishResult.success) {
+            await finishRejectedDraft(draftResult.listingId, publishResult.error)
+            return
+        }
+
+        finishPublishedPost()
     }
 
     return (
         <form
             onSubmit={handleSubmit}
+            noValidate
             aria-busy={isSubmitting || isPreparingPhotos}
             className="flex flex-col gap-6 rounded-3xl border border-border bg-card p-5 shadow-sm sm:p-8"
         >
@@ -321,6 +521,36 @@ export function ListingForm() {
                 disabled={isSubmitting || isPreparingPhotos}
                 className="contents"
             >
+            {hasErrors && (
+                <div
+                    ref={errorSummaryRef}
+                    tabIndex={-1}
+                    role="alert"
+                    aria-live="assertive"
+                    className="flex gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 p-4 text-left outline-none focus:ring-2 focus:ring-destructive/40"
+                >
+                    <AlertCircle className="mt-0.5 size-5 shrink-0 text-destructive" />
+                    <div className="min-w-0">
+                        <p className="font-semibold text-destructive">
+                            {error ? 'Listing wasn’t posted' : 'Fix these details before posting'}
+                        </p>
+                        {error && (
+                            <p className="mt-1 text-sm text-foreground">{error.message}</p>
+                        )}
+                        {summaryFieldMessages.length > 0 && (
+                            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-foreground">
+                                {summaryFieldMessages.map((message) => (
+                                    <li key={message}>{message}</li>
+                                ))}
+                            </ul>
+                        )}
+                        <p className="mt-2 text-xs text-muted-foreground">
+                            Your entered details were preserved. Any previously prepared photos are still here.
+                        </p>
+                    </div>
+                </div>
+            )}
+
             <fieldset className="flex flex-col gap-3 text-left">
                 <legend className="font-medium text-foreground">Photos *</legend>
                 <label className="flex cursor-pointer items-center justify-center gap-3 rounded-2xl border border-dashed border-border bg-secondary/60 px-4 py-8 text-center transition hover:bg-secondary has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary has-[:focus-visible]:ring-offset-2">
@@ -538,12 +768,6 @@ export function ListingForm() {
                 />
                 <FieldError id="listing-pickup-area-error" message={fieldErrors.pickup_area} />
             </label>
-
-            {error && (
-                <p className="rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive" role="alert">
-                    {error}
-                </p>
-            )}
 
             {progress && (
                 <span className="sr-only" aria-live="polite">{progress}</span>

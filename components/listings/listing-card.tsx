@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import { ImageIcon, MapPin } from 'lucide-react'
+import type { ReactNode } from 'react'
 import {
     LISTING_CATEGORY_LABELS,
     LISTING_CONDITION_LABELS,
@@ -31,7 +32,15 @@ function formatPrice(priceCents: number) {
     }).format(priceCents / 100)
 }
 
-export function ListingCard({ listing }: { listing: ListingCardData }) {
+export function ListingCard({
+    listing,
+    footer,
+    statusLabelOverride,
+}: {
+    listing: ListingCardData
+    footer?: ReactNode
+    statusLabelOverride?: string
+}) {
     const sharingLabels = listing.transaction_types.map((type) =>
         type === 'sell' && listing.price_cents !== null
             ? formatPrice(listing.price_cents)
@@ -58,9 +67,9 @@ export function ListingCard({ listing }: { listing: ListingCardData }) {
                     </div>
                 )}
 
-                {listing.status !== 'active' && (
+                {(listing.status !== 'active' || statusLabelOverride) && (
                     <span className="absolute right-2 top-2 rounded-full bg-card/90 px-2.5 py-1 text-xs font-medium text-foreground shadow-sm backdrop-blur">
-                        {LISTING_STATUS_LABELS[listing.status]}
+                        {statusLabelOverride ?? LISTING_STATUS_LABELS[listing.status]}
                     </span>
                 )}
             </div>
@@ -83,6 +92,12 @@ export function ListingCard({ listing }: { listing: ListingCardData }) {
                     <span className="truncate">{listing.pickup_area}</span>
                 </p>
             </div>
+
+            {footer && (
+                <div className="border-t border-border px-4 py-3">
+                    {footer}
+                </div>
+            )}
         </article>
     )
 }
