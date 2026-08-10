@@ -1,8 +1,11 @@
 'use client'
 
 import Image from 'next/image'
-import { UserRound } from 'lucide-react'
-import { useState, useTransition } from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { PackagePlus, UserRound } from 'lucide-react'
+import { useEffect, useState, useTransition } from 'react'
+import { ListingCard, type ListingCardData } from '@/components/listings/listing-card'
 import { compressProfilePicture } from '@/lib/compress-profile-picture'
 import { updateProfile } from './profile-actions'
 
@@ -33,9 +36,9 @@ const categoryLabels: Record<string, string> = {
 }
 
 const inputClass =
-    'rounded-lg border border-[#d8d1c5] bg-white px-4 py-3 text-black outline-none transition focus:border-[#7c9272] focus:ring-2 focus:ring-[#7c9272]/20'
-const labelClass = 'flex flex-col gap-2 text-left text-[#2c2c2c]'
-const checkboxLabelClass = 'flex items-center gap-2 text-[#2c2c2c]'
+    'rounded-lg border border-input bg-card px-4 py-3 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20'
+const labelClass = 'flex flex-col gap-2 text-left text-foreground'
+const checkboxLabelClass = 'flex items-center gap-2 text-foreground'
 
 function FieldError({ message }: { message?: string }) {
     if (!message) return null
@@ -47,19 +50,35 @@ export function ProfileSection({
     preferredName,
     profilePictureUrl,
     responses,
+    listings,
+    listingsLoadError,
+    initialTab,
 }: {
     username: string
     preferredName: string | null
     profilePictureUrl: string | null
     responses: Responses
+    listings: ListingCardData[]
+    listingsLoadError: boolean
+    initialTab: 'about' | 'listings'
 }) {
-    const [tab, setTab] = useState<'about' | 'listings'>('about')
+    const router = useRouter()
+    const [tab, setTab] = useState<'about' | 'listings'>(initialTab)
     const [isEditing, setIsEditing] = useState(false)
     const [isPending, startTransition] = useTransition()
     const [isCompressingPhoto, setIsCompressingPhoto] = useState(false)
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+
+    useEffect(() => {
+        setTab(initialTab)
+    }, [initialTab])
+
+    function selectTab(nextTab: 'about' | 'listings') {
+        setTab(nextTab)
+        router.replace(`/profile?tab=${nextTab}`, { scroll: false })
+    }
 
     async function handleProfilePicChange(event: React.ChangeEvent<HTMLInputElement>) {
         const input = event.currentTarget
@@ -115,10 +134,10 @@ export function ProfileSection({
         return (
             <form
                 action={handleSubmit}
-                className="flex flex-col gap-6 rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-6 text-left shadow-sm"
+                className="flex flex-col gap-6 rounded-2xl border border-border bg-card p-6 text-left shadow-sm"
             >
                 <div className="flex items-center gap-4">
-                    <div className="flex size-24 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#ded8cc] bg-[#f2ede0]">
+                    <div className="flex size-24 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-secondary">
                         {previewUrl || profilePictureUrl ? (
                             <Image
                                 src={previewUrl ?? profilePictureUrl!}
@@ -129,20 +148,20 @@ export function ProfileSection({
                                 unoptimized={Boolean(previewUrl)}
                             />
                         ) : (
-                            <UserRound className="size-10 text-[#9aaa90]" />
+                            <UserRound className="size-10 text-muted-foreground" />
                         )}
                     </div>
-                    <label className="flex flex-col gap-2 text-[#2c2c2c]">
+                    <label className="flex flex-col gap-2 text-foreground">
                         <span className="text-sm font-medium">Profile picture</span>
                         <input
                             type="file"
                             name="profile_pic"
                             accept="image/png,image/jpeg"
                             onChange={handleProfilePicChange}
-                            className="text-sm file:mr-3 file:rounded-md file:border-0 file:bg-[#7c9272] file:px-3 file:py-1.5 file:text-white"
+                            className="text-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-primary-foreground"
                         />
                         {isCompressingPhoto && (
-                            <span className="text-sm text-[#7c8072]">preparing photo...</span>
+                            <span className="text-sm text-muted-foreground">preparing photo...</span>
                         )}
                         <FieldError message={fieldErrors.profile_pic} />
                     </label>
@@ -197,7 +216,7 @@ export function ProfileSection({
                     <FieldError message={fieldErrors.emojis} />
                 </label>
 
-                <fieldset className="flex flex-col gap-2 text-[#2c2c2c]">
+                <fieldset className="flex flex-col gap-2 text-foreground">
                     <legend className="mb-1 text-sm font-medium">Trading categories</legend>
                     {categoryOptions.map((category) => (
                         <label key={category.value} className={checkboxLabelClass}>
@@ -206,7 +225,7 @@ export function ProfileSection({
                                 name="categories"
                                 value={category.value}
                                 defaultChecked={responses?.categories?.includes(category.value)}
-                                className="size-4 accent-[#7c9272]"
+                                className="size-4 accent-primary"
                             />
                             {category.label}
                         </label>
@@ -217,7 +236,7 @@ export function ProfileSection({
                             name="categories"
                             value="other"
                             defaultChecked={responses?.categories?.includes('other')}
-                            className="size-4 accent-[#7c9272]"
+                            className="size-4 accent-primary"
                         />
                         <span>other:</span>
                         <input
@@ -237,7 +256,7 @@ export function ProfileSection({
                     <button
                         type="submit"
                         disabled={isPending || isCompressingPhoto}
-                        className="rounded-lg bg-[#7c9272] px-4 py-2 font-medium text-white transition hover:bg-[#667b5f] disabled:cursor-not-allowed disabled:opacity-60"
+                        className="rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                         {isPending ? 'saving...' : 'save'}
                     </button>
@@ -245,7 +264,7 @@ export function ProfileSection({
                         type="button"
                         onClick={handleCancel}
                         disabled={isPending}
-                        className="rounded-lg border border-[#ded8cc] px-4 py-2 font-medium text-[#2c2c2c] transition hover:bg-[#f5efe5]"
+                        className="rounded-lg border border-border px-4 py-2 font-medium text-foreground transition hover:bg-secondary"
                     >
                         cancel
                     </button>
@@ -264,7 +283,7 @@ export function ProfileSection({
         <div>
             <div className="mb-6 flex items-start justify-between gap-4">
                 <div className="flex items-start gap-4 text-left">
-                    <div className="flex size-32 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#ded8cc] bg-[#f2ede0]">
+                    <div className="flex size-32 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-secondary">
                         {profilePictureUrl ? (
                             <Image
                                 src={profilePictureUrl}
@@ -274,43 +293,45 @@ export function ProfileSection({
                                 className="size-full object-cover"
                             />
                         ) : (
-                            <UserRound className="size-12 text-[#9aaa90]" />
+                            <UserRound className="size-12 text-muted-foreground" />
                         )}
                     </div>
 
                     <div className="pt-1">
-                        <p className="text-xl font-semibold text-[#30392d]">@{username}</p>
+                        <p className="text-xl font-semibold text-foreground">@{username}</p>
                         {preferredName && (
-                            <p className="text-sm text-[#7c8072]">{preferredName}</p>
+                            <p className="text-sm text-muted-foreground">{preferredName}</p>
                         )}
                     </div>
                 </div>
 
                 <button
                     onClick={() => setIsEditing(true)}
-                    className="shrink-0 rounded-full border border-[#ded8cc] bg-[#fffdf9] px-4 py-2 text-sm font-medium text-[#2c2c2c] transition hover:bg-[#f5efe5]"
+                    className="shrink-0 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition hover:bg-secondary"
                 >
                     Edit
                 </button>
             </div>
 
-            <div className="mb-4 flex rounded-full border border-[#ded8cc] bg-[#fffdf9] p-1">
+            <div className="mb-4 flex rounded-full border border-border bg-card p-1">
                 <button
-                    onClick={() => setTab('about')}
+                    onClick={() => selectTab('about')}
+                    aria-pressed={tab === 'about'}
                     className={`flex-1 rounded-full px-4 py-2 text-sm font-medium transition ${
                         tab === 'about'
-                            ? 'bg-[#7c9272] text-white'
-                            : 'text-[#625f58] hover:bg-[#f5efe5]'
+                            ? 'bg-primary text-primary-foreground'
+                            : 'text-muted-foreground hover:bg-secondary'
                     }`}
                 >
                     About
                 </button>
                 <button
-                    onClick={() => setTab('listings')}
+                    onClick={() => selectTab('listings')}
+                    aria-pressed={tab === 'listings'}
                     className={`flex-1 rounded-full px-4 py-2 text-sm font-medium transition ${
                         tab === 'listings'
-                            ? 'bg-[#7c9272] text-white'
-                            : 'text-[#625f58] hover:bg-[#f5efe5]'
+                            ? 'bg-primary text-primary-foreground'
+                            : 'text-muted-foreground hover:bg-secondary'
                     }`}
                 >
                     Listings
@@ -318,20 +339,20 @@ export function ProfileSection({
             </div>
 
             {tab === 'about' ? (
-                <div className="flex flex-col gap-4 rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-6 text-left shadow-sm">
+                <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-6 text-left shadow-sm">
                     <div>
-                        <p className="text-sm font-medium text-[#7c8072]">Neighborhood</p>
-                        <p className="text-[#2c2c2c]">{responses?.neighborhood || '—'}</p>
+                        <p className="text-sm font-medium text-muted-foreground">Neighborhood</p>
+                        <p className="text-foreground">{responses?.neighborhood || '—'}</p>
                     </div>
 
                     <div>
-                        <p className="text-sm font-medium text-[#7c8072]">Emojis</p>
-                        <p className="text-[#2c2c2c]">{responses?.emojis || '—'}</p>
+                        <p className="text-sm font-medium text-muted-foreground">Emojis</p>
+                        <p className="text-foreground">{responses?.emojis || '—'}</p>
                     </div>
 
                     <div>
-                        <p className="text-sm font-medium text-[#7c8072]">Trading categories</p>
-                        <p className="text-[#2c2c2c]">
+                        <p className="text-sm font-medium text-muted-foreground">Trading categories</p>
+                        <p className="text-foreground">
                             {responses?.categories?.length
                                 ? responses.categories
                                       .map((category) => categoryLabels[category] ?? category)
@@ -341,8 +362,37 @@ export function ProfileSection({
                     </div>
                 </div>
             ) : (
-                <div className="rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-6 text-left shadow-sm">
-                    <p className="text-sm text-[#625f58]">No listings yet.</p>
+                <div className="flex flex-col gap-4">
+                    {listingsLoadError && (
+                        <p
+                            className="rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive"
+                            role="alert"
+                        >
+                            We could not load all of your listings right now. Please refresh and try again.
+                        </p>
+                    )}
+
+                    {listings.length > 0 ? (
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            {listings.map((listing) => (
+                                <ListingCard key={listing.id} listing={listing} />
+                            ))}
+                        </div>
+                    ) : !listingsLoadError ? (
+                        <div className="rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
+                            <PackagePlus className="mx-auto size-8 text-primary" />
+                            <p className="mt-3 font-medium text-foreground">No listings yet.</p>
+                            <p className="mt-1 text-sm text-muted-foreground">
+                                Post a trinket and it will show up here.
+                            </p>
+                            <Link
+                                href="/posts"
+                                className="mt-5 inline-flex rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90"
+                            >
+                                Make a post
+                            </Link>
+                        </div>
+                    ) : null}
                 </div>
             )}
         </div>

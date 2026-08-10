@@ -4,8 +4,12 @@ import { BetaBottomNav } from '@/components/beta-bottom-nav'
 import { ProfileSection } from './profile-section'
 import { ProfileViewSwitcher } from './profile-view-switcher'
 import { MyTroop } from './my-troop'
+import type { ListingCardData } from '@/components/listings/listing-card'
 
-async function ProfileContent() {
+type ProfileSearchParams = Promise<{ tab?: string | string[] }>
+
+async function ProfileContent({ searchParams }: { searchParams: ProfileSearchParams }) {
+    const { tab } = await searchParams
     const { profile, db, user } = await requireMember()
     const { data: fullProfile } = await db
         .from('users')
@@ -22,6 +26,62 @@ async function ProfileContent() {
             .createSignedUrl(picturePath, 60 * 60)
         profilePictureUrl = signedUrlData?.signedUrl ?? null
     }
+
+    const { data: listingRows, error: listingsError } = await db
+        .from('listings')
+        .select('id, title, category, other_category, condition, transaction_types, price_cents, pickup_area, status, published_at')
+        .eq('owner_id', user.id)
+        .in('status', ['active', 'reserved', 'fulfilled'])
+        .order('published_at', { ascending: false })
+
+    const listingIds = listingRows?.map((listing) => listing.id) ?? []
+    const { data: coverPhotos, error: coverPhotosError } = listingIds.length > 0
+        ? await db
+            .from('listing_photos')
+            .select('listing_id, storage_path')
+            .in('listing_id', listingIds)
+            .eq('position', 0)
+        : { data: [], error: null }
+
+    const coverPaths = coverPhotos?.map((photo) => photo.storage_path) ?? []
+    const { data: signedCoverPhotos, error: signedCoverPhotosError } = coverPaths.length > 0
+        ? await db.storage.from('listing-photos').createSignedUrls(coverPaths, 3600)
+        : { data: [], error: null }
+
+    const hasUnsignedCover = signedCoverPhotos?.some(
+        (photo) => photo.error || !photo.signedUrl,
+    ) ?? false
+    const listingsLoadError = Boolean(
+        listingsError || coverPhotosError || signedCoverPhotosError || hasUnsignedCover,
+    )
+
+    if (listingsError) {
+        console.error('Profile listings query failed:', listingsError.code)
+    }
+    if (coverPhotosError) {
+        console.error('Listing cover query failed:', coverPhotosError.code)
+    }
+    if (signedCoverPhotosError) {
+        console.error('Listing cover signing failed:', signedCoverPhotosError.statusCode)
+    }
+    if (hasUnsignedCover) {
+        console.error('At least one listing cover could not be signed.')
+    }
+
+    const coverPathByListingId = new Map(
+        coverPhotos?.map((photo) => [photo.listing_id, photo.storage_path]) ?? [],
+    )
+    const signedUrlByPath = new Map(
+        signedCoverPhotos?.map((photo) => [photo.path, photo.signedUrl]) ?? [],
+    )
+    const listings: ListingCardData[] = (listingRows ?? []).map((listing) => {
+        const coverPath = coverPathByListingId.get(listing.id)
+
+        return {
+            ...listing,
+            coverPhotoUrl: coverPath ? signedUrlByPath.get(coverPath) ?? null : null,
+        }
+    })
 
     // accepted friendships
     const { data: fullMyTroop } = await db
@@ -67,6 +127,9 @@ async function ProfileContent() {
                         preferredName={fullProfile?.preferred_name || fullProfile?.first_name || null}
                         profilePictureUrl={profilePictureUrl}
                         responses={fullProfile?.responses ?? null}
+                        listings={listings}
+                        listingsLoadError={listingsLoadError}
+                        initialTab={tab === 'listings' ? 'listings' : 'about'}
                     />
                 }
                 troopView={
@@ -106,11 +169,13 @@ async function resolveProfilesWithPictures(db: Awaited<ReturnType<typeof require
     }) ?? []
 }
 
-export default function ProfilePage() {
+export default function ProfilePage({ searchParams }: { searchParams: ProfileSearchParams }) {
     return (
-        <main className="relative flex min-h-screen flex-col items-center justify-center bg-[#faf7f0] px-4 pb-28 text-center">
+        <main className="relative flex min-h-screen flex-col items-center justify-center bg-background px-4 pb-28 text-center">
             <Suspense fallback={null}>
-                <ProfileContent />
+                <div className="w-full max-w-3xl py-10">
+                    <ProfileContent searchParams={searchParams} />
+                </div>
             </Suspense>
             <BetaBottomNav />
         </main>

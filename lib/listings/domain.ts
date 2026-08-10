@@ -58,6 +58,14 @@ export const LISTING_STATUSES = [
 
 export type ListingStatus = (typeof LISTING_STATUSES)[number]
 
+export const LISTING_STATUS_LABELS: Record<ListingStatus, string> = {
+    draft: 'draft',
+    active: 'active',
+    reserved: 'reserved',
+    fulfilled: 'fulfilled',
+    archived: 'archived',
+}
+
 export type Listing = {
     id: string
     owner_id: string
