@@ -23,9 +23,9 @@ function PersonRow({
     children?: React.ReactNode
 }) {
     return (
-        <div className="flex items-center justify-between gap-3 rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-4 shadow-sm">
+        <div className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm">
             <div className="flex items-center gap-3">
-                <div className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#ded8cc] bg-[#f2ede0]">
+                <div className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-secondary">
                     {person.profilePictureUrl ? (
                         <Image
                             src={person.profilePictureUrl}
@@ -35,10 +35,10 @@ function PersonRow({
                             className="size-full object-cover"
                         />
                     ) : (
-                        <UserRound className="size-6 text-[#9aaa90]" />
+                        <UserRound className="size-6 text-muted-foreground" />
                     )}
                 </div>
-                <p className="font-medium text-[#2c2c2c]">@{person.username}</p>
+                <p className="font-medium text-foreground">@{person.username}</p>
             </div>
             {children && <div className="flex gap-2">{children}</div>}
         </div>
@@ -100,11 +100,11 @@ export function MyTroop({
 
     return (
         <div>
-            <div className="mb-4 flex rounded-full border border-[#ded8cc] bg-[#fffdf9] p-1">
+            <div className="mb-4 flex rounded-full border border-border bg-card p-1">
                 <button
                     onClick={() => setTab('friends')}
                     className={`flex-1 rounded-full px-4 py-2 text-sm font-medium transition ${
-                        tab === 'friends' ? 'bg-[#7c9272] text-white' : 'text-[#625f58] hover:bg-[#f5efe5]'
+                        tab === 'friends' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-secondary'
                     }`}
                 >
                     Friends
@@ -112,7 +112,7 @@ export function MyTroop({
                 <button
                     onClick={() => setTab('requests')}
                     className={`flex-1 rounded-full px-4 py-2 text-sm font-medium transition ${
-                        tab === 'requests' ? 'bg-[#7c9272] text-white' : 'text-[#625f58] hover:bg-[#f5efe5]'
+                        tab === 'requests' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-secondary'
                     }`}
                 >
                     Requests
@@ -131,41 +131,41 @@ export function MyTroop({
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         placeholder="Search by username"
-                        className="mb-4 w-full rounded-lg border border-[#d8d1c5] bg-white px-4 py-3 text-black outline-none transition focus:border-[#7c9272] focus:ring-2 focus:ring-[#7c9272]/20"
+                        className="mb-4 w-full rounded-lg border border-input bg-card px-4 py-3 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                     />
 
                     {search.trim() ? (
                         isSearching ? (
-                            <div className="rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-6 text-left shadow-sm">
-                                <p className="text-sm text-[#625f58]">Searching...</p>
+                            <div className="rounded-2xl border border-border bg-card p-6 text-left shadow-sm">
+                                <p className="text-sm text-muted-foreground">Searching...</p>
                             </div>
                         ) : searchResults.length === 0 ? (
-                            <div className="rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-6 text-left shadow-sm">
-                                <p className="text-sm text-[#625f58]">No one found.</p>
+                            <div className="rounded-2xl border border-border bg-card p-6 text-left shadow-sm">
+                                <p className="text-sm text-muted-foreground">No one found.</p>
                             </div>
                         ) : (
                             <div className="flex flex-col gap-3">
                                 {searchResults.map((result) => (
                                     <PersonRow key={result.id} person={result}>
                                         {result.relationship === 'friend' && (
-                                            <span className="rounded-lg px-3 py-1.5 text-sm font-medium text-[#7c9272]">
+                                            <span className="rounded-lg px-3 py-1.5 text-sm font-medium text-primary">
                                                 In your troop
                                             </span>
                                         )}
                                         {result.relationship === 'sent' && (
-                                            <span className="rounded-lg px-3 py-1.5 text-sm font-medium text-[#7c8072]">
+                                            <span className="rounded-lg px-3 py-1.5 text-sm font-medium text-muted-foreground">
                                                 Requested
                                             </span>
                                         )}
                                         {result.relationship === 'received' && (
-                                            <span className="rounded-lg px-3 py-1.5 text-sm font-medium text-[#7c8072]">
+                                            <span className="rounded-lg px-3 py-1.5 text-sm font-medium text-muted-foreground">
                                                 Check Requests
                                             </span>
                                         )}
                                         {result.relationship === 'none' && (
                                             <button
                                                 onClick={() => handleAdd(result.id)}
-                                                className="rounded-lg bg-[#7c9272] px-3 py-1.5 text-sm font-medium text-white transition hover:bg-[#667b5f]"
+                                                className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition hover:opacity-90"
                                             >
                                                 Add
                                             </button>
@@ -175,8 +175,8 @@ export function MyTroop({
                             </div>
                         )
                     ) : friendsData.length === 0 ? (
-                        <div className="rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-6 text-left shadow-sm">
-                            <p className="text-sm text-[#625f58]">No troop members yet.</p>
+                        <div className="rounded-2xl border border-border bg-card p-6 text-left shadow-sm">
+                            <p className="text-sm text-muted-foreground">No troop members yet.</p>
                         </div>
                     ) : (
                         <div className="flex flex-col gap-3">
@@ -191,10 +191,10 @@ export function MyTroop({
             {tab === 'requests' && (
                 <div className="flex flex-col gap-6">
                     <div>
-                        <p className="mb-2 text-sm font-medium text-[#7c8072]">Requests received</p>
+                        <p className="mb-2 text-sm font-medium text-muted-foreground">Requests received</p>
                         {incomingRequests.length === 0 ? (
-                            <div className="rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-6 text-left shadow-sm">
-                                <p className="text-sm text-[#625f58]">Nothing yet.</p>
+                            <div className="rounded-2xl border border-border bg-card p-6 text-left shadow-sm">
+                                <p className="text-sm text-muted-foreground">Nothing yet.</p>
                             </div>
                         ) : (
                             <div className="flex flex-col gap-3">
@@ -202,13 +202,13 @@ export function MyTroop({
                                     <PersonRow key={request.friendshipId} person={request}>
                                         <button
                                             onClick={() => handleAccept(request.friendshipId)}
-                                            className="rounded-lg bg-[#7c9272] px-3 py-1.5 text-sm font-medium text-white transition hover:bg-[#667b5f]"
+                                            className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition hover:opacity-90"
                                         >
                                             Accept
                                         </button>
                                         <button
                                             onClick={() => handleRemove(request.friendshipId)}
-                                            className="rounded-lg border border-[#ded8cc] px-3 py-1.5 text-sm font-medium text-[#625f58] transition hover:bg-[#f5efe5]"
+                                            className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground transition hover:bg-secondary"
                                         >
                                             Decline
                                         </button>
@@ -219,10 +219,10 @@ export function MyTroop({
                     </div>
 
                     <div>
-                        <p className="mb-2 text-sm font-medium text-[#7c8072]">Requests sent</p>
+                        <p className="mb-2 text-sm font-medium text-muted-foreground">Requests sent</p>
                         {outgoingRequests.length === 0 ? (
-                            <div className="rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-6 text-left shadow-sm">
-                                <p className="text-sm text-[#625f58]">Nothing yet.</p>
+                            <div className="rounded-2xl border border-border bg-card p-6 text-left shadow-sm">
+                                <p className="text-sm text-muted-foreground">Nothing yet.</p>
                             </div>
                         ) : (
                             <div className="flex flex-col gap-3">
@@ -230,7 +230,7 @@ export function MyTroop({
                                     <PersonRow key={request.friendshipId} person={request}>
                                         <button
                                             onClick={() => handleRemove(request.friendshipId)}
-                                            className="rounded-lg border border-[#ded8cc] px-3 py-1.5 text-sm font-medium text-[#625f58] transition hover:bg-[#f5efe5]"
+                                            className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground transition hover:bg-secondary"
                                         >
                                             Cancel
                                         </button>
