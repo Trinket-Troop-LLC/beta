@@ -71,10 +71,10 @@ export function ProfileSection({
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
-    const [takenDownListingIds, setTakenDownListingIds] = useState<string[]>([])
+    const [deletedListingIds, setDeletedListingIds] = useState<string[]>([])
     const [listingStatusMessage, setListingStatusMessage] = useState<string | null>(null)
     const visibleListings = listings.filter(
-        (listing) => !takenDownListingIds.includes(listing.id),
+        (listing) => !deletedListingIds.includes(listing.id),
     )
 
     useEffect(() => {
@@ -86,11 +86,11 @@ export function ProfileSection({
         router.replace(`/profile?tab=${nextTab}`, { scroll: false })
     }
 
-    function handleListingTakenDown(listingId: string, title: string) {
-        setTakenDownListingIds((current) => current.includes(listingId)
+    function handleListingDeleted(listingId: string, title: string) {
+        setDeletedListingIds((current) => current.includes(listingId)
             ? current
             : [...current, listingId])
-        setListingStatusMessage(`“${title}” was taken down.`)
+        setListingStatusMessage(`“${title}” and all of its photos were permanently deleted.`)
     }
 
     async function handleProfilePicChange(event: React.ChangeEvent<HTMLInputElement>) {
@@ -400,7 +400,7 @@ export function ProfileSection({
                                 <OwnerListingCard
                                     key={listing.id}
                                     listing={listing}
-                                    onTakenDown={handleListingTakenDown}
+                                    onDeleted={handleListingDeleted}
                                 />
                             ))}
                         </div>
