@@ -7,7 +7,13 @@ const generalInterestSchema = z.object({
     first_name: z.string().trim().min(1, 'First name is required').max(100),
     last_name: z.string().trim().min(1, 'Last name is required').max(100),
     email: z.string().trim().email('Please enter a valid email').max(320),
-    phone_number: z.string().trim().min(1, 'Phone number is required').max(50),
+    phone_number: z.string()
+        .trim()
+        .transform((val) => val.replace(/\D/g, ''))
+        .refine((digits) => digits.length === 10 || (digits.length === 11 && digits.startsWith('1')), {
+            message: 'Please enter a valid 10-digit phone number',
+        })
+        .transform((digits) => digits.length === 11 ? `+${digits}` : `+1${digits}`),
     pain_points: z.string().trim().min(1, 'Pain points are required').max(3000),
     friend_phone_numbers: z.string().max(2000),
     website: z.string().max(200),

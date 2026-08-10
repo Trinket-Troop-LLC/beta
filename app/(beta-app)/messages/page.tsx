@@ -1,24 +1,72 @@
-// app/troop/messages/page.tsx
 import { Suspense } from 'react'
 import { requireMember } from '@/lib/supabase/require-member'
+import { signProfilePictureUrls } from '@/lib/supabase/profile-pictures'
 import { BetaBottomNav } from '@/components/beta-bottom-nav'
+import { ConversationsList } from './conversations-list'
 
 async function MessagesContent() {
-    await requireMember()
+    const { db, user } = await requireMember()
 
-    return (
-        <>
-            <h1 className="mb-3 text-3xl font-semibold text-[#30392d]">Messages</h1>
-            <p className="max-w-md text-[#625f58]">
-                This is coming soon — check back shortly.
-            </p>
-        </>
-    )
+    const { data: conversations } = await db
+        .from('conversations')
+        .select('*')
+        .or(`participant_one_id.eq.${user.id},participant_two_id.eq.${user.id}`)
+        .order('updated_at', { ascending: false })
+
+    const otherUserIds = conversations?.map((c) =>
+        c.participant_one_id === user.id ? c.participant_two_id : c.participant_one_id
+    ) ?? []
+
+    const { data: profiles } = await db
+        .from('users')
+        .select('id, username, responses')
+        .in('id', otherUserIds)
+
+    const paths = profiles?.map((p) => p.responses?.profile_picture_path) ?? []
+    const signedUrlsByPath = await signProfilePictureUrls(db, paths)
+
+    // last message per conversation, for the preview line
+    const conversationIds = conversations?.map((c) => c.id) ?? []
+    const { data: recentMessages } = conversationIds.length > 0
+        ? await db
+            .from('messages')
+            .select('conversation_id, content, image_path, created_at, sender_id')
+            .in('conversation_id', conversationIds)
+            .order('created_at', { ascending: false })
+        : { data: [] }
+
+    const conversationsWithDetails = conversations?.map((conversation) => {
+        const otherUserId = conversation.participant_one_id === user.id
+            ? conversation.participant_two_id
+            : conversation.participant_one_id
+
+        const profile = profiles?.find((p) => p.id === otherUserId)
+        const path = profile?.responses?.profile_picture_path
+
+        const lastMessage = recentMessages?.find((m) => m.conversation_id === conversation.id)
+
+        return {
+            id: conversation.id,
+            status: conversation.status,
+            initiatedByMe: conversation.initiated_by === user.id,
+            otherUser: {
+                id: otherUserId,
+                username: profile?.username ?? 'Unknown',
+                profilePictureUrl: (path && signedUrlsByPath.get(path)) ?? null,
+            },
+            lastMessagePreview: lastMessage
+                ? (lastMessage.content ?? (lastMessage.image_path ? 'Sent a photo' : ''))
+                : null,
+            updatedAt: conversation.updated_at,
+        }
+    }) ?? []
+
+    return <ConversationsList conversations={conversationsWithDetails} />
 }
 
-export default function ThoughtsPage() {
+export default function MessagesPage() {
     return (
-        <main className="relative flex min-h-screen flex-col items-center justify-center bg-[#faf7f0] px-4 pb-28 text-center">
+        <main className="relative flex min-h-screen flex-col items-center bg-[#faf7f0] px-4 pb-28 pt-12">
             <Suspense fallback={null}>
                 <MessagesContent />
             </Suspense>

@@ -1,5 +1,6 @@
 import { Suspense } from 'react'
 import { requireMember } from '@/lib/supabase/require-member'
+import { signProfilePictureUrl, signProfilePictureUrls } from '@/lib/supabase/profile-pictures'
 import { BetaBottomNav } from '@/components/beta-bottom-nav'
 import { ProfileSection } from './profile-section'
 import { ProfileViewSwitcher } from './profile-view-switcher'
@@ -17,15 +18,7 @@ async function ProfileContent({ searchParams }: { searchParams: ProfileSearchPar
         .eq('id', user.id)
         .single()
 
-    let profilePictureUrl: string | null = null
-    const picturePath = fullProfile?.responses?.profile_picture_path
-
-    if (picturePath) {
-        const { data: signedUrlData } = await db.storage
-            .from('beta-profile-pictures')
-            .createSignedUrl(picturePath, 60 * 60)
-        profilePictureUrl = signedUrlData?.signedUrl ?? null
-    }
+    const profilePictureUrl = await signProfilePictureUrl(db, fullProfile?.responses?.profile_picture_path)
 
     const { data: listingRows, error: listingsError } = await db
         .from('listings')
@@ -152,19 +145,14 @@ async function resolveProfilesWithPictures(db: Awaited<ReturnType<typeof require
         .in('id', ids)
 
     const paths = profiles?.map((p) => p.responses?.profile_picture_path) ?? []
-    const validPaths = paths.filter((path): path is string => Boolean(path))
-
-    const { data: signedUrlResults } = validPaths.length > 0
-        ? await db.storage.from('beta-profile-pictures').createSignedUrls(validPaths, 3600)
-        : { data: [] }
+    const signedUrlsByPath = await signProfilePictureUrls(db, paths)
 
     return profiles?.map((profile) => {
         const path = profile.responses?.profile_picture_path
-        const match = signedUrlResults?.find((r) => r.path === path)
         return {
             id: profile.id,
             username: profile.username,
-            profilePictureUrl: match?.signedUrl ?? null,
+            profilePictureUrl: (path && signedUrlsByPath.get(path)) ?? null,
         }
     }) ?? []
 }
