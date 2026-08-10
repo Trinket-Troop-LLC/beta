@@ -146,14 +146,18 @@ export async function sendMessage(conversationId: string, content: string) {
     const trimmed = content.trim()
     if (!trimmed) return { success: false, error: 'Message cannot be empty.' }
 
-    const { error } = await db.from('messages').insert({
-        conversation_id: conversationId,
-        sender_id: userId,
-        content: trimmed,
-    })
+    const { data, error } = await db
+        .from('messages')
+        .insert({
+            conversation_id: conversationId,
+            sender_id: userId,
+            content: trimmed,
+        })
+        .select()
+        .single()
 
-    if (error) return { success: false, error: 'Could not send message. This conversation may not be active yet.' }
+    if (error || !data) return { success: false, error: 'Could not send message. This conversation may not be active yet.' }
 
     revalidatePath('/messages')
-    return { success: true }
+    return { success: true, message: data }
 }
