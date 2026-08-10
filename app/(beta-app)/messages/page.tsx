@@ -1,5 +1,6 @@
 import { Suspense } from 'react'
 import { requireMember } from '@/lib/supabase/require-member'
+import { signProfilePictureUrls } from '@/lib/supabase/profile-pictures'
 import { BetaBottomNav } from '@/components/beta-bottom-nav'
 import { ConversationsList } from './conversations-list'
 
@@ -22,11 +23,7 @@ async function MessagesContent() {
         .in('id', otherUserIds)
 
     const paths = profiles?.map((p) => p.responses?.profile_picture_path) ?? []
-    const validPaths = paths.filter((path): path is string => Boolean(path))
-
-    const { data: signedUrlResults } = validPaths.length > 0
-        ? await db.storage.from('beta-profile-pictures').createSignedUrls(validPaths, 3600)
-        : { data: [] }
+    const signedUrlsByPath = await signProfilePictureUrls(db, paths)
 
     // last message per conversation, for the preview line
     const conversationIds = conversations?.map((c) => c.id) ?? []
@@ -45,7 +42,6 @@ async function MessagesContent() {
 
         const profile = profiles?.find((p) => p.id === otherUserId)
         const path = profile?.responses?.profile_picture_path
-        const pictureMatch = signedUrlResults?.find((r) => r.path === path)
 
         const lastMessage = recentMessages?.find((m) => m.conversation_id === conversation.id)
 
@@ -56,7 +52,7 @@ async function MessagesContent() {
             otherUser: {
                 id: otherUserId,
                 username: profile?.username ?? 'Unknown',
-                profilePictureUrl: pictureMatch?.signedUrl ?? null,
+                profilePictureUrl: (path && signedUrlsByPath.get(path)) ?? null,
             },
             lastMessagePreview: lastMessage
                 ? (lastMessage.content ?? (lastMessage.image_path ? 'Sent a photo' : ''))

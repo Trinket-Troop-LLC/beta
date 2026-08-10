@@ -92,6 +92,13 @@ export async function requestConversation(
 
     if (convError || !conversation) return { success: false, error: 'Could not start the conversation.' }
 
+    const { error: messageError } = await db.from('messages').insert({
+        conversation_id: conversation.id,
+        sender_id: userId,
+        content: firstMessageContent,
+    })
+    if (messageError) return { success: false, error: 'Could not send your message.' }
+
     revalidatePath('/messages')
     return { success: true, conversationId: conversation.id }
 }

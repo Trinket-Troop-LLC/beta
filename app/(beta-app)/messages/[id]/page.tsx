@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import { requireMember } from '@/lib/supabase/require-member'
+import { signProfilePictureUrl } from '@/lib/supabase/profile-pictures'
 import { BetaBottomNav } from '@/components/beta-bottom-nav'
 import { ChatView } from './chat-view'
 
@@ -32,14 +33,7 @@ async function ConversationContent({ conversationId }: { conversationId: string 
         .eq('id', otherUserId)
         .single()
 
-    let otherUserPictureUrl: string | null = null
-    const otherPicturePath = otherProfile?.responses?.profile_picture_path
-    if (otherPicturePath) {
-        const { data: signedUrlData } = await db.storage
-            .from('beta-profile-pictures')
-            .createSignedUrl(otherPicturePath, 3600)
-        otherUserPictureUrl = signedUrlData?.signedUrl ?? null
-    }
+    const otherUserPictureUrl = await signProfilePictureUrl(db, otherProfile?.responses?.profile_picture_path)
 
     const { data: messages } = await db
         .from('messages')
