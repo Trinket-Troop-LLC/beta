@@ -56,16 +56,16 @@ async function ProfileContent({ searchParams }: { searchParams: ProfileSearchPar
     )
 
     if (listingsError) {
-        console.error('Profile listings query failed:', listingsError.code)
+        console.warn('Profile listings query failed:', listingsError.code)
     }
     if (coverPhotosError) {
-        console.error('Listing cover query failed:', coverPhotosError.code)
+        console.warn('Listing cover query failed:', coverPhotosError.code)
     }
     if (signedCoverPhotosError) {
-        console.error('Listing cover signing failed:', signedCoverPhotosError.statusCode)
+        console.warn('Listing cover signing failed:', signedCoverPhotosError.statusCode)
     }
     if (hasUnsignedCover) {
-        console.error('At least one listing cover could not be signed.')
+        console.warn('At least one listing cover could not be signed.')
     }
 
     const coverPathByListingId = new Map(
