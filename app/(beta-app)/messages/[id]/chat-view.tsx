@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowLeft, UserRound, Send } from 'lucide-react'
@@ -44,7 +45,51 @@ export function ChatView({
     const bottomRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
-        bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+        const db = createClient()
+        let channel: ReturnType<typeof db.channel> | undefined
+        let cancelled = false
+
+        async function setup() {
+            // The browser client loads its session from cookies asynchronously.
+            // Subscribing before that finishes joins the channel as `anon`, which
+            // makes auth.uid() resolve to null inside RLS during postgres_changes
+            // evaluation, so every change gets silently filtered out for every
+            // subscriber. Explicitly set the token before subscribing.
+            const { data: { session } } = await db.auth.getSession()
+            if (cancelled) return
+            if (session) db.realtime.setAuth(session.access_token)
+
+            channel = db
+                .channel(`conversations:${conversationId}`)
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'INSERT',
+                        schema: 'public',
+                        table: 'messages',
+                        filter: `conversation_id=eq.${conversationId}`,
+                    },
+                    (payload) => {
+                        const newMessage = payload.new as Message
+                        setMessages((prev) => {
+                            if (prev.some((m) => m.id === newMessage.id)) return prev
+                            return [...prev, newMessage]
+                        })
+                    }
+                )
+                .subscribe()
+        }
+
+        setup()
+
+        return () => {
+            cancelled = true
+            if (channel) db.removeChannel(channel)
+        }
+    }, [conversationId])
+
+    useEffect(() => {
+        bottomRef.current?.scrollIntoView({behavior: 'smooth'})
     }, [messages])
 
     async function handleSend() {
@@ -55,19 +100,13 @@ export function ChatView({
         const result = await sendMessage(conversationId, trimmed)
 
         if (result.success) {
-            // Optimistically add it locally so it shows immediately
-            setMessages((prev) => [
-                ...prev,
-                {
-                    id: crypto.randomUUID(),
-                    conversation_id: conversationId,
-                    sender_id: currentUserId,
-                    content: trimmed,
-                    image_path: null,
-                    created_at: new Date().toISOString(),
-                    read_at: null,
-                },
-            ])
+            // Add it locally with its real id so the realtime echo of our own
+            // insert (now that the subscription auth race is fixed) dedupes
+            // against this instead of rendering a second copy.
+            setMessages((prev) => {
+                if (prev.some((m) => m.id === result.message.id)) return prev
+                return [...prev, result.message]
+            })
             setDraft('')
         }
         setIsSending(false)
