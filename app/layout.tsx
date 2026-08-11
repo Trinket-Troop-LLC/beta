@@ -1,6 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Gluten } from "next/font/google";
 import { ThemeProvider } from "next-themes";
+import { SerwistProvider } from "@/components/serwist-provider";
 import { getAppUrl } from "@/lib/utils";
 import "./globals.css";
 
@@ -20,6 +21,15 @@ export const metadata: Metadata = {
     description:
       "Join the waiting list for a friendlier way to exchange secondhand treasures in New York City.",
   },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Trinket Troop",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#7c9272",
 };
 
 const geistSans = Geist({
@@ -42,14 +52,16 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.className} ${gluten.variable}`}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          enableSystem={false}
-          disableTransitionOnChange
-        >
-          {children}
-        </ThemeProvider>
+        <SerwistProvider swUrl="/serwist/sw.js">
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="light"
+            enableSystem={false}
+            disableTransitionOnChange
+          >
+            {children}
+          </ThemeProvider>
+        </SerwistProvider>
       </body>
     </html>
   );
