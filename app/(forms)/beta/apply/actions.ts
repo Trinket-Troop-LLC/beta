@@ -31,6 +31,7 @@ const betaApplicationSchema = z
         email: z.string().trim().email('Please enter a valid email').max(320),
         phone_number: z.string()
             .trim()
+            .min(1, 'Phone number is required')
             .transform((val) => val.replace(/\D/g, ''))
             .refine((digits) => digits.length === 10 || (digits.length === 11 && digits.startsWith('1')), {
                 message: 'Please enter a valid 10-digit phone number',

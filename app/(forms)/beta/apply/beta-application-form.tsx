@@ -171,6 +171,7 @@ export function BetaApplicationForm() {
                                 type="tel"
                                 name="phone_number"
                                 autoComplete="tel"
+                                inputMode="tel"
                                 maxLength={50}
                                 required
                                 className={inputClass}
@@ -271,6 +272,22 @@ export function BetaApplicationForm() {
                             <span>comments, questions, compliments, or concerns ;)</span>
                             <textarea name="misc_thoughts" maxLength={3000} rows={3} className={inputClass} />
                             <FieldError message={fieldErrors.misc_thoughts} />
+                        </label>
+
+                        <label className={labelClass}>
+                            <span>phone number(s) of people you think we should reach out to</span>
+                            <input
+                                type="tel"
+                                name="recommended_phone_numbers"
+                                autoComplete="tel"
+                                inputMode="tel"
+                                maxLength={500}
+                                className={inputClass}
+                            />
+                            <span className="text-sm text-[#7c8072]">
+                                separate multiple phone numbers with commas or new lines. please only share friends who would be happy to hear from us.
+                            </span>
+                            <FieldError message={fieldErrors.recommended_phone_numbers} />
                         </label>
 
                         <button
