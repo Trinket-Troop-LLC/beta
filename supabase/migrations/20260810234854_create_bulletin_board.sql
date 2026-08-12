@@ -7,7 +7,6 @@ create table bulletin_posts (
     id uuid primary key default gen_random_uuid(),
     author_id uuid not null references users(id) on delete cascade,
     content text not null,
-    image_path text,
     created_at timestamptz default now()
 );
 
