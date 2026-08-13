@@ -16,11 +16,11 @@ export default function OfflinePage() {
                 className="mb-6 h-24 w-24"
             />
 
-            <h1 className="text-2xl font-semibold text-[#30392d]">You're offline</h1>
+            <h1 className="text-2xl font-semibold text-[#30392d]">You&apos;re offline</h1>
 
             <p className="mt-2 max-w-sm text-[#625f58]">
                 This page needs a connection to load. Reconnect and try again — anything
-                you'd already opened will still work.
+                you&apos;d already opened will still work.
             </p>
         </main>
     );

@@ -4,7 +4,6 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { type ApplicantStatus, isApplicantStatus } from './applicant-status'
-import { sendApprovalEmail } from '../../lib/email/approval-email'
 import { sendApprovalText } from '@/lib/sms/notifications/approval'
 
 // Creates the real account for an approved applicant, but doesn't email them —

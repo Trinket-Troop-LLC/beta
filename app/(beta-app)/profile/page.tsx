@@ -127,7 +127,6 @@ async function ProfileContent({ searchParams }: { searchParams: ProfileSearchPar
                 }
                 troopView={
                     <MyTroop
-                        userId={profile.id}
                         friendsData={friendsWithPictures}
                         outgoingRequests={outgoingWithPictures}
                         incomingRequests={incomingWithPictures}

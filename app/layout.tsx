@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Gluten } from "next/font/google";
 import { ThemeProvider } from "next-themes";
-import { SerwistProvider } from "@/components/serwist-provider";
+import { SerwistProvider } from "@serwist/turbopack/react";
 import { getAppUrl } from "@/lib/utils";
 import "./globals.css";
 

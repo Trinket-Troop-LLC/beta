@@ -1,4 +1,5 @@
 {
+  "name": "trinket-troop",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -11,7 +12,6 @@
     "@radix-ui/react-dropdown-menu": "^2.1.14",
     "@radix-ui/react-label": "^2.1.6",
     "@radix-ui/react-slot": "^1.2.2",
-    "@serwist/turbopack": "^10.0.0-preview.14",
     "@supabase/ssr": "latest",
     "@supabase/supabase-js": "latest",
     "class-variance-authority": "^0.7.1",
@@ -21,20 +21,23 @@
     "next-themes": "^0.4.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "serwist": "^10.0.0-preview.14",
     "tailwind-merge": "^3.3.0",
     "twilio": "^6.0.2",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@serwist/turbopack": "^9.5.12",
+    "@swc/helpers": "0.5.23",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "autoprefixer": "^10.4.20",
+    "esbuild": "^0.28.2",
     "eslint": "^9",
     "eslint-config-next": "15.3.1",
     "postcss": "^8",
+    "serwist": "^9.5.12",
     "supabase": "^2.113.0",
     "tailwindcss": "^3.4.1",
     "tailwindcss-animate": "^1.0.7",

@@ -13,6 +13,22 @@ declare global {
 
 declare const self: ServiceWorkerGlobalScope;
 
+const authenticatedPaths = [
+  "/admin",
+  "/messages",
+  "/posts",
+  "/profile",
+  "/protected",
+  "/thoughts",
+  "/troop",
+];
+
+function isAuthenticatedPath(pathname: string) {
+  return authenticatedPaths.some(
+    (path) => pathname === path || pathname.startsWith(`${path}/`),
+  );
+}
+
 const serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST,
   skipWaiting: true,
@@ -24,7 +40,14 @@ const serwist = new Serwist({
     // to a cached response after a 10s network hiccup, which for realtime chat
     // means silently showing outdated messages instead of surfacing a real error.
     {
-      matcher: /^https:\/\/ctmdrcnpfjewudsowvkj\.supabase\.co\/.*/i,
+      matcher: /^https:\/\/[a-z0-9-]+\.supabase\.co(?:\/|$)/i,
+      handler: new NetworkOnly(),
+    },
+    // Authenticated HTML and RSC responses can contain member-specific data.
+    // Never place them in a shared browser cache or use stale copies offline.
+    {
+      matcher: ({ sameOrigin, url }) =>
+        sameOrigin && isAuthenticatedPath(url.pathname),
       handler: new NetworkOnly(),
     },
     ...defaultCache,
@@ -39,6 +62,33 @@ const serwist = new Serwist({
       },
     ],
   },
+});
+
+// Earlier service workers used Serwist's generic runtime caches for every page
+// and cross-origin request. Remove those caches once this safer worker activates
+// so data written under the old rules cannot be served to a later browser user.
+self.addEventListener("activate", (event) => {
+  const obsoleteRuntimeCaches = new Set([
+    "apis",
+    "cross-origin",
+    "others",
+    "pages",
+    "pages-rsc",
+    "pages-rsc-prefetch",
+    "static-image-assets",
+  ]);
+
+  event.waitUntil(
+    caches
+      .keys()
+      .then((cacheNames) =>
+        Promise.all(
+          cacheNames
+            .filter((cacheName) => obsoleteRuntimeCaches.has(cacheName))
+            .map((cacheName) => caches.delete(cacheName)),
+        ),
+      ),
+  );
 });
 
 serwist.addEventListeners();
