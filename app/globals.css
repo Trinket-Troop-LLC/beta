@@ -29,6 +29,12 @@
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
+
+    /* Shared root font-size for the illustrated "canvas" pages (home, why-us, about, mission
+       redirect): every em-sized position/asset on those pages is calibrated against this one
+       clamp, so it's centralized here rather than repeated per-page — that repetition is what
+       let the home page and why-us/about drift onto two different clamp formulas before. */
+    --canvas-text: clamp(14px, 1vw + 8px, 20px);
   }
   .dark {
     --background: 0 0% 3.9%;
