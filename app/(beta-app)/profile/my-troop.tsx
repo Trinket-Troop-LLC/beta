@@ -46,12 +46,10 @@ function PersonRow({
 }
 
 export function MyTroop({
-    userId,
     friendsData,
     outgoingRequests,
     incomingRequests,
 }: {
-    userId: string
     friendsData: FriendsData[]
     outgoingRequests: RequestData[]
     incomingRequests: RequestData[]

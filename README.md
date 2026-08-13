@@ -15,6 +15,15 @@ review dashboard. The beta app itself — post a listing, browse, message anothe
 - [Resend](https://resend.com) for transactional email; Twilio for SMS message notifications (beta app)
 - Deployed on Vercel, auto-deploying from `main`
 
+## Deployment flow
+
+- `beta-internal` is the long-lived staging branch. Feature work is reviewed and merged there first so Vercel can deploy
+  it to the internal beta domain.
+- After internal testing, open a pull request from `beta-internal` into `main`. Merging that pull request deploys the public
+  beta site.
+- Keep staging credentials and data separate from production wherever possible, especially for Supabase, Resend, and
+  Twilio.
+
 ## Local setup
 
 1. Copy `.env.local` from whoever last had it, or create one with:
@@ -54,8 +63,9 @@ work — not automatically on deploy.
 
 ## Working on this repo
 
-- Branch off `main` (or the `beta-app` integration branch for beta-app work), keep branches short-lived, and pull before you
-  start each session — a merge collision from a stale branch has already shipped a real bug to `main` once.
+- Branch off `beta-internal` for normal feature work, keep branches short-lived, and pull before you start each session.
+  Use `main` only as the public-beta release branch (or for an emergency hotfix that is immediately merged back into
+  `beta-internal`) — a merge collision from a stale branch has already shipped a real bug to `main` once.
 - PRs require review before merge (branch protection enforces this on `main`).
 - If you're touching `app/beta/apply/` or `app/apply/`, check open PRs first — these files have collided with concurrent
   work more than once.
