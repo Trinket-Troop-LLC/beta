@@ -19,7 +19,7 @@ const uuidSchema = z.string().uuid()
 const listingPhotoNamePattern =
     /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(?:jpg|png)$/
 
-export const LISTING_DELETION_ERROR_CODES = [
+const LISTING_DELETION_ERROR_CODES = [
     'LISTING_ID_INVALID',
     'DELETE_AUTH_REQUIRED',
     'DELETE_AUTH_CHECK_FAILED',
