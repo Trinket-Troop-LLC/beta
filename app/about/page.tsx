@@ -40,7 +40,7 @@ export default function AboutPage() {
                     <h1 className="font-sophie-chalk text-[1.57em] text-foreground">Who we are..</h1>
 
                     <p className="text-[1.14em] text-[#2c2c2c]">
-                        caroline shimeall and martina gai, a urban studies and software engineering duo dreaming of a
+                        Caroline Shimeall and Martina Gai, a urban studies and software engineering duo dreaming of a
                         better way to connect people to the things they need, and in the process, each other
                     </p>
                 </div>
