@@ -41,15 +41,15 @@ export function BulletinComposer(props: BulletinComposerProps) {
     const [error, setError] = useState<string | null>(null)
     const inputRef = useRef<HTMLInputElement>(null)
 
+    const photosRef = useRef(photos)
+photosRef.current = photos
+
     useEffect(() => {
         return () => {
-            photos.forEach((photo) => URL.revokeObjectURL(photo.previewUrl))
+            photosRef.current.forEach((photo) => URL.revokeObjectURL(photo.previewUrl))
         }
-        // Only revoke on unmount — photos held here after a successful post
-        // hand their preview URLs off to the feed for optimistic display.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
-
+    
     async function handlePhotoChange(event: React.ChangeEvent<HTMLInputElement>) {
         const input = event.currentTarget
         const selected = Array.from(input.files ?? [])
