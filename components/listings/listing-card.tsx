@@ -6,6 +6,7 @@ import {
     LISTING_CONDITION_LABELS,
     LISTING_STATUS_LABELS,
     LISTING_TRANSACTION_TYPE_LABELS,
+    formatListingPrice,
     type Listing,
 } from '@/lib/listings/domain'
 
@@ -25,13 +26,6 @@ export type ListingCardData = Pick<
     coverPhotoUrl: string | null
 }
 
-function formatPrice(priceCents: number) {
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-    }).format(priceCents / 100)
-}
-
 export function ListingCard({
     listing,
     footer,
@@ -43,7 +37,7 @@ export function ListingCard({
 }) {
     const sharingLabels = listing.transaction_types.map((type) =>
         type === 'sell' && listing.price_cents !== null
-            ? formatPrice(listing.price_cents)
+            ? formatListingPrice(listing.price_cents)
             : LISTING_TRANSACTION_TYPE_LABELS[type],
     )
     const categoryLabel = listing.category === 'other'
