@@ -13,24 +13,12 @@ export default function WhyUsPage() {
             <MissionLogoHeader />
 
             {/* Sizing scales off --canvas-text, shared with home/about/mission so all four pages
-                sit on the same type scale. Illustrations flank the text column the same way
-                home's bag/vase do — bag.png is reused directly (same already-rotated export,
-                top-left anchored); boot.png replaces the old vase-big.png sliver, which was a
-                pre-masked strip so thin it read as barely-there and cut across the paragraph
-                column rather than flanking it. */}
+                sit on the same type scale. boot.png flanks the text column the same way home's
+                vase does — an already-rotated export, top-left anchored. */}
             <div
                 className="relative flex-1"
                 style={{ fontSize: 'var(--canvas-text)' }}
             >
-                <Image
-                    src="/mission/bag.png"
-                    alt=""
-                    width={243}
-                    height={265}
-                    aria-hidden="true"
-                    className="pointer-events-none absolute left-[-32.34%] top-[48%] w-[17.5em] lg:left-[-12.97%] lg:top-[42%] lg:w-[19em]"
-                />
-
                 <Image
                     src="/mission/boot.png"
                     alt=""
