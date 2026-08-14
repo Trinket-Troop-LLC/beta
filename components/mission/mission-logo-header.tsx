@@ -17,16 +17,16 @@ export function MissionLogoHeader() {
 
             <Link
                 href="/why-us"
-                className="justify-self-center font-inter text-sm text-foreground transition hover:text-primary"
+                className="justify-self-center font-inter text-[length:var(--text-label)] text-foreground transition hover:text-primary"
             >
-                Mission
+                Our Mission
             </Link>
 
             <Link
                 href="/about"
-                className="justify-self-end font-inter text-sm text-foreground transition hover:text-primary"
+                className="justify-self-end font-inter text-[length:var(--text-label)] text-foreground transition hover:text-primary"
             >
-                About Us
+                Meet the Founders
             </Link>
         </header>
     )

@@ -9,7 +9,10 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
     return (
-        <main className="relative flex min-h-screen flex-col overflow-x-hidden bg-background font-inter">
+        <main
+            className="relative flex min-h-screen flex-col overflow-x-hidden bg-background font-inter"
+            style={{ fontSize: 'var(--canvas-text)' }}
+        >
             <MissionLogoHeader />
 
             {/* Positions below the lg: (desktop) breakpoint come from a fresh Figma read;
@@ -18,11 +21,8 @@ export default function AboutPage() {
                 verified. Re-check against the phone frame once quota resets. wagon-sketch.png
                 is the flattened, pre-rotated export (top-left anchored, no CSS rotation needed).
                 Sizing scales off --canvas-text, shared with home/why-us/mission so all four pages
-                sit on the same type scale. */}
-            <div
-                className="relative flex-1"
-                style={{ fontSize: 'var(--canvas-text)' }}
-            >
+                sit on the same type scale — set on <main> so the shared header inherits it too. */}
+            <div className="relative flex-1">
                 <Image
                     src="/mission/wagon-sketch.png"
                     alt=""
@@ -37,15 +37,15 @@ export default function AboutPage() {
                     read the same way — the old max-w-[26ch]/12.24em here was much narrower than
                     the other two pages for no real reason. */}
                 <div className="absolute inset-x-0 top-[16.78%] mx-auto flex max-w-[40ch] flex-col gap-[0.6em] lg:top-[18.63%] lg:max-w-[54ch]">
-                    <h1 className="font-sophie-chalk text-[1.57em] text-foreground">Who we are..</h1>
+                    <h1 className="font-sophie-chalk text-[length:var(--text-heading)] text-foreground">Who we are..</h1>
 
-                    <p className="text-[1.14em] text-[#2c2c2c]">
+                    <p className="text-[length:var(--text-body)] text-[#2c2c2c]">
                         Caroline Shimeall and Martina Gai, a urban studies and software engineering duo dreaming of a
                         better way to connect people to the things they need, and in the process, each other
                     </p>
                 </div>
 
-                <p className="absolute left-[56.72%] top-[87.5%] font-sophie-chalk text-[1.14em] text-muted-foreground">
+                <p className="absolute left-[56.72%] top-[87.5%] font-sophie-chalk text-[length:var(--text-caption)] text-muted-foreground">
                     under construction&hellip;
                 </p>
             </div>
