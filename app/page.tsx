@@ -16,19 +16,10 @@ export default function WelcomePage() {
                 className="relative flex-1"
                 style={{ fontSize: 'var(--canvas-text)' }}
             >
-                {/* bag.png / vase.png are already-rotated Figma exports — their own pixel
-                    dimensions are the post-rotation bounding box (243×265, 136×238), so they're
-                    placed top-left-anchored at that bounding box's Figma position with no extra
-                    CSS rotation; adding one would double-rotate them. */}
-                <Image
-                    src="/mission/bag.png"
-                    alt=""
-                    width={243}
-                    height={265}
-                    aria-hidden="true"
-                    className="pointer-events-none absolute left-[-32.34%] top-[34.21%] w-[17.5em] lg:left-[-12.97%] lg:top-[35.11%] lg:w-[19em]"
-                />
-
+                {/* vase.png is an already-rotated Figma export — its own pixel dimensions are
+                    the post-rotation bounding box (136×238), so it's placed top-left-anchored at
+                    that bounding box's Figma position with no extra CSS rotation; adding one
+                    would double-rotate it. */}
                 <Image
                     src="/mission/vase.png"
                     alt=""
