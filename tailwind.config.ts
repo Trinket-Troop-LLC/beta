@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import defaultTheme from "tailwindcss/defaultTheme";
 import tailwindcssAnimate from "tailwindcss-animate";
 
 export default {
@@ -12,7 +13,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        gluten: ["var(--font-gluten)"],
+        "sophie-chalk": ["var(--font-sophie-chalk)"],
+        inter: ["var(--font-inter)", ...defaultTheme.fontFamily.sans],
       },
       colors: {
         background: "hsl(var(--background))",

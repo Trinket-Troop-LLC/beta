@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Gluten } from "next/font/google";
+import { Geist, Gluten, Inter } from "next/font/google";
+import localFont from "next/font/local";
 import { ThemeProvider } from "next-themes";
 import { SerwistProvider } from "@/components/serwist-provider";
 import { getAppUrl } from "@/lib/utils";
@@ -44,6 +45,18 @@ const gluten = Gluten({
   variable: "--font-gluten",
 });
 
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-inter",
+});
+
+const sophieChalk = localFont({
+  src: "./fonts/Sophiechalk-Regular.ttf",
+  display: "swap",
+  variable: "--font-sophie-chalk",
+});
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -51,7 +64,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.className} ${gluten.variable}`}>
+      <body
+        className={`${geistSans.className} ${gluten.variable} ${inter.variable} ${sophieChalk.variable}`}
+      >
         <SerwistProvider swUrl="/serwist/sw.js">
           <ThemeProvider
             attribute="class"
