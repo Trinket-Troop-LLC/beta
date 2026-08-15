@@ -363,13 +363,19 @@ export async function markListingFulfilled(listingId: string) {
         revalidatePath(`/troop/listings/${pairedListingId}`)
     }
 
-    // close the linked conversation now that the transaction is done
-    await admin
+    // close the linked conversation now that the transaction is done --
+    // covers both trade offers ('offer') and direct sell/gift requests
+    // ('listing'), which are the two origin types that link to a listing.
+    const { error: closeConversationError } = await admin
         .from('conversations')
         .update({ status: 'closed' })
-        .eq('origin_type', 'offer')
+        .in('origin_type', ['offer', 'listing'])
         .in('origin_id', pairedListingId ? [listingId, pairedListingId] : [listingId])
         .eq('status', 'active')
+
+    if (closeConversationError) {
+        console.error('Could not close conversation for fulfilled listing:', closeConversationError)
+    }
 
     revalidatePath(`/troop/listings/${listingId}`)
     revalidatePath('/messages')
