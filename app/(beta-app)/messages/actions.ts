@@ -13,15 +13,27 @@ async function getCurrentUserId() {
 async function findExistingConversation(
     db: Awaited<ReturnType<typeof getCurrentUserId>>['db'],
     userId: string,
-    otherUserId: string
+    otherUserId: string,
+    originType: string,
+    originId: string | null,
 ) {
-    const { data } = await db
+    let query = db
         .from('conversations')
         .select('id')
         .or(`and(participant_one_id.eq.${userId},participant_two_id.eq.${otherUserId}),and(participant_one_id.eq.${otherUserId},participant_two_id.eq.${userId})`)
         .neq('status', 'closed')
-        .maybeSingle()
+        .eq('origin_type', originType)
 
+    // Listings/offers/bulletin posts each get their own thread per origin.
+    // A truly origin-less "direct" conversation still reuses one thread per
+    // person, since there's nothing more specific to scope it to.
+    if (originId) {
+        query = query.eq('origin_id', originId)
+    } else {
+        query = query.is('origin_id', null)
+    }
+
+    const { data } = await query.maybeSingle()
     return data?.id ?? null
 }
 
@@ -34,7 +46,7 @@ export async function startActiveConversation(
     const { db, userId } = await getCurrentUserId()
     if (!userId) return { success: false, error: 'You must be logged in.' }
 
-    const existingId = await findExistingConversation(db, userId, otherUserId)
+    const existingId = await findExistingConversation(db, userId, otherUserId, originType, originId)
     if (existingId) {
         await db.from('conversations').update({ status: 'active' }).eq('id', existingId)
         return { success: true, conversationId: existingId }
@@ -69,7 +81,7 @@ export async function requestConversation(
     const { db, userId } = await getCurrentUserId()
     if (!userId) return { success: false, error: 'You must be logged in.' }
 
-    const existingId = await findExistingConversation(db, userId, otherUserId)
+    const existingId = await findExistingConversation(db, userId, otherUserId, originType, originId)
     if (existingId) {
         const { error: messageError } = await db.from('messages').insert({
             conversation_id: existingId,
