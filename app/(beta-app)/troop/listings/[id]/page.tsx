@@ -14,6 +14,8 @@ import {
     type ListingTransactionType,
 } from '@/lib/listings/domain'
 import { ExchangeActions } from './exchange-actions'
+import { OfferReview } from './offer-review'
+import { getPendingOffersForListing } from '../../listing-lifecycle-actions'
 
 async function ListingDetailContent({ listingId }: { listingId: string }) {
     const { db, user } = await requireMember()
@@ -55,6 +57,11 @@ async function ListingDetailContent({ listingId }: { listingId: string }) {
     const ownerPictureUrl = await signProfilePictureUrl(db, owner?.responses?.profile_picture_path)
     const ownerDisplayName = owner?.preferred_name || owner?.first_name || owner?.username || 'A troop member'
     const isOwner = listing.owner_id === user.id
+
+    const pendingOffers = isOwner && listing.status === 'active'
+        ? await getPendingOffersForListing(listing.id)
+        : null
+
 
     const sharingLabels = listing.transaction_types.map((type: string) =>
         type === 'sell' && listing.price_cents !== null
@@ -109,6 +116,7 @@ async function ListingDetailContent({ listingId }: { listingId: string }) {
                     listing.status === 'active' ? (
                         <ExchangeActions
                             listingId={listing.id}
+                            listingTitle={listing.title}
                             ownerId={listing.owner_id}
                             transactionTypes={listing.transaction_types as ListingTransactionType[]}
                             priceCents={listing.price_cents}
@@ -119,6 +127,8 @@ async function ListingDetailContent({ listingId }: { listingId: string }) {
                         </p>
                     )
                 )}
+
+                {pendingOffers?.success && <OfferReview offers={pendingOffers.offers} />}
 
                 <div className="mt-6">
                     <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">

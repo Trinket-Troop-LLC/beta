@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 
 async function getCurrentUserId() {
@@ -56,11 +57,13 @@ export async function startActiveConversation(
     return { success: true, conversationId: data.id }
 }
 
-// Used when responding to a message board post — starts pending until accepted
+// Used when responding to a message board post, or requesting a sell/gift
+// listing — starts pending until accepted
 export async function requestConversation(
     otherUserId: string,
     originId: string,
-    firstMessageContent: string
+    firstMessageContent: string,
+    originType: 'message_board' | 'listing' = 'message_board'
 ) {
     const { db, userId } = await getCurrentUserId()
     if (!userId) return { success: false, error: 'You must be logged in.' }
@@ -82,7 +85,7 @@ export async function requestConversation(
         .insert({
             participant_one_id: userId,
             participant_two_id: otherUserId,
-            origin_type: 'message_board',
+            origin_type: originType,
             origin_id: originId,
             status: 'pending',
             initiated_by: userId,
@@ -113,13 +116,29 @@ export async function acceptConversationRequest(conversationId: string) {
         .eq('id', conversationId)
         .eq('status', 'pending')
         .neq('initiated_by', userId)
-        .select('id')
+        .select('id, origin_type, origin_id')
         .maybeSingle()
 
     if (error) return { success: false, error: 'Could not accept the request.' }
     if (!data) return { success: false, error: 'This request no longer exists.' }
 
+    // Accepting a listing request is the moment of owner agreement — that's
+    // when the listing actually reserves, not when the request was sent.
+    // Listing writes go through the admin client (see
+    // 20260810010000_enable_listing_posting.sql): authenticated clients can't
+    // mutate listings directly.
+    if (data.origin_type === 'listing' && data.origin_id) {
+        const admin = createAdminClient()
+        await admin
+            .from('listings')
+            .update({ status: 'reserved' })
+            .eq('id', data.origin_id)
+            .eq('owner_id', userId)
+            .eq('status', 'active')
+    }
+
     revalidatePath('/messages')
+    revalidatePath('/troop')
     return { success: true }
 }
 

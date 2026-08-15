@@ -41,6 +41,22 @@ async function ConversationContent({ conversationId }: { conversationId: string 
         .eq('conversation_id', conversationId)
         .order('created_at', { ascending: true })
 
+    // 'listing' and 'offer' conversations link back to a listing via
+    // origin_id. Only surface the reservation controls (Mark complete /
+    // Didn't work out) to that listing's owner.
+    let ownedListing: { id: string; status: string } | null = null
+    if ((conversation.origin_type === 'listing' || conversation.origin_type === 'offer') && conversation.origin_id) {
+        const { data: linkedListing } = await db
+            .from('listings')
+            .select('id, owner_id, status')
+            .eq('id', conversation.origin_id)
+            .maybeSingle()
+
+        if (linkedListing && linkedListing.owner_id === user.id) {
+            ownedListing = { id: linkedListing.id, status: linkedListing.status }
+        }
+    }
+
     return (
         <ChatView
             conversationId={conversation.id}
@@ -53,6 +69,7 @@ async function ConversationContent({ conversationId }: { conversationId: string 
                 profilePictureUrl: otherUserPictureUrl,
             }}
             initialMessages={messages ?? []}
+            ownedListing={ownedListing}
         />
     )
 }
