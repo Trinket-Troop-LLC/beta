@@ -363,6 +363,14 @@ export async function markListingFulfilled(listingId: string) {
         revalidatePath(`/troop/listings/${pairedListingId}`)
     }
 
+    // close the linked conversation now that the transaction is done
+    await admin
+        .from('conversations')
+        .update({ status: 'closed' })
+        .eq('origin_type', 'offer')
+        .in('origin_id', pairedListingId ? [listingId, pairedListingId] : [listingId])
+        .eq('status', 'active')
+
     revalidatePath(`/troop/listings/${listingId}`)
     revalidatePath('/messages')
     revalidatePath('/profile')

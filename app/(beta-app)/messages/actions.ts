@@ -19,6 +19,7 @@ async function findExistingConversation(
         .from('conversations')
         .select('id')
         .or(`and(participant_one_id.eq.${userId},participant_two_id.eq.${otherUserId}),and(participant_one_id.eq.${otherUserId},participant_two_id.eq.${userId})`)
+        .neq('status', 'closed')
         .maybeSingle()
 
     return data?.id ?? null
