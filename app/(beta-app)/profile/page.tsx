@@ -24,7 +24,7 @@ async function ProfileContent({ searchParams }: { searchParams: ProfileSearchPar
         .from('listings')
         .select('id, title, category, other_category, condition, transaction_types, price_cents, pickup_area, status, published_at')
         .eq('owner_id', user.id)
-        .in('status', ['active', 'reserved', 'fulfilled'])
+        .in('status', ['active', 'reserved'])
         .order('published_at', { ascending: false })
 
     const listingIds = listingRows?.map((listing) => listing.id) ?? []

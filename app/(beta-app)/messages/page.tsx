@@ -3,6 +3,7 @@ import { requireMember } from '@/lib/supabase/require-member'
 import { signProfilePictureUrls } from '@/lib/supabase/profile-pictures'
 import { BetaBottomNav } from '@/components/beta-bottom-nav'
 import { ConversationsList } from './conversations-list'
+import { getAllMyPendingOffers } from '../troop/listing-lifecycle-actions'
 
 async function MessagesContent() {
     const { db, user } = await requireMember()
@@ -11,6 +12,7 @@ async function MessagesContent() {
         .from('conversations')
         .select('*')
         .or(`participant_one_id.eq.${user.id},participant_two_id.eq.${user.id}`)
+        .neq('status', 'closed')
         .order('updated_at', { ascending: false })
 
     const otherUserIds = conversations?.map((c) =>
@@ -25,7 +27,6 @@ async function MessagesContent() {
     const paths = profiles?.map((p) => p.responses?.profile_picture_path) ?? []
     const signedUrlsByPath = await signProfilePictureUrls(db, paths)
 
-    // last message per conversation, for the preview line
     const conversationIds = conversations?.map((c) => c.id) ?? []
     const { data: recentMessages } = conversationIds.length > 0
         ? await db
@@ -61,12 +62,15 @@ async function MessagesContent() {
         }
     }) ?? []
 
-    return <ConversationsList conversations={conversationsWithDetails} />
+    const pendingOffersResult = await getAllMyPendingOffers()
+    const offers = pendingOffersResult.success ? pendingOffersResult.offers : []
+
+    return <ConversationsList conversations={conversationsWithDetails} offers={offers} />
 }
 
 export default function MessagesPage() {
     return (
-        <main className="relative flex min-h-screen flex-col items-center bg-[#faf7f0] px-4 pb-28 pt-12">
+        <main className="relative flex min-h-screen flex-col items-center bg-[#faf7f0] pb-28 pt-12">
             <Suspense fallback={null}>
                 <MessagesContent />
             </Suspense>
