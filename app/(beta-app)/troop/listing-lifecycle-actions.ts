@@ -402,3 +402,83 @@ export async function unreserveListing(listingId: string) {
     revalidatePath('/profile')
     return { success: true }
 }
+
+// All pending trade offers across every listing the current user owns,
+// for a consolidated "Offers" view (vs. getPendingOffersForListing, which
+// is scoped to a single listing's detail page).
+export async function getAllMyPendingOffers() {
+    const { db, userId } = await getCurrentUserId()
+    if (!userId) return { success: false as const, error: 'You must be logged in.' }
+
+    const { data: myListingRows, error: myListingsError } = await db
+        .from('listings')
+        .select('id, title')
+        .eq('owner_id', userId)
+
+    if (myListingsError) return { success: false as const, error: 'Could not load your listings.' }
+    if (!myListingRows || myListingRows.length === 0) return { success: true as const, offers: [] }
+
+    const myListingIds = myListingRows.map((listing) => listing.id)
+    const myListingTitleById = new Map(myListingRows.map((listing) => [listing.id, listing.title]))
+
+    const { data: offerRows, error: offersError } = await db
+        .from('listing_offers')
+        .select('id, listing_id, offerer_id, offered_listing_id, created_at')
+        .in('listing_id', myListingIds)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: true })
+
+    if (offersError) return { success: false as const, error: 'Could not load offers.' }
+    if (offerRows.length === 0) return { success: true as const, offers: [] }
+
+    const offererIds = [...new Set(offerRows.map((offer) => offer.offerer_id))]
+    const offeredListingIds = offerRows.map((offer) => offer.offered_listing_id)
+
+    const [{ data: offerers }, { data: offeredListings }, { data: coverPhotos }] = await Promise.all([
+        db.from('users').select('id, username, responses').in('id', offererIds),
+        db.from('listings').select('id, title').in('id', offeredListingIds),
+        db.from('listing_photos').select('listing_id, storage_path').in('listing_id', offeredListingIds).eq('position', 0),
+    ])
+
+    const coverPaths = coverPhotos?.map((photo) => photo.storage_path) ?? []
+    const { data: signedPhotos } = coverPaths.length > 0
+        ? await db.storage.from('listing-photos').createSignedUrls(coverPaths, 3600)
+        : { data: [] }
+
+    const avatarPaths = offerers?.map((offerer) => offerer.responses?.profile_picture_path) ?? []
+    const avatarUrlByPath = await signProfilePictureUrls(db, avatarPaths)
+
+    const coverPathByListingId = new Map(
+        coverPhotos?.map((photo) => [photo.listing_id, photo.storage_path]) ?? [],
+    )
+    const signedUrlByPath = new Map(
+        signedPhotos?.map((photo) => [photo.path, photo.signedUrl]) ?? [],
+    )
+
+    const offers = offerRows.map((offer) => {
+        const offerer = offerers?.find((row) => row.id === offer.offerer_id)
+        const offeredListing = offeredListings?.find((row) => row.id === offer.offered_listing_id)
+        const coverPath = coverPathByListingId.get(offer.offered_listing_id)
+        const avatarPath = offerer?.responses?.profile_picture_path
+
+        return {
+            offerId: offer.id,
+            targetListing: {
+                id: offer.listing_id,
+                title: myListingTitleById.get(offer.listing_id) ?? 'A listing',
+            },
+            offerer: {
+                id: offer.offerer_id,
+                username: offerer?.username ?? 'Unknown',
+                profilePictureUrl: (avatarPath && avatarUrlByPath.get(avatarPath)) ?? null,
+            },
+            offeredListing: {
+                id: offer.offered_listing_id,
+                title: offeredListing?.title ?? 'A listing',
+                coverPhotoUrl: coverPath ? signedUrlByPath.get(coverPath) ?? null : null,
+            },
+        }
+    })
+
+    return { success: true as const, offers }
+}

@@ -2,8 +2,9 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { useState } from 'react'
-import { UserRound } from 'lucide-react'
+import { useState, useTransition } from 'react'
+import { ImageIcon, UserRound } from 'lucide-react'
+import { acceptListingOffer, declineListingOffer } from '../troop/listing-lifecycle-actions'
 
 type ConversationSummary = {
     id: string
@@ -16,6 +17,13 @@ type ConversationSummary = {
     }
     lastMessagePreview: string | null
     updatedAt: string
+}
+
+type OfferSummary = {
+    offerId: string
+    targetListing: { id: string; title: string }
+    offerer: { id: string; username: string; profilePictureUrl: string | null }
+    offeredListing: { id: string; title: string; coverPhotoUrl: string | null }
 }
 
 function ConversationRow({ conversation }: { conversation: ConversationSummary }) {
@@ -60,13 +68,117 @@ function ConversationRow({ conversation }: { conversation: ConversationSummary }
     )
 }
 
-export function ConversationsList({ conversations }: { conversations: ConversationSummary[] }) {
+function OfferRow({
+    offer,
+    onResolved,
+}: {
+    offer: OfferSummary
+    onResolved: (offerId: string) => void
+}) {
+    const [error, setError] = useState<string | null>(null)
+    const [isPending, startTransition] = useTransition()
+
+    function handleAccept() {
+        setError(null)
+        startTransition(async () => {
+            const result = await acceptListingOffer(offer.offerId)
+            if (!result.success) {
+                setError(result.error ?? 'Could not accept this offer.')
+                return
+            }
+            onResolved(offer.offerId)
+            if (result.conversationId) {
+                window.location.href = `/messages/${result.conversationId}`
+            }
+        })
+    }
+
+    function handleDecline() {
+        setError(null)
+        startTransition(async () => {
+            const result = await declineListingOffer(offer.offerId)
+            if (!result.success) {
+                setError(result.error ?? 'Could not decline this offer.')
+                return
+            }
+            onResolved(offer.offerId)
+        })
+    }
+
+    return (
+        <div className="flex flex-col gap-2 rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-4 shadow-sm">
+            <p className="text-xs text-[#7c8072]">
+                Offer on <span className="font-medium text-[#2c2c2c]">{offer.targetListing.title}</span>
+            </p>
+            <div className="flex items-center gap-3">
+                <div className="relative size-12 shrink-0 overflow-hidden rounded-lg bg-[#f2ede0]">
+                    {offer.offeredListing.coverPhotoUrl ? (
+                        <Image
+                            src={offer.offeredListing.coverPhotoUrl}
+                            alt={offer.offeredListing.title}
+                            fill
+                            className="object-cover"
+                        />
+                    ) : (
+                        <div className="flex size-full items-center justify-center text-[#9aaa90]">
+                            <ImageIcon className="size-5" />
+                        </div>
+                    )}
+                </div>
+                <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-[#2c2c2c]">{offer.offeredListing.title}</p>
+                    <p className="flex items-center gap-1 truncate text-xs text-[#7c8072]">
+                        <UserRound className="size-3 shrink-0" />
+                        @{offer.offerer.username}
+                    </p>
+                </div>
+                <div className="flex shrink-0 gap-2">
+                    <button
+                        type="button"
+                        onClick={handleAccept}
+                        disabled={isPending}
+                        className="rounded-lg bg-[#7c9272] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[#667b5f] disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                        Accept
+                    </button>
+                    <button
+                        type="button"
+                        onClick={handleDecline}
+                        disabled={isPending}
+                        className="rounded-lg border border-[#ded8cc] px-3 py-1.5 text-xs font-medium text-[#7c8072] transition hover:bg-[#f5efe5] disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                        Decline
+                    </button>
+                </div>
+            </div>
+            {error && <p className="text-sm text-red-600">{error}</p>}
+        </div>
+    )
+}
+
+export function ConversationsList({
+    conversations,
+    offers: initialOffers,
+}: {
+    conversations: ConversationSummary[]
+    offers: OfferSummary[]
+}) {
     const active = conversations.filter((c) => c.status === 'active')
     const needsMyResponse = conversations.filter((c) => c.status === 'pending' && !c.initiatedByMe)
     const waitingOnThem = conversations.filter((c) => c.status === 'pending' && c.initiatedByMe)
     const pending = [...needsMyResponse, ...waitingOnThem]
 
-    const [tab, setTab] = useState<'active' | 'requests'>(needsMyResponse.length > 0 ? 'requests' : 'active')
+    const [offers, setOffers] = useState(initialOffers)
+
+    const requestsBadgeCount = needsMyResponse.length + offers.length
+
+    const [tab, setTab] = useState<'active' | 'requests' | 'offers'>(
+        requestsBadgeCount > 0 ? 'requests' : 'active'
+    )
+
+    function handleOfferResolved(offerId: string) {
+        setOffers((current) => current.filter((offer) => offer.offerId !== offerId))
+    }
 
     return (
         <div className="w-full max-w-md">
@@ -75,7 +187,7 @@ export function ConversationsList({ conversations }: { conversations: Conversati
             <div className="mb-4 flex rounded-full border border-[#ded8cc] bg-[#fffdf9] p-1">
                 <button
                     onClick={() => setTab('active')}
-                    className={`flex-1 rounded-full px-4 py-2 text-sm font-medium transition ${
+                    className={`flex-1 rounded-full px-3 py-2 text-sm font-medium transition ${
                         tab === 'active' ? 'bg-[#7c9272] text-white' : 'text-[#625f58] hover:bg-[#f5efe5]'
                     }`}
                 >
@@ -83,7 +195,7 @@ export function ConversationsList({ conversations }: { conversations: Conversati
                 </button>
                 <button
                     onClick={() => setTab('requests')}
-                    className={`flex-1 rounded-full px-4 py-2 text-sm font-medium transition ${
+                    className={`flex-1 rounded-full px-3 py-2 text-sm font-medium transition ${
                         tab === 'requests' ? 'bg-[#7c9272] text-white' : 'text-[#625f58] hover:bg-[#f5efe5]'
                     }`}
                 >
@@ -94,9 +206,22 @@ export function ConversationsList({ conversations }: { conversations: Conversati
                         </span>
                     )}
                 </button>
+                <button
+                    onClick={() => setTab('offers')}
+                    className={`flex-1 rounded-full px-3 py-2 text-sm font-medium transition ${
+                        tab === 'offers' ? 'bg-[#7c9272] text-white' : 'text-[#625f58] hover:bg-[#f5efe5]'
+                    }`}
+                >
+                    Offers
+                    {offers.length > 0 && (
+                        <span className="ml-1.5 rounded-full bg-white/30 px-1.5 text-xs">
+                            {offers.length}
+                        </span>
+                    )}
+                </button>
             </div>
 
-            {tab === 'active' ? (
+            {tab === 'active' && (
                 active.length === 0 ? (
                     <div className="rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-6 text-left shadow-sm">
                         <p className="text-sm text-[#625f58]">No active conversations yet.</p>
@@ -106,7 +231,9 @@ export function ConversationsList({ conversations }: { conversations: Conversati
                         {active.map((c) => <ConversationRow key={c.id} conversation={c} />)}
                     </div>
                 )
-            ) : (
+            )}
+
+            {tab === 'requests' && (
                 pending.length === 0 ? (
                     <div className="rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-6 text-left shadow-sm">
                         <p className="text-sm text-[#625f58]">No pending requests.</p>
@@ -114,6 +241,20 @@ export function ConversationsList({ conversations }: { conversations: Conversati
                 ) : (
                     <div className="flex flex-col gap-3">
                         {pending.map((c) => <ConversationRow key={c.id} conversation={c} />)}
+                    </div>
+                )
+            )}
+
+            {tab === 'offers' && (
+                offers.length === 0 ? (
+                    <div className="rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-6 text-left shadow-sm">
+                        <p className="text-sm text-[#625f58]">No pending offers.</p>
+                    </div>
+                ) : (
+                    <div className="flex flex-col gap-3">
+                        {offers.map((offer) => (
+                            <OfferRow key={offer.offerId} offer={offer} onResolved={handleOfferResolved} />
+                        ))}
                     </div>
                 )
             )}
