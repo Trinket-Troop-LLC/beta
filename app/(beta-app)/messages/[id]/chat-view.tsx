@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowLeft, UserRound, Send } from 'lucide-react'
-import { sendMessage, acceptConversationRequest, declineConversationRequest } from '../actions'
+import { sendMessage } from '../actions'
 import { markListingFulfilled, unreserveListing } from '@/app/(beta-app)/troop/listing-lifecycle-actions'
 
 type Message = {
@@ -44,7 +44,6 @@ export function ChatView({
     const [messages, setMessages] = useState(initialMessages)
     const [draft, setDraft] = useState('')
     const [isSending, setIsSending] = useState(false)
-    const [currentStatus, setCurrentStatus] = useState(status)
     const [listingStatus, setListingStatus] = useState(ownedListing?.status ?? null)
     const [isUpdatingListing, setIsUpdatingListing] = useState(false)
     const [listingActionError, setListingActionError] = useState<string | null>(null)
@@ -118,18 +117,6 @@ export function ChatView({
         setIsSending(false)
     }
 
-    async function handleAccept() {
-        const result = await acceptConversationRequest(conversationId)
-        if (result.success) {
-            setCurrentStatus('active')
-        }
-    }
-
-    async function handleDecline() {
-        await declineConversationRequest(conversationId)
-        window.location.href = '/messages'
-    }
-
     async function handleMarkFulfilled() {
         if (!ownedListing || isUpdatingListing) return
         setIsUpdatingListing(true)
@@ -156,7 +143,7 @@ export function ChatView({
         setIsUpdatingListing(false)
     }
 
-    const isPendingForMe = currentStatus === 'pending' && !initiatedByMe
+    const isPendingForMe = status === 'pending' && !initiatedByMe
 
     return (
         <div className="flex min-h-screen flex-col">
@@ -213,28 +200,13 @@ export function ChatView({
                     </div>
                 )}
 
-                {currentStatus === 'pending' && (
+                {status === 'pending' && (
                     <div className="mb-4 rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-4 text-center shadow-sm">
                         {isPendingForMe ? (
-                            <>
-                                <p className="mb-3 text-sm text-[#625f58]">
-                                    @{otherUser.username} wants to start a conversation with you.
-                                </p>
-                                <div className="flex justify-center gap-2">
-                                    <button
-                                        onClick={handleAccept}
-                                        className="rounded-lg bg-[#7c9272] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#667b5f]"
-                                    >
-                                        Accept
-                                    </button>
-                                    <button
-                                        onClick={handleDecline}
-                                        className="rounded-lg border border-[#ded8cc] px-4 py-2 text-sm font-medium text-[#625f58] transition hover:bg-[#f5efe5]"
-                                    >
-                                        Decline
-                                    </button>
-                                </div>
-                            </>
+                            <p className="text-sm text-[#625f58]">
+                                @{otherUser.username} wants to start a conversation with you. Accept or decline
+                                from your <Link href="/messages" className="underline">Requests</Link> list.
+                            </p>
                         ) : (
                             <p className="text-sm text-[#625f58]">
                                 Waiting for @{otherUser.username} to accept your message.
@@ -263,7 +235,7 @@ export function ChatView({
                 </div>
             </div>
 
-            {currentStatus === 'active' && (
+            {status === 'active' && (
                 <div className="flex items-center gap-2 border-t border-[#ded8cc]/70 bg-[#faf7f0]/90 px-4 py-3">
                     <input
                         type="text"
