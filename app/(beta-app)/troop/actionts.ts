@@ -24,8 +24,8 @@ export async function getListingsView(page = 0): Promise<GetListingsViewResult> 
 
     const { data: listingRows, error: listingsError } = await db
         .from('listings')
-        .select('id, title, transaction_types, price_cents')
-        .eq('status', 'active')
+        .select('id, title, transaction_types, price_cents, status')
+        .in('status', ['active', 'reserved'])
         .order('published_at', { ascending: false })
         .range(from, to)
 
