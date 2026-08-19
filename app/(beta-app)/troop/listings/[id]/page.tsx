@@ -6,6 +6,7 @@ import { ArrowLeft, UserRound } from 'lucide-react'
 import { z } from 'zod'
 import { BetaBottomNav } from '@/components/beta-bottom-nav'
 import { ListingPhotoPlaceholder } from '@/components/listings/listing-photo-placeholder'
+import { Button } from '@/components/ui/button'
 import {
     LISTING_CATEGORY_LABELS,
     LISTING_CONDITION_LABELS,
@@ -207,6 +208,14 @@ async function ListingDetailContent({ listingId }: { listingId: string }) {
                     <p className="mt-5 rounded-xl bg-secondary px-4 py-3 text-sm text-secondary-foreground">
                         This trinket is currently reserved and is not available for a new exchange.
                     </p>
+                )}
+
+                {!isOwner && listing.status === 'active' && (
+                    <Button asChild className="mt-5 w-full">
+                        <Link href={`/troop/listings/${listing.id}/offer`}>
+                            Make an offer
+                        </Link>
+                    </Button>
                 )}
 
                 <section className="mt-7">
