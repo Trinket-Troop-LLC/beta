@@ -112,6 +112,11 @@ async function ensureAccountExists(applicant: {
         throw new Error(`Account was created but the profile could not be saved: ${insertUserError.message}`)
     }
 
+    // Best-effort: a hiccup here is logged, never thrown, so a broken welcome
+    // friendship/chat can't roll back an otherwise-successful account
+    // creation (see the rollback-on-failure note below this function).
+    await createAdminWelcome(admin, authUserId)
+
     await markApplicantConverted(admin, applicant.id)
 
     // Only report an authUserId for rollback purposes if we actually created
@@ -119,6 +124,75 @@ async function ensureAccountExists(applicant: {
     // already-existing account, so a later failure can't delete someone
     // else's real, pre-existing account.
     return { isNewAccount, authUserId: isNewAccount ? authUserId : null }
+}
+
+// Gives a brand-new member an already-accepted friendship with the official
+// Trinket Troop account, plus an active welcome chat, so they land with a
+// familiar face and someone to message right away. Uses the admin client
+// directly rather than the friendship/conversation helpers built for a
+// logged-in caller (sendFriendRequest, startActiveConversation) -- this runs
+// in the context of whichever admin clicked Approve, not the Trinket Troop
+// account itself, so those would create the friendship/chat with the wrong
+// person. Never throws: every failure here is logged and swallowed so a
+// broken welcome can't block or roll back the account creation it's attached to.
+async function createAdminWelcome(admin: ReturnType<typeof createAdminClient>, newUserId: string) {
+    try {
+        const { data: officialAccount, error: officialAccountError } = await admin
+            .from('users')
+            .select('id')
+            .eq('username', 'admin')
+            .maybeSingle()
+
+        if (officialAccountError || !officialAccount) {
+            console.error('Could not find the official Trinket Troop account for auto-welcome:', officialAccountError)
+            return
+        }
+
+        const officialAccountId = officialAccount.id
+
+        const { data: existingFriendship } = await admin
+            .from('friendships')
+            .select('id, status')
+            .or(`and(requester_id.eq.${officialAccountId},addressee_id.eq.${newUserId}),and(requester_id.eq.${newUserId},addressee_id.eq.${officialAccountId})`)
+            .maybeSingle()
+
+        if (!existingFriendship) {
+            const { error: friendshipError } = await admin.from('friendships').insert({
+                requester_id: officialAccountId,
+                addressee_id: newUserId,
+                status: 'accepted',
+            })
+
+            if (friendshipError) {
+                console.error('Could not create the auto-welcome friendship:', friendshipError)
+            }
+        } else if (existingFriendship.status !== 'accepted') {
+            await admin.from('friendships').update({ status: 'accepted' }).eq('id', existingFriendship.id)
+        }
+
+        const { data: existingConversation } = await admin
+            .from('conversations')
+            .select('id')
+            .or(`and(participant_one_id.eq.${officialAccountId},participant_two_id.eq.${newUserId}),and(participant_one_id.eq.${newUserId},participant_two_id.eq.${officialAccountId})`)
+            .maybeSingle()
+
+        if (!existingConversation) {
+            const { error: conversationError } = await admin.from('conversations').insert({
+                participant_one_id: officialAccountId,
+                participant_two_id: newUserId,
+                origin_type: 'direct',
+                origin_id: null,
+                status: 'active',
+                initiated_by: officialAccountId,
+            })
+
+            if (conversationError) {
+                console.error('Could not create the auto-welcome conversation:', conversationError)
+            }
+        }
+    } catch (error) {
+        console.error('Auto-welcome (friendship/chat) failed unexpectedly:', error)
+    }
 }
 
 async function rollbackNewAccount(admin: ReturnType<typeof createAdminClient>, authUserId: string) {
