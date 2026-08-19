@@ -72,7 +72,7 @@ export function TroopFeed({
                     The shelf is waiting for its first finds
                 </h2>
                 <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
-                    No other troop members have an active listing yet. Your own posts will stay organized in Profile.
+                    No one in the troop has an active listing yet — including you. Post the first one.
                 </p>
                 <Link
                     href="/posts"

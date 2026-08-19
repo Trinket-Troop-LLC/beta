@@ -2,6 +2,7 @@ import Image from 'next/image'
 import { UserRound } from 'lucide-react'
 import { ListingPhotoPlaceholder } from '@/components/listings/listing-photo-placeholder'
 import {
+    LISTING_STATUS_LABELS,
     LISTING_TRANSACTION_TYPE_LABELS,
     formatListingPrice,
     type Listing,
@@ -9,7 +10,7 @@ import {
 
 export type ListingBrowseCardData = Pick<
     Listing,
-    'id' | 'owner_id' | 'title' | 'category' | 'transaction_types' | 'price_cents'
+    'id' | 'owner_id' | 'title' | 'category' | 'transaction_types' | 'price_cents' | 'status'
 > & {
     coverPhotoUrl: string | null
     owner: {
@@ -24,9 +25,14 @@ export function ListingBrowseCard({ listing }: { listing: ListingBrowseCardData 
             ? formatListingPrice(listing.price_cents)
             : LISTING_TRANSACTION_TYPE_LABELS[type],
     )
+    const isReserved = listing.status === 'reserved'
 
     return (
-        <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card text-left shadow-sm transition duration-200 group-hover:-translate-y-0.5 group-hover:shadow-md">
+        <article
+            className={`flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card text-left shadow-sm transition duration-200 group-hover:-translate-y-0.5 group-hover:shadow-md ${
+                isReserved ? 'opacity-60 saturate-50' : ''
+            }`}
+        >
             <div className="relative aspect-square overflow-hidden bg-secondary">
                 {listing.coverPhotoUrl ? (
                     <Image
@@ -41,6 +47,12 @@ export function ListingBrowseCard({ listing }: { listing: ListingBrowseCardData 
                         category={listing.category}
                         title={listing.title}
                     />
+                )}
+
+                {isReserved && (
+                    <span className="absolute right-2 top-2 rounded-full bg-card/90 px-2.5 py-1 text-xs font-medium text-foreground shadow-sm backdrop-blur">
+                        {LISTING_STATUS_LABELS.reserved}
+                    </span>
                 )}
             </div>
 

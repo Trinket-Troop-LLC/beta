@@ -45,8 +45,14 @@ export function ListingCard({
         ? listing.other_category ?? LISTING_CATEGORY_LABELS.other
         : LISTING_CATEGORY_LABELS[listing.category]
 
+    const isReserved = listing.status === 'reserved'
+
     return (
-        <article className="overflow-hidden rounded-2xl border border-border bg-card text-left shadow-sm">
+        <article
+            className={`overflow-hidden rounded-2xl border border-border bg-card text-left shadow-sm ${
+                isReserved ? 'opacity-60 saturate-50' : ''
+            }`}
+        >
             <div className="relative aspect-square bg-secondary">
                 {listing.coverPhotoUrl ? (
                     <Image
