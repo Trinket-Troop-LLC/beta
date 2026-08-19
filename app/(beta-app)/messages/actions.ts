@@ -165,6 +165,63 @@ export async function acceptConversationRequest(conversationId: string) {
     return { success: true }
 }
 
+type FinishTradeResult =
+    | { success: true }
+    | { success: false; error: string }
+
+async function finishTradeConversation(
+    conversationId: string,
+    conversationStatus: 'completed' | 'closed',
+    listingStatus: 'fulfilled' | 'active',
+): Promise<FinishTradeResult> {
+    const { db, userId } = await getCurrentUserId()
+    if (!userId) return { success: false, error: 'You must be logged in.' }
+
+    const { data, error } = await db
+        .from('conversations')
+        .update({ status: conversationStatus })
+        .eq('id', conversationId)
+        .eq('status', 'active')
+        .or(`participant_one_id.eq.${userId},participant_two_id.eq.${userId}`)
+        .select('id, origin_type, listing_id')
+        .maybeSingle()
+
+    if (error) return { success: false, error: 'Could not update this trade.' }
+    if (!data) return { success: false, error: 'This trade is no longer active.' }
+
+    if (data.origin_type === 'offer' && data.listing_id) {
+        const admin = createAdminClient()
+
+        // Best-effort: the trade conversation ending is the source of truth the
+        // user asked for, so a listing that already changed status some other
+        // way doesn't fail this action — it's just logged.
+        const { error: listingError } = await admin
+            .from('listings')
+            .update({ status: listingStatus })
+            .eq('id', data.listing_id)
+            .eq('status', 'reserved')
+
+        if (listingError) {
+            console.warn('Listing status update after trade finish failed:', listingError.code)
+        }
+
+        revalidatePath('/troop')
+        revalidatePath('/profile')
+        revalidatePath(`/troop/listings/${data.listing_id}`)
+    }
+
+    revalidatePath('/messages')
+    return { success: true }
+}
+
+export async function markTradeComplete(conversationId: string): Promise<FinishTradeResult> {
+    return finishTradeConversation(conversationId, 'completed', 'fulfilled')
+}
+
+export async function markTradeNotWorkedOut(conversationId: string): Promise<FinishTradeResult> {
+    return finishTradeConversation(conversationId, 'closed', 'active')
+}
+
 export async function declineConversationRequest(conversationId: string) {
     const { db, userId } = await getCurrentUserId()
     if (!userId) return { success: false, error: 'You must be logged in.' }
