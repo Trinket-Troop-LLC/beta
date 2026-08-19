@@ -6,7 +6,7 @@ import {
     type Listing,
 } from '@/lib/listings/domain'
 
-export type ListingBrowseCardData = Pick<Listing, 'id' | 'title' | 'transaction_types' | 'price_cents'> & {
+export type ListingBrowseCardData = Pick<Listing, 'id' | 'title' | 'transaction_types' | 'price_cents' | 'status'> & {
     coverPhotoUrl: string | null
 }
 
@@ -17,6 +17,8 @@ export function ListingBrowseCard({ listing }: { listing: ListingBrowseCardData 
             : LISTING_TRANSACTION_TYPE_LABELS[type],
     )
 
+    const isReserved = listing.status === 'reserved'
+
     return (
         <article className="overflow-hidden rounded-2xl border border-border bg-card text-left shadow-sm">
             <div className="relative aspect-square bg-secondary">
@@ -26,7 +28,7 @@ export function ListingBrowseCard({ listing }: { listing: ListingBrowseCardData 
                         alt={listing.title}
                         fill
                         sizes="(max-width: 640px) 50vw, 240px"
-                        className="object-cover"
+                        className={`object-cover ${isReserved ? 'grayscale-[50%] opacity-40' : ''}`}
                     />
                 ) : (
                     <div className="flex size-full items-center justify-center text-muted-foreground">
