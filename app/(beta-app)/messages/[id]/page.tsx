@@ -43,17 +43,22 @@ async function ConversationContent({ conversationId }: { conversationId: string 
 
     // 'listing' and 'offer' conversations link back to a listing via
     // origin_id. Only surface the reservation controls (Mark complete /
-    // Didn't work out) to that listing's owner.
-    let ownedListing: { id: string; status: string } | null = null
+    // Didn't work out, or the lend-specific relist/remove choice) to that
+    // listing's owner.
+    let ownedListing: { id: string; status: string; activeTransactionType: string | null } | null = null
     if ((conversation.origin_type === 'listing' || conversation.origin_type === 'offer') && conversation.origin_id) {
         const { data: linkedListing } = await db
             .from('listings')
-            .select('id, owner_id, status')
+            .select('id, owner_id, status, active_transaction_type')
             .eq('id', conversation.origin_id)
             .maybeSingle()
 
         if (linkedListing && linkedListing.owner_id === user.id) {
-            ownedListing = { id: linkedListing.id, status: linkedListing.status }
+            ownedListing = {
+                id: linkedListing.id,
+                status: linkedListing.status,
+                activeTransactionType: linkedListing.active_transaction_type,
+            }
         }
     }
 

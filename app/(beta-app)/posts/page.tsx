@@ -14,7 +14,7 @@ async function PostsContent() {
                 </p>
                 <h1 className="text-3xl font-semibold text-foreground sm:text-4xl">Make a post</h1>
                 <p className="mt-3 max-w-xl leading-7 text-muted-foreground">
-                    Tell the troop what you&apos;re passing along. You can sell it, trade it, gift it, or choose more than one.
+                    Tell the troop what you&apos;re passing along. You can sell it, trade it, gift it, lend it out, or choose more than one.
                 </p>
             </header>
 

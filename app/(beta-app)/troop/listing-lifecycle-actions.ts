@@ -238,10 +238,13 @@ export async function acceptListingOffer(offerId: string) {
         return { success: false, error: 'This listing is no longer active.' }
     }
 
-    // Accepting is mutual agreement -- both sides reserve immediately.
+    // Accepting is mutual agreement -- both sides reserve immediately. A
+    // trade offer is unambiguously a trade, so active_transaction_type is
+    // set directly (no need to carry it through a request the way
+    // sell/gift/lend do via conversations.transaction_type).
     const { data: reservedTarget, error: targetUpdateError } = await admin
         .from('listings')
-        .update({ status: 'reserved' })
+        .update({ status: 'reserved', active_transaction_type: 'trade' })
         .eq('id', offer.listing_id)
         .eq('status', 'active')
         .select('id')
@@ -253,7 +256,7 @@ export async function acceptListingOffer(offerId: string) {
 
     const { data: reservedOffered, error: offeredUpdateError } = await admin
         .from('listings')
-        .update({ status: 'reserved' })
+        .update({ status: 'reserved', active_transaction_type: 'trade' })
         .eq('id', offer.offered_listing_id)
         .eq('status', 'active')
         .select('id')
@@ -342,7 +345,7 @@ export async function markListingFulfilled(listingId: string) {
     const admin = createAdminClient()
     const { data, error } = await admin
         .from('listings')
-        .update({ status: 'fulfilled' })
+        .update({ status: 'fulfilled', active_transaction_type: null })
         .eq('id', listingId)
         .eq('owner_id', userId)
         .eq('status', 'reserved')
@@ -357,7 +360,7 @@ export async function markListingFulfilled(listingId: string) {
     if (pairedListingId) {
         await admin
             .from('listings')
-            .update({ status: 'fulfilled' })
+            .update({ status: 'fulfilled', active_transaction_type: null })
             .eq('id', pairedListingId)
             .eq('status', 'reserved')
         revalidatePath(`/troop/listings/${pairedListingId}`)
@@ -390,7 +393,7 @@ export async function unreserveListing(listingId: string) {
     const admin = createAdminClient()
     const { data, error } = await admin
         .from('listings')
-        .update({ status: 'active' })
+        .update({ status: 'active', active_transaction_type: null })
         .eq('id', listingId)
         .eq('owner_id', userId)
         .eq('status', 'reserved')
@@ -405,10 +408,56 @@ export async function unreserveListing(listingId: string) {
     if (pairedListingId) {
         await admin
             .from('listings')
-            .update({ status: 'active' })
+            .update({ status: 'active', active_transaction_type: null })
             .eq('id', pairedListingId)
             .eq('status', 'reserved')
         revalidatePath(`/troop/listings/${pairedListingId}`)
+    }
+
+    revalidatePath(`/troop/listings/${listingId}`)
+    revalidatePath('/messages')
+    revalidatePath('/profile')
+    return { success: true }
+}
+
+// Ends a lend reservation once the item is back. Unlike markListingFulfilled
+// (sell/gift/trade -- always terminal), a lend can go back out again, so the
+// owner chooses whether to relist it or take it off their profile. Only
+// valid while active_transaction_type is 'lend' -- sell/gift/trade
+// reservations use markListingFulfilled/unreserveListing instead.
+export async function markListingReturned(listingId: string, action: 'relist' | 'remove') {
+    const { userId } = await getCurrentUserId()
+    if (!userId) return { success: false, error: 'You must be logged in.' }
+
+    const admin = createAdminClient()
+    const { data, error } = await admin
+        .from('listings')
+        .update({
+            status: action === 'relist' ? 'active' : 'archived',
+            active_transaction_type: null,
+        })
+        .eq('id', listingId)
+        .eq('owner_id', userId)
+        .eq('status', 'reserved')
+        .eq('active_transaction_type', 'lend')
+        .select('id')
+        .maybeSingle()
+
+    if (error) return { success: false, error: 'Could not update this listing. Please try again.' }
+    if (!data) return { success: false, error: 'This listing is not currently out on loan.' }
+
+    // The loan with this borrower is over either way -- close the linked
+    // conversation, same as markListingFulfilled does for sell/gift/trade.
+    // Lending has no paired listing (that's a trade-only concept).
+    const { error: closeConversationError } = await admin
+        .from('conversations')
+        .update({ status: 'closed' })
+        .eq('origin_type', 'listing')
+        .eq('origin_id', listingId)
+        .eq('status', 'active')
+
+    if (closeConversationError) {
+        console.error('Could not close conversation for returned listing:', closeConversationError)
     }
 
     revalidatePath(`/troop/listings/${listingId}`)

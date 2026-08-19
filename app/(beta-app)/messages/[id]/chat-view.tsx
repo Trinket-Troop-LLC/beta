@@ -6,7 +6,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowLeft, UserRound, Send } from 'lucide-react'
 import { sendMessage, acceptConversationRequest, declineConversationRequest } from '../actions'
-import { markListingFulfilled, unreserveListing } from '@/app/(beta-app)/troop/listing-lifecycle-actions'
+import { markListingFulfilled, unreserveListing, markListingReturned } from '@/app/(beta-app)/troop/listing-lifecycle-actions'
 
 type Message = {
     id: string
@@ -39,7 +39,7 @@ export function ChatView({
     currentUserId: string
     otherUser: OtherUser
     initialMessages: Message[]
-    ownedListing: { id: string; status: string } | null
+    ownedListing: { id: string; status: string; activeTransactionType: string | null } | null
 }) {
     const [messages, setMessages] = useState(initialMessages)
     const [draft, setDraft] = useState('')
@@ -48,7 +48,9 @@ export function ChatView({
     const [listingStatus, setListingStatus] = useState(ownedListing?.status ?? null)
     const [isUpdatingListing, setIsUpdatingListing] = useState(false)
     const [listingActionError, setListingActionError] = useState<string | null>(null)
+    const [showReturnChoice, setShowReturnChoice] = useState(false)
     const bottomRef = useRef<HTMLDivElement>(null)
+    const isLend = ownedListing?.activeTransactionType === 'lend'
 
     useEffect(() => {
         const db = createClient()
@@ -156,6 +158,20 @@ export function ChatView({
         setIsUpdatingListing(false)
     }
 
+    async function handleMarkReturned(action: 'relist' | 'remove') {
+        if (!ownedListing || isUpdatingListing) return
+        setIsUpdatingListing(true)
+        setListingActionError(null)
+        const result = await markListingReturned(ownedListing.id, action)
+        if (result.success) {
+            setListingStatus(action === 'relist' ? 'active' : 'archived')
+            setShowReturnChoice(false)
+        } else {
+            setListingActionError(result.error ?? 'Could not update this listing.')
+        }
+        setIsUpdatingListing(false)
+    }
+
     const isPendingForMe = currentStatus === 'pending' && !initiatedByMe
 
     return (
@@ -181,7 +197,59 @@ export function ChatView({
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 py-4">
-                {listingStatus === 'reserved' && (
+                {listingStatus === 'reserved' && isLend && (
+                    <div className="mb-4 rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-4 text-center shadow-sm">
+                        {!showReturnChoice ? (
+                            <>
+                                <p className="mb-3 text-sm text-[#625f58]">
+                                    This item is out on loan to @{otherUser.username}.
+                                </p>
+                                <div className="flex justify-center gap-2">
+                                    <button
+                                        onClick={() => setShowReturnChoice(true)}
+                                        disabled={isUpdatingListing}
+                                        className="rounded-lg bg-[#7c9272] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#667b5f] disabled:cursor-not-allowed disabled:opacity-60"
+                                    >
+                                        Item returned
+                                    </button>
+                                    <button
+                                        onClick={handleUnreserve}
+                                        disabled={isUpdatingListing}
+                                        className="rounded-lg border border-[#ded8cc] px-4 py-2 text-sm font-medium text-[#625f58] transition hover:bg-[#f5efe5] disabled:cursor-not-allowed disabled:opacity-60"
+                                    >
+                                        Didn&apos;t work out
+                                    </button>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <p className="mb-3 text-sm text-[#625f58]">
+                                    Welcome back! What next for this item?
+                                </p>
+                                <div className="flex justify-center gap-2">
+                                    <button
+                                        onClick={() => handleMarkReturned('relist')}
+                                        disabled={isUpdatingListing}
+                                        className="rounded-lg bg-[#7c9272] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#667b5f] disabled:cursor-not-allowed disabled:opacity-60"
+                                    >
+                                        Relist it
+                                    </button>
+                                    <button
+                                        onClick={() => handleMarkReturned('remove')}
+                                        disabled={isUpdatingListing}
+                                        className="rounded-lg border border-[#ded8cc] px-4 py-2 text-sm font-medium text-[#625f58] transition hover:bg-[#f5efe5] disabled:cursor-not-allowed disabled:opacity-60"
+                                    >
+                                        Remove from profile
+                                    </button>
+                                </div>
+                            </>
+                        )}
+                        {listingActionError && (
+                            <p className="mt-2 text-sm text-red-600">{listingActionError}</p>
+                        )}
+                    </div>
+                )}
+                {listingStatus === 'reserved' && !isLend && (
                     <div className="mb-4 rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-4 text-center shadow-sm">
                         <p className="mb-3 text-sm text-[#625f58]">
                             This listing is reserved for @{otherUser.username}.
@@ -210,6 +278,11 @@ export function ChatView({
                 {listingStatus === 'fulfilled' && (
                     <div className="mb-4 rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-4 text-center shadow-sm">
                         <p className="text-sm text-[#625f58]">This listing is marked complete.</p>
+                    </div>
+                )}
+                {listingStatus === 'archived' && ownedListing && (
+                    <div className="mb-4 rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-4 text-center shadow-sm">
+                        <p className="text-sm text-[#625f58]">This item was taken off your profile.</p>
                     </div>
                 )}
 

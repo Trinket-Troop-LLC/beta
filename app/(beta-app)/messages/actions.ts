@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
+import type { ListingTransactionType } from '@/lib/listings/domain'
 
 async function getCurrentUserId() {
     const db = await createClient()
@@ -70,13 +71,17 @@ export async function startActiveConversation(
     return { success: true, conversationId: data.id }
 }
 
-// Used when responding to a message board post, or requesting a sell/gift
-// listing — starts pending until accepted
+// Used when responding to a message board post, or requesting a sell/gift/
+// lend listing — starts pending until accepted. transactionType is only
+// meaningful for originType 'listing' — it's carried through to
+// acceptConversationRequest, which stamps it onto the listing as the
+// reservation actually happens.
 export async function requestConversation(
     otherUserId: string,
     originId: string,
     firstMessageContent: string,
-    originType: 'message_board' | 'listing' = 'message_board'
+    originType: 'message_board' | 'listing' = 'message_board',
+    transactionType?: ListingTransactionType,
 ) {
     const { db, userId } = await getCurrentUserId()
     if (!userId) return { success: false, error: 'You must be logged in.' }
@@ -100,6 +105,7 @@ export async function requestConversation(
             participant_two_id: otherUserId,
             origin_type: originType,
             origin_id: originId,
+            transaction_type: transactionType ?? null,
             status: 'pending',
             initiated_by: userId,
         })
@@ -129,7 +135,7 @@ export async function acceptConversationRequest(conversationId: string) {
         .eq('id', conversationId)
         .eq('status', 'pending')
         .neq('initiated_by', userId)
-        .select('id, origin_type, origin_id')
+        .select('id, origin_type, origin_id, transaction_type')
         .maybeSingle()
 
     if (error) return { success: false, error: 'Could not accept the request.' }
@@ -139,12 +145,14 @@ export async function acceptConversationRequest(conversationId: string) {
     // when the listing actually reserves, not when the request was sent.
     // Listing writes go through the admin client (see
     // 20260810010000_enable_listing_posting.sql): authenticated clients can't
-    // mutate listings directly.
+    // mutate listings directly. Stamping active_transaction_type here (not
+    // just status) is what lets the owner's completion UI later tell a lend
+    // apart from a sell/gift on a listing that offers several types at once.
     if (data.origin_type === 'listing' && data.origin_id) {
         const admin = createAdminClient()
         await admin
             .from('listings')
-            .update({ status: 'reserved' })
+            .update({ status: 'reserved', active_transaction_type: data.transaction_type ?? null })
             .eq('id', data.origin_id)
             .eq('owner_id', userId)
             .eq('status', 'active')
