@@ -1,9 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import {
     AdminDashboardClient,
     type Applicant,
     type GeneralInterest,
+    type Member,
 } from './admin-dashboard-client'
 
 const pageSize = 500
@@ -26,10 +28,11 @@ export default async function AdminDashboardContent() {
     const [
         { data: applicants, error: applicantsError },
         { data: generalInterests, error: generalInterestsError },
-    ] = await Promise.all([loadApplicants(db), loadGeneralInterests(db)])
+        { data: members, error: membersError },
+    ] = await Promise.all([loadApplicants(db), loadGeneralInterests(db), loadMembers()])
 
-    if (applicantsError || generalInterestsError) {
-        const message = applicantsError?.message ?? generalInterestsError?.message
+    if (applicantsError || generalInterestsError || membersError) {
+        const message = applicantsError?.message ?? generalInterestsError?.message ?? membersError?.message
         return <p className="py-10 text-center text-red-600">Error loading applications: {message}</p>
     }
 
@@ -44,6 +47,7 @@ export default async function AdminDashboardContent() {
                 <AdminDashboardClient
                     applicants={applicantsWithProfilePictures}
                     generalInterests={generalInterests ?? []}
+                    members={members ?? []}
                 />
             </div>
         </div>
@@ -113,6 +117,68 @@ async function loadApplicants(db: Awaited<ReturnType<typeof createClient>>) {
 
         if (!data || data.length < pageSize) {
             return { data: applicants, error: null }
+        }
+    }
+}
+
+// last_sign_in_at lives on auth.users, not public.users, so it's only
+// reachable through the admin (service-role) client's auth.admin API --
+// never via a normal table select.
+async function loadAuthLastSignIns() {
+    const admin = createAdminClient()
+    const lastSignInById = new Map<string, string | null>()
+
+    for (let page = 1; ; page += 1) {
+        const { data, error } = await admin.auth.admin.listUsers({ page, perPage: pageSize })
+
+        if (error) {
+            return { data: null, error }
+        }
+
+        for (const authUser of data.users) {
+            lastSignInById.set(authUser.id, authUser.last_sign_in_at ?? null)
+        }
+
+        if (data.users.length < pageSize) {
+            return { data: lastSignInById, error: null }
+        }
+    }
+}
+
+async function loadMembers(): Promise<{ data: Member[] | null; error: { message: string } | null }> {
+    const admin = createAdminClient()
+    const members: Member[] = []
+
+    const { data: lastSignInById, error: authError } = await loadAuthLastSignIns()
+
+    if (authError) {
+        return { data: null, error: authError }
+    }
+
+    for (let from = 0; ; from += pageSize) {
+        const { data, error } = await admin
+            .from('users')
+            .select('id, username, email, role, created_at')
+            .order('created_at', { ascending: true })
+            .range(from, from + pageSize - 1)
+
+        if (error) {
+            return { data: null, error }
+        }
+
+        for (const row of data ?? []) {
+            members.push({
+                id: row.id,
+                username: row.username,
+                email: row.email,
+                role: row.role,
+                createdAt: row.created_at,
+                lastSignInAt: lastSignInById?.get(row.id) ?? null,
+            })
+        }
+
+        if (!data || data.length < pageSize) {
+            return { data: members, error: null }
         }
     }
 }

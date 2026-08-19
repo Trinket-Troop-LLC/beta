@@ -50,7 +50,16 @@ export type GeneralInterest = {
     created_at: string
 }
 
-type DashboardTab = 'beta' | 'general-interest'
+export type Member = {
+    id: string
+    username: string
+    email: string
+    role: string
+    createdAt: string
+    lastSignInAt: string | null
+}
+
+type DashboardTab = 'beta' | 'general-interest' | 'members'
 
 function escapeCsvCell(value: unknown) {
     let text = Array.isArray(value) ? value.join('; ') : String(value ?? '')
@@ -66,9 +75,11 @@ function escapeCsvCell(value: unknown) {
 export function AdminDashboardClient({
     applicants,
     generalInterests,
+    members,
 }: {
     applicants: Applicant[]
     generalInterests: GeneralInterest[]
+    members: Member[]
 }) {
     const [activeTab, setActiveTab] = useState<DashboardTab>('beta')
     const [selectedApplicant, setSelectedApplicant] = useState<Applicant | null>(null)
@@ -163,6 +174,24 @@ export function AdminDashboardClient({
                         {generalInterests.length}
                     </span>
                 </button>
+                <button
+                    id="members-tab"
+                    type="button"
+                    role="tab"
+                    aria-selected={activeTab === 'members'}
+                    aria-controls="members-panel"
+                    onClick={() => switchTab('members')}
+                    className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+                        activeTab === 'members'
+                            ? 'bg-[#7c9272] text-white'
+                            : 'text-[#455442] hover:bg-[#f2ede0]'
+                    }`}
+                >
+                    Members
+                    <span className="ml-2 rounded-full bg-black/10 px-2 py-0.5 text-xs">
+                        {members.length}
+                    </span>
+                </button>
             </div>
 
             {activeTab === 'beta' ? (
@@ -235,7 +264,7 @@ export function AdminDashboardClient({
                         </div>
                     )}
                 </section>
-            ) : (
+            ) : activeTab === 'general-interest' ? (
                 <section
                     id="general-interest-panel"
                     role="tabpanel"
@@ -313,6 +342,43 @@ export function AdminDashboardClient({
                                     onClose={() => setSelectedInterest(null)}
                                 />
                             )}
+                        </div>
+                    )}
+                </section>
+            ) : (
+                <section
+                    id="members-panel"
+                    role="tabpanel"
+                    aria-labelledby="members-tab"
+                >
+                    {members.length === 0 ? (
+                        <EmptyState message="No approved members yet." />
+                    ) : (
+                        <div className="overflow-x-auto rounded-2xl border border-[#ded8cc] bg-[#fffdf9] shadow-sm">
+                            <table className="min-w-full border-collapse text-sm">
+                                <thead>
+                                    <tr className="bg-[#f2ede0]">
+                                        <th className={thClass}>Username</th>
+                                        <th className={thClass}>Email</th>
+                                        <th className={thClass}>Role</th>
+                                        <th className={thClass}>Joined</th>
+                                        <th className={thClass}>Last Signed In</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {members.map((member) => (
+                                        <tr key={member.id} className="transition hover:bg-[#f7f3ea]">
+                                            <td className={tdClass}>{member.username}</td>
+                                            <td className={tdClass}>{member.email}</td>
+                                            <td className={tdClass}>{member.role}</td>
+                                            <td className={tdClass}>{formatDateLabel(member.createdAt)}</td>
+                                            <td className={tdClass}>
+                                                {member.lastSignInAt ? formatDateLabel(member.lastSignInAt) : 'Never'}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
                         </div>
                     )}
                 </section>
