@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { z } from 'zod'
 
 const emailSchema = z.string().trim().email().max(320)
+const usersPerPage = 1000
 
 export type PasswordResetAccountResult =
     | { exists: true }
@@ -22,28 +23,36 @@ export async function checkPasswordResetAccount(
 
     try {
         const admin = createAdminClient()
-        const { data, error } = await admin
-            .from('users')
-            .select('id')
-            .eq('email', normalizedEmail)
-            .limit(1)
 
-        if (error) {
-            console.error('Password reset account lookup failed:', error.code)
-            return {
-                exists: false,
-                error: 'We could not check that account right now. Please try again.',
+        for (let page = 1; ; page += 1) {
+            const { data, error } = await admin.auth.admin.listUsers({
+                page,
+                perPage: usersPerPage,
+            })
+
+            if (error) {
+                console.error('Password reset account lookup failed:', error.code)
+                return {
+                    exists: false,
+                    error: 'We could not check that account right now. Please try again.',
+                }
+            }
+
+            const accountExists = data.users.some(
+                (user) => user.email?.trim().toLowerCase() === normalizedEmail,
+            )
+
+            if (accountExists) {
+                return { exists: true }
+            }
+
+            if (data.users.length < usersPerPage) {
+                return {
+                    exists: false,
+                    error: 'No account exists with that email.',
+                }
             }
         }
-
-        if (data.length === 0) {
-            return {
-                exists: false,
-                error: 'No account exists with that email.',
-            }
-        }
-
-        return { exists: true }
     } catch (error) {
         console.error(
             'Password reset account lookup failed unexpectedly:',
