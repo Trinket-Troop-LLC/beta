@@ -4,6 +4,7 @@ import { requireMember } from '@/lib/supabase/require-member'
 import { signProfilePictureUrl } from '@/lib/supabase/profile-pictures'
 import { BetaBottomNav } from '@/components/beta-bottom-nav'
 import { ChatView } from './chat-view'
+import { TradeClosedNotice } from '../trade-closed-notice'
 
 async function ConversationContent({ conversationId }: { conversationId: string }) {
     const { db, user } = await requireMember()
@@ -21,6 +22,10 @@ async function ConversationContent({ conversationId }: { conversationId: string 
     const isParticipant = conversation.participant_one_id === user.id || conversation.participant_two_id === user.id
     if (!isParticipant) {
         notFound()
+    }
+
+    if (conversation.status === 'completed' || conversation.status === 'closed') {
+        return <TradeClosedNotice status={conversation.status} />
     }
 
     const otherUserId = conversation.participant_one_id === user.id
@@ -41,6 +46,16 @@ async function ConversationContent({ conversationId }: { conversationId: string 
         .eq('conversation_id', conversationId)
         .order('created_at', { ascending: true })
 
+    const listingTitle = conversation.origin_type === 'offer' && conversation.listing_id
+        ? (
+            await db
+                .from('listings')
+                .select('title')
+                .eq('id', conversation.listing_id)
+                .maybeSingle()
+        ).data?.title ?? null
+        : null
+
     return (
         <ChatView
             conversationId={conversation.id}
@@ -53,6 +68,9 @@ async function ConversationContent({ conversationId }: { conversationId: string 
                 profilePictureUrl: otherUserPictureUrl,
             }}
             initialMessages={messages ?? []}
+            originType={conversation.origin_type}
+            listingId={conversation.listing_id}
+            listingTitle={listingTitle}
         />
     )
 }
