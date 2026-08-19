@@ -1,4 +1,5 @@
 'use server'
+import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 
 type ActionResult = { success: boolean; error?: string }
@@ -12,6 +13,7 @@ async function getCurrentUserId() {
 export async function createBulletinPost(
     content: string,
     imagePaths: string[],
+    visibility: 'global' | 'troop',
 ) {
     // check if user exists
     const { db, userId } = await getCurrentUserId()
@@ -25,8 +27,9 @@ export async function createBulletinPost(
     const { data: post, error: postError } = await db
         .from('bulletin_posts')
         .insert({
-            author_id: userId, 
+            author_id: userId,
             content: trimmedContent,
+            visibility,
         })
         .select('id')
         .single()
@@ -52,6 +55,7 @@ export async function createBulletinPost(
         }
     }
 
+    revalidatePath('/thoughts')
     return { success: true, postId: post.id}
 }
 
@@ -100,6 +104,7 @@ export async function createBulletinReply(
         }
     }
 
+    revalidatePath('/thoughts')
     return { success: true, replyId: reply.id}
 }
 
@@ -131,6 +136,8 @@ export async function deletePost(
             console.error('Could not remove bulletin post photos from storage', { postId, storageError })
         }
     }
+
+    revalidatePath('/thoughts')
     return { success: true }
 }
 
@@ -162,5 +169,7 @@ export async function deleteReply(
             console.error('Could not remove bulletin reply photos from storage', { replyId, storageError })
         }
     }
+
+    revalidatePath('/thoughts')
     return { success: true }
 }
