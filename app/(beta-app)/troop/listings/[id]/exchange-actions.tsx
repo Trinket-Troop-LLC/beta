@@ -24,7 +24,7 @@ function defaultRequestMessage(type: RequestableType, title: string, priceCents:
     }
 }
 
-function requestButtonLabel(type: RequestableType, priceCents: number | null) {
+function openButtonLabel(type: RequestableType, priceCents: number | null) {
     switch (type) {
         case 'sell':
             return priceCents !== null ? `Buy for ${formatListingPrice(priceCents)}` : 'Buy'
@@ -50,19 +50,25 @@ export function ExchangeActions({
 }) {
     const router = useRouter()
     const [activeType, setActiveType] = useState<ListingTransactionType | null>(null)
+    const [requestMessage, setRequestMessage] = useState('')
     const [error, setError] = useState<string | null>(null)
     const [isPending, startTransition] = useTransition()
 
     const [offerableListings, setOfferableListings] = useState<OfferableListing[] | null>(null)
     const [selectedOfferListingId, setSelectedOfferListingId] = useState<string | null>(null)
+    const [tradeMessage, setTradeMessage] = useState('')
     const [offerSent, setOfferSent] = useState(false)
 
-    function handleRequest(type: RequestableType) {
+    function openRequestPanel(type: RequestableType) {
         setError(null)
         setActiveType(type)
+        setRequestMessage(defaultRequestMessage(type, listingTitle, priceCents))
+    }
+
+    function handleSendRequest(type: RequestableType) {
+        setError(null)
         startTransition(async () => {
-            const message = defaultRequestMessage(type, listingTitle, priceCents)
-            const result = await requestConversation(ownerId, listingId, message, 'listing', type)
+            const result = await requestConversation(ownerId, listingId, requestMessage, 'listing', type)
 
             if (!result.success) {
                 setError(result.error ?? 'Could not send your request. Please try again.')
@@ -76,6 +82,7 @@ export function ExchangeActions({
     function handleOpenTradePicker() {
         setError(null)
         setActiveType('trade')
+        setTradeMessage('')
         startTransition(async () => {
             const result = await getMyOfferableListings(listingId)
             if (!result.success) {
@@ -86,15 +93,30 @@ export function ExchangeActions({
         })
     }
 
-    function handleSubmitOffer() {
-        if (!selectedOfferListingId) return
+    function handleSubmitTrade() {
+        const trimmedMessage = tradeMessage.trim()
+
+        if (!selectedOfferListingId && !trimmedMessage) {
+            setError("Choose one of your listings to offer, or write a message explaining what you'd like to trade.")
+            return
+        }
+
         setError(null)
         startTransition(async () => {
-            const result = await submitListingOffer(listingId, selectedOfferListingId)
+            const result = selectedOfferListingId
+                ? await submitListingOffer(listingId, selectedOfferListingId)
+                : await requestConversation(ownerId, listingId, trimmedMessage, 'listing', 'trade')
+
             if (!result.success) {
                 setError(result.error ?? 'Could not send your offer. Please try again.')
                 return
             }
+
+            if ('conversationId' in result) {
+                router.push(`/messages/${result.conversationId}`)
+                return
+            }
+
             setOfferSent(true)
         })
     }
@@ -117,14 +139,10 @@ export function ExchangeActions({
 
                             {activeType === 'trade' && offerableListings !== null && !offerSent && (
                                 <div className="mt-2 rounded-lg border border-border p-3">
-                                    {offerableListings.length === 0 ? (
-                                        <p className="text-sm text-muted-foreground">
-                                            You don&apos;t have any active listings to offer yet.
-                                        </p>
-                                    ) : (
+                                    {offerableListings.length > 0 && (
                                         <>
                                             <p className="mb-2 text-sm text-muted-foreground">
-                                                Pick one of your listings to offer:
+                                                Pick one of your listings to offer (optional):
                                             </p>
                                             <div className="flex flex-col gap-1.5">
                                                 {offerableListings.map((listing) => (
@@ -141,7 +159,16 @@ export function ExchangeActions({
                                                             name="offer-listing"
                                                             value={listing.id}
                                                             checked={selectedOfferListingId === listing.id}
-                                                            onChange={() => setSelectedOfferListingId(listing.id)}
+                                                            onChange={() =>
+                                                                setSelectedOfferListingId(
+                                                                    selectedOfferListingId === listing.id ? null : listing.id,
+                                                                )
+                                                            }
+                                                            onClick={() => {
+                                                                if (selectedOfferListingId === listing.id) {
+                                                                    setSelectedOfferListingId(null)
+                                                                }
+                                                            }}
                                                             className="shrink-0"
                                                         />
                                                         <div className="relative size-10 shrink-0 overflow-hidden rounded-md bg-secondary">
@@ -162,16 +189,33 @@ export function ExchangeActions({
                                                     </label>
                                                 ))}
                                             </div>
-                                            <button
-                                                type="button"
-                                                onClick={handleSubmitOffer}
-                                                disabled={!selectedOfferListingId || isPending}
-                                                className="mt-3 w-full rounded-lg bg-[#7c9272] px-3 py-2 text-sm font-medium text-white transition hover:bg-[#667b5f] disabled:cursor-not-allowed disabled:opacity-60"
-                                            >
-                                                Send offer
-                                            </button>
                                         </>
                                     )}
+
+                                    <label className="mt-3 block text-sm text-muted-foreground" htmlFor="trade-message">
+                                        Message{selectedOfferListingId ? ' (optional)' : ''}
+                                    </label>
+                                    <textarea
+                                        id="trade-message"
+                                        value={tradeMessage}
+                                        onChange={(event) => setTradeMessage(event.target.value)}
+                                        rows={3}
+                                        placeholder={
+                                            selectedOfferListingId
+                                                ? 'Add a note (optional)...'
+                                                : "Say what you'd like to trade for..."
+                                        }
+                                        className="mt-1 w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-[#7c9272] focus:ring-2 focus:ring-[#7c9272]/20"
+                                    />
+
+                                    <button
+                                        type="button"
+                                        onClick={handleSubmitTrade}
+                                        disabled={isPending}
+                                        className="mt-3 w-full rounded-lg bg-[#7c9272] px-3 py-2 text-sm font-medium text-white transition hover:bg-[#667b5f] disabled:cursor-not-allowed disabled:opacity-60"
+                                    >
+                                        Send offer
+                                    </button>
                                 </div>
                             )}
                         </div>
@@ -180,17 +224,39 @@ export function ExchangeActions({
                 case 'gift':
                 case 'lend':
                     return (
-                        <button
-                            key={type}
-                            type="button"
-                            onClick={() => handleRequest(type)}
-                            disabled={isPending}
-                            className="rounded-lg bg-[#7c9272] px-4 py-3 font-medium text-white transition hover:bg-[#667b5f] disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                            {isPending && activeType === type
-                                ? 'Sending…'
-                                : requestButtonLabel(type, priceCents)}
-                        </button>
+                        <div key={type}>
+                            <button
+                                type="button"
+                                onClick={() => openRequestPanel(type)}
+                                disabled={isPending}
+                                className="w-full rounded-lg bg-[#7c9272] px-4 py-3 font-medium text-white transition hover:bg-[#667b5f] disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                {openButtonLabel(type, priceCents)}
+                            </button>
+
+                            {activeType === type && (
+                                <div className="mt-2 rounded-lg border border-border p-3">
+                                    <label className="block text-sm text-muted-foreground" htmlFor={`${type}-message`}>
+                                        Message (optional)
+                                    </label>
+                                    <textarea
+                                        id={`${type}-message`}
+                                        value={requestMessage}
+                                        onChange={(event) => setRequestMessage(event.target.value)}
+                                        rows={3}
+                                        className="mt-1 w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-[#7c9272] focus:ring-2 focus:ring-[#7c9272]/20"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => handleSendRequest(type)}
+                                        disabled={isPending}
+                                        className="mt-3 w-full rounded-lg bg-[#7c9272] px-3 py-2 text-sm font-medium text-white transition hover:bg-[#667b5f] disabled:cursor-not-allowed disabled:opacity-60"
+                                    >
+                                        {isPending ? 'Sending…' : 'Send'}
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                     )
                 default:
                     // Exhaustiveness check: a new ListingTransactionType added

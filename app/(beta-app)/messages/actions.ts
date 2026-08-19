@@ -103,14 +103,18 @@ export async function requestConversation(
         }
     }
 
+    const trimmedMessage = firstMessageContent.trim()
+
     const existingId = await findExistingConversation(db, userId, otherUserId, originType, originId)
     if (existingId) {
-        const { error: messageError } = await db.from('messages').insert({
-            conversation_id: existingId,
-            sender_id: userId,
-            content: firstMessageContent,
-        })
-        if (messageError) return { success: false, error: 'Could not send your message.' }
+        if (trimmedMessage) {
+            const { error: messageError } = await db.from('messages').insert({
+                conversation_id: existingId,
+                sender_id: userId,
+                content: trimmedMessage,
+            })
+            if (messageError) return { success: false, error: 'Could not send your message.' }
+        }
         revalidatePath('/messages')
         return { success: true, conversationId: existingId }
     }
@@ -141,12 +145,14 @@ export async function requestConversation(
         return { success: false, error: 'Could not start the conversation.' }
     }
 
-    const { error: messageError } = await db.from('messages').insert({
-        conversation_id: conversation.id,
-        sender_id: userId,
-        content: firstMessageContent,
-    })
-    if (messageError) return { success: false, error: 'Could not send your message.' }
+    if (trimmedMessage) {
+        const { error: messageError } = await db.from('messages').insert({
+            conversation_id: conversation.id,
+            sender_id: userId,
+            content: trimmedMessage,
+        })
+        if (messageError) return { success: false, error: 'Could not send your message.' }
+    }
 
     revalidatePath('/messages')
     return { success: true, conversationId: conversation.id }
