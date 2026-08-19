@@ -42,23 +42,27 @@ async function ConversationContent({ conversationId }: { conversationId: string 
         .order('created_at', { ascending: true })
 
     // 'listing' and 'offer' conversations link back to a listing via
-    // origin_id. Only surface the reservation controls (Mark complete /
-    // Didn't work out, or the lend-specific relist/remove choice) to that
-    // listing's owner.
-    let ownedListing: { id: string; status: string; activeTransactionType: string | null } | null = null
+    // origin_id. The reservation controls (Mark complete / Didn't work out,
+    // or the lend-specific relist/remove choice) are still owner-only, but
+    // both participants need to see the listing's current status live --
+    // otherwise the non-owner has no way to know the owner acted until they
+    // refresh (see chat-view.tsx's listings realtime subscription).
+    let linkedListing: { id: string; status: string; activeTransactionType: string | null } | null = null
+    let isOwnedByMe = false
     if ((conversation.origin_type === 'listing' || conversation.origin_type === 'offer') && conversation.origin_id) {
-        const { data: linkedListing } = await db
+        const { data: listingRow } = await db
             .from('listings')
             .select('id, owner_id, status, active_transaction_type')
             .eq('id', conversation.origin_id)
             .maybeSingle()
 
-        if (linkedListing && linkedListing.owner_id === user.id) {
-            ownedListing = {
-                id: linkedListing.id,
-                status: linkedListing.status,
-                activeTransactionType: linkedListing.active_transaction_type,
+        if (listingRow) {
+            linkedListing = {
+                id: listingRow.id,
+                status: listingRow.status,
+                activeTransactionType: listingRow.active_transaction_type,
             }
+            isOwnedByMe = listingRow.owner_id === user.id
         }
     }
 
@@ -74,7 +78,8 @@ async function ConversationContent({ conversationId }: { conversationId: string 
                 profilePictureUrl: otherUserPictureUrl,
             }}
             initialMessages={messages ?? []}
-            ownedListing={ownedListing}
+            linkedListing={linkedListing}
+            isOwnedByMe={isOwnedByMe}
         />
     )
 }

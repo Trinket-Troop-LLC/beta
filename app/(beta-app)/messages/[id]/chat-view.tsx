@@ -24,6 +24,8 @@ type OtherUser = {
     profilePictureUrl: string | null
 }
 
+type LinkedListing = { id: string; status: string; activeTransactionType: string | null }
+
 export function ChatView({
     conversationId,
     status,
@@ -31,7 +33,8 @@ export function ChatView({
     currentUserId,
     otherUser,
     initialMessages,
-    ownedListing,
+    linkedListing,
+    isOwnedByMe,
 }: {
     conversationId: string
     status: 'pending' | 'active'
@@ -39,17 +42,18 @@ export function ChatView({
     currentUserId: string
     otherUser: OtherUser
     initialMessages: Message[]
-    ownedListing: { id: string; status: string; activeTransactionType: string | null } | null
+    linkedListing: LinkedListing | null
+    isOwnedByMe: boolean
 }) {
     const [messages, setMessages] = useState(initialMessages)
     const [draft, setDraft] = useState('')
     const [isSending, setIsSending] = useState(false)
-    const [listingStatus, setListingStatus] = useState(ownedListing?.status ?? null)
+    const [listingStatus, setListingStatus] = useState(linkedListing?.status ?? null)
     const [isUpdatingListing, setIsUpdatingListing] = useState(false)
     const [listingActionError, setListingActionError] = useState<string | null>(null)
     const [showReturnChoice, setShowReturnChoice] = useState(false)
     const bottomRef = useRef<HTMLDivElement>(null)
-    const isLend = ownedListing?.activeTransactionType === 'lend'
+    const isLend = linkedListing?.activeTransactionType === 'lend'
 
     useEffect(() => {
         const db = createClient()
@@ -66,25 +70,46 @@ export function ChatView({
             if (cancelled) return
             if (session) db.realtime.setAuth(session.access_token)
 
-            channel = db
-                .channel(`conversations:${conversationId}`)
-                .on(
+            channel = db.channel(`conversations:${conversationId}`)
+
+            channel.on(
+                'postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'messages',
+                    filter: `conversation_id=eq.${conversationId}`,
+                },
+                (payload) => {
+                    const newMessage = payload.new as Message
+                    setMessages((prev) => {
+                        if (prev.some((m) => m.id === newMessage.id)) return prev
+                        return [...prev, newMessage]
+                    })
+                }
+            )
+
+            // Lets the non-owner participant see live when the owner marks the
+            // listing complete or says it didn't work out -- previously only the
+            // owner's own click updated local state, so the other side had no
+            // way to find out short of refreshing.
+            if (linkedListing) {
+                channel.on(
                     'postgres_changes',
                     {
-                        event: 'INSERT',
+                        event: 'UPDATE',
                         schema: 'public',
-                        table: 'messages',
-                        filter: `conversation_id=eq.${conversationId}`,
+                        table: 'listings',
+                        filter: `id=eq.${linkedListing.id}`,
                     },
                     (payload) => {
-                        const newMessage = payload.new as Message
-                        setMessages((prev) => {
-                            if (prev.some((m) => m.id === newMessage.id)) return prev
-                            return [...prev, newMessage]
-                        })
+                        const updated = payload.new as { status: string }
+                        setListingStatus(updated.status)
                     }
                 )
-                .subscribe()
+            }
+
+            channel.subscribe()
         }
 
         setup()
@@ -93,7 +118,7 @@ export function ChatView({
             cancelled = true
             if (channel) db.removeChannel(channel)
         }
-    }, [conversationId])
+    }, [conversationId, linkedListing])
 
     useEffect(() => {
         bottomRef.current?.scrollIntoView({behavior: 'smooth'})
@@ -120,10 +145,10 @@ export function ChatView({
     }
 
     async function handleMarkFulfilled() {
-        if (!ownedListing || isUpdatingListing) return
+        if (!linkedListing || !isOwnedByMe || isUpdatingListing) return
         setIsUpdatingListing(true)
         setListingActionError(null)
-        const result = await markListingFulfilled(ownedListing.id)
+        const result = await markListingFulfilled(linkedListing.id)
         if (result.success) {
             setListingStatus('fulfilled')
         } else {
@@ -133,10 +158,10 @@ export function ChatView({
     }
 
     async function handleUnreserve() {
-        if (!ownedListing || isUpdatingListing) return
+        if (!linkedListing || !isOwnedByMe || isUpdatingListing) return
         setIsUpdatingListing(true)
         setListingActionError(null)
-        const result = await unreserveListing(ownedListing.id)
+        const result = await unreserveListing(linkedListing.id)
         if (result.success) {
             setListingStatus('active')
         } else {
@@ -146,10 +171,10 @@ export function ChatView({
     }
 
     async function handleMarkReturned(action: 'relist' | 'remove') {
-        if (!ownedListing || isUpdatingListing) return
+        if (!linkedListing || !isOwnedByMe || isUpdatingListing) return
         setIsUpdatingListing(true)
         setListingActionError(null)
-        const result = await markListingReturned(ownedListing.id, action)
+        const result = await markListingReturned(linkedListing.id, action)
         if (result.success) {
             setListingStatus(action === 'relist' ? 'active' : 'archived')
             setShowReturnChoice(false)
@@ -184,7 +209,7 @@ export function ChatView({
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 py-4">
-                {listingStatus === 'reserved' && isLend && (
+                {listingStatus === 'reserved' && isLend && isOwnedByMe && (
                     <div className="mb-4 rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-4 text-center shadow-sm">
                         {!showReturnChoice ? (
                             <>
@@ -236,7 +261,12 @@ export function ChatView({
                         )}
                     </div>
                 )}
-                {listingStatus === 'reserved' && !isLend && (
+                {listingStatus === 'reserved' && isLend && !isOwnedByMe && (
+                    <div className="mb-4 rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-4 text-center shadow-sm">
+                        <p className="text-sm text-[#625f58]">This item is out on loan to you.</p>
+                    </div>
+                )}
+                {listingStatus === 'reserved' && !isLend && isOwnedByMe && (
                     <div className="mb-4 rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-4 text-center shadow-sm">
                         <p className="mb-3 text-sm text-[#625f58]">
                             This listing is reserved for @{otherUser.username}.
@@ -262,14 +292,21 @@ export function ChatView({
                         )}
                     </div>
                 )}
+                {listingStatus === 'reserved' && !isLend && !isOwnedByMe && (
+                    <div className="mb-4 rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-4 text-center shadow-sm">
+                        <p className="text-sm text-[#625f58]">This listing is reserved for you.</p>
+                    </div>
+                )}
                 {listingStatus === 'fulfilled' && (
                     <div className="mb-4 rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-4 text-center shadow-sm">
                         <p className="text-sm text-[#625f58]">This listing is marked complete.</p>
                     </div>
                 )}
-                {listingStatus === 'archived' && ownedListing && (
+                {listingStatus === 'archived' && linkedListing && (
                     <div className="mb-4 rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-4 text-center shadow-sm">
-                        <p className="text-sm text-[#625f58]">This item was taken off your profile.</p>
+                        <p className="text-sm text-[#625f58]">
+                            {isOwnedByMe ? 'This item was taken off your profile.' : 'This item is no longer available.'}
+                        </p>
                     </div>
                 )}
 
