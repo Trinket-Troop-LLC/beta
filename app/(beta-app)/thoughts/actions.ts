@@ -57,6 +57,7 @@ function getOwnedBulletinPhotoPaths(userId: string, imagePaths: string[]): strin
 export async function createBulletinPost(
     content: string,
     imagePaths: string[],
+    visibility: 'global' | 'troop' = 'global',
 ): Promise<CreatePostResult> {
     const { db, userId } = await getCurrentUserId()
     if (!userId) return { success: false, error: 'You must be logged in to create a post' }
@@ -79,6 +80,7 @@ export async function createBulletinPost(
         .insert({
             author_id: userId,
             content: trimmedContent,
+            visibility,
         })
         .select('id')
         .single()

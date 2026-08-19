@@ -2,9 +2,10 @@
 
 import Image from 'next/image'
 import { useState } from 'react'
-import { MessageCircle, Trash2, UserRound } from 'lucide-react'
+import { MessageCircle, Trash2, UserRound, Users } from 'lucide-react'
 import { deletePost, deleteReply } from './actions'
 import { BulletinComposer } from './bulletin-composer'
+import { BulletinViewSwitcher } from './bulletin-view-switcher'
 import type { BulletinAuthor, BulletinPost, BulletinReply } from './types'
 
 function formatRelativeTime(iso: string) {
@@ -183,7 +184,15 @@ function PostItem({
                 <Avatar author={post.author} />
                 <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
-                        <p className="font-medium text-[#30392d]">@{post.author.username}</p>
+                        <div className="flex min-w-0 items-center gap-1.5">
+                            <p className="truncate font-medium text-[#30392d]">@{post.author.username}</p>
+                            {post.visibility === 'troop' && (
+                                <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#f2ede0] px-2 py-0.5 text-[11px] font-medium text-[#625f58]">
+                                    <Users size={11} />
+                                    Troop only
+                                </span>
+                            )}
+                        </div>
                         <div className="flex shrink-0 items-center gap-2">
                             <span className="text-xs text-[#7c8072]">{formatRelativeTime(post.createdAt)}</span>
                             {post.author.id === currentUser.id && (
@@ -266,6 +275,7 @@ export function BulletinFeed({
     currentUser: BulletinAuthor
 }) {
     const [posts, setPosts] = useState(initialPosts)
+    const [view, setView] = useState<'global' | 'troop'>('global')
 
     function handlePosted(post: BulletinPost) {
         setPosts((current) => [post, ...current])
@@ -281,16 +291,22 @@ export function BulletinFeed({
             : post))
     }
 
+    const visiblePosts = view === 'troop' ? posts.filter((post) => post.isTroopAuthor) : posts
+
     return (
         <div className="flex flex-col gap-4">
             <BulletinComposer variant="post" currentUser={currentUser} onPosted={handlePosted} />
 
-            {posts.length === 0 ? (
+            <BulletinViewSwitcher view={view} onChange={setView} />
+
+            {visiblePosts.length === 0 ? (
                 <p className="rounded-2xl border border-dashed border-[#ded8cc] bg-[#fffdf9] p-6 text-center text-sm text-[#625f58]">
-                    No posts yet — be the first to share something with the troop.
+                    {view === 'troop'
+                        ? 'No posts from your troop yet.'
+                        : 'No posts yet — be the first to share something with the troop.'}
                 </p>
             ) : (
-                posts.map((post) => (
+                visiblePosts.map((post) => (
                     <PostItem
                         key={post.id}
                         post={post}

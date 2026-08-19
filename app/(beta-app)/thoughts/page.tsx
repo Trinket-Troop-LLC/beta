@@ -14,12 +14,22 @@ async function ThoughtsContent() {
 
     const { data: postRows } = await db
         .from('bulletin_posts')
-        .select('id, author_id, content, created_at')
+        .select('id, author_id, content, created_at, visibility')
         .order('created_at', { ascending: false })
         .limit(maxPosts)
 
     const posts = postRows ?? []
     const postIds = posts.map((post) => post.id)
+
+    const { data: troopRows } = await db
+        .from('friendships')
+        .select('requester_id, addressee_id')
+        .eq('status', 'accepted')
+        .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`)
+
+    const troopMemberIds = new Set(
+        (troopRows ?? []).map((row) => row.requester_id === user.id ? row.addressee_id : row.requester_id),
+    )
 
     const { data: replyRows } = postIds.length > 0
         ? await db
@@ -130,6 +140,8 @@ async function ThoughtsContent() {
         createdAt: post.created_at,
         photoUrls: postPhotosByPostId.get(post.id) ?? [],
         replies: repliesByPostId.get(post.id) ?? [],
+        visibility: (post.visibility as 'global' | 'troop') ?? 'global',
+        isTroopAuthor: post.author_id === user.id || troopMemberIds.has(post.author_id),
     }))
 
     const currentUser: BulletinAuthor = authorsById.get(user.id) ?? {

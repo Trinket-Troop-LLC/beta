@@ -34,6 +34,7 @@ type BulletinComposerProps =
 export function BulletinComposer(props: BulletinComposerProps) {
     const { variant, currentUser, onPosted } = props
     const [content, setContent] = useState('')
+    const [troopOnly, setTroopOnly] = useState(false)
     const [photos, setPhotos] = useState<PreparedPhoto[]>([])
     const [isPreparingPhotos, setIsPreparingPhotos] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
@@ -153,7 +154,8 @@ photosRef.current = photos
             const photoUrls = photos.map((photo) => photo.previewUrl)
 
             if (variant === 'post') {
-                const result = await createBulletinPost(trimmed, uploadedPaths)
+                const visibility = troopOnly ? 'troop' : 'global'
+                const result = await createBulletinPost(trimmed, uploadedPaths, visibility)
 
                 if (!result.success) {
                     throw new Error(result.error)
@@ -166,6 +168,8 @@ photosRef.current = photos
                     createdAt: new Date().toISOString(),
                     photoUrls,
                     replies: [],
+                    visibility,
+                    isTroopAuthor: true,
                 })
             } else {
                 const result = await createBulletinReply(
@@ -193,6 +197,7 @@ photosRef.current = photos
 
             setContent('')
             setPhotos([])
+            setTroopOnly(false)
         } catch (submitError) {
             setError(submitError instanceof Error ? submitError.message : 'Something went wrong. Please try again.')
         } finally {
@@ -264,19 +269,34 @@ photosRef.current = photos
             )}
 
             <div className="flex items-center justify-between gap-2">
-                <label className={`flex cursor-pointer items-center gap-1.5 text-sm text-[#625f58] transition hover:text-[#30392d] ${isBusy || photos.length >= maxPhotoCount ? 'pointer-events-none opacity-50' : ''}`}>
-                    <Images size={16} />
-                    photos
-                    <input
-                        ref={inputRef}
-                        type="file"
-                        accept="image/png,image/jpeg"
-                        multiple
-                        disabled={isBusy || photos.length >= maxPhotoCount}
-                        onChange={handlePhotoChange}
-                        className="sr-only"
-                    />
-                </label>
+                <div className="flex items-center gap-3">
+                    <label className={`flex cursor-pointer items-center gap-1.5 text-sm text-[#625f58] transition hover:text-[#30392d] ${isBusy || photos.length >= maxPhotoCount ? 'pointer-events-none opacity-50' : ''}`}>
+                        <Images size={16} />
+                        photos
+                        <input
+                            ref={inputRef}
+                            type="file"
+                            accept="image/png,image/jpeg"
+                            multiple
+                            disabled={isBusy || photos.length >= maxPhotoCount}
+                            onChange={handlePhotoChange}
+                            className="sr-only"
+                        />
+                    </label>
+
+                    {variant === 'post' && (
+                        <label className="flex items-center gap-1.5 text-sm text-[#625f58]">
+                            <input
+                                type="checkbox"
+                                checked={troopOnly}
+                                onChange={(event) => setTroopOnly(event.target.checked)}
+                                disabled={isBusy}
+                                className="size-4 rounded border-[#d8d1c5]"
+                            />
+                            My troop only
+                        </label>
+                    )}
+                </div>
 
                 <div className="flex items-center gap-2">
                     {variant === 'reply' && (

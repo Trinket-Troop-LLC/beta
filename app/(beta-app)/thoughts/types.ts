@@ -22,4 +22,6 @@ export type BulletinPost = {
     createdAt: string
     photoUrls: string[]
     replies: BulletinReply[]
+    visibility: 'global' | 'troop'
+    isTroopAuthor: boolean
 }
