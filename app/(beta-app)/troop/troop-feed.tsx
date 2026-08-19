@@ -3,35 +3,45 @@
 import Link from 'next/link'
 import { useState, useTransition } from 'react'
 import { ListingBrowseCard, type ListingBrowseCardData } from '@/components/listings/listing-browse-card'
-import { getListingsView } from './actionts'
+import { getListingsView, type ListingFeedCursor } from './actionts'
 
 export function TroopFeed({
     initialListings,
-    initialHasMore,
+    initialCursor,
 }: {
     initialListings: ListingBrowseCardData[]
-    initialHasMore: boolean
+    initialCursor: ListingFeedCursor | null
 }) {
     const [listings, setListings] = useState(initialListings)
-    const [hasMore, setHasMore] = useState(initialHasMore)
-    const [page, setPage] = useState(0)
+    const [nextCursor, setNextCursor] = useState(initialCursor)
     const [error, setError] = useState<string | null>(null)
     const [isPending, startTransition] = useTransition()
 
     function loadMore() {
+        if (!nextCursor || isPending) return
+
         setError(null)
+        const requestedCursor = nextCursor
+
         startTransition(async () => {
-            const nextPage = page + 1
-            const result = await getListingsView(nextPage)
+            const result = await getListingsView(requestedCursor)
 
             if (!result.success) {
                 setError(result.error)
                 return
             }
 
-            setListings((current) => [...current, ...result.listings])
-            setHasMore(result.hasMore)
-            setPage(nextPage)
+            setListings((current) => {
+                // Keyset pagination shouldn't produce overlap, but this stays
+                // as a cheap safety net against duplicate React keys if a
+                // page is ever re-requested.
+                const knownIds = new Set(current.map((listing) => listing.id))
+                return [
+                    ...current,
+                    ...result.listings.filter((listing) => !knownIds.has(listing.id)),
+                ]
+            })
+            setNextCursor(result.nextCursor)
         })
     }
 
@@ -57,7 +67,7 @@ export function TroopFeed({
                 <p className="mt-4 text-sm text-red-600">{error}</p>
             )}
 
-            {hasMore && (
+            {nextCursor && (
                 <button
                     type="button"
                     onClick={loadMore}

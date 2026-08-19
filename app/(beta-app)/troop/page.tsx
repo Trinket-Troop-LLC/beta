@@ -7,7 +7,7 @@ import { TroopFeed } from './troop-feed'
 
 async function TroopHomeContent() {
     const { profile } = await requireMember()
-    const result = await getListingsView()
+    const result = await getListingsView(null)
 
     return (
         <div className="mx-auto w-full max-w-4xl text-left">
@@ -16,7 +16,7 @@ async function TroopHomeContent() {
             </h1>
 
             {result.success ? (
-                <TroopFeed initialListings={result.listings} initialHasMore={result.hasMore} />
+                <TroopFeed initialListings={result.listings} initialCursor={result.nextCursor} />
             ) : (
                 <p className="text-sm text-[#625f58]">{result.error}</p>
             )}
