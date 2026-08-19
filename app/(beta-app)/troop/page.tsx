@@ -6,8 +6,8 @@ import { getListingFeedPage } from '@/lib/listings/feed'
 import { TroopFeed } from './troop-feed'
 
 async function TroopHomeContent() {
-    const { db, profile, user } = await requireMember()
-    const result = await getListingFeedPage(db, user.id, null)
+    const { db, profile } = await requireMember()
+    const result = await getListingFeedPage(db, null)
 
     return (
         <div className="mx-auto w-full max-w-5xl">
@@ -19,7 +19,7 @@ async function TroopHomeContent() {
                     Hi{profile.username ? `, @${profile.username}` : ''}. See what&apos;s being shared.
                 </h1>
                 <p className="mt-3 max-w-2xl leading-7 text-muted-foreground">
-                    Fresh finds from other troop members, newest first. Your own listings stay in Profile.
+                    Fresh finds from the troop, newest first — including your own.
                 </p>
             </header>
 

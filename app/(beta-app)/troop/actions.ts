@@ -37,5 +37,5 @@ export async function getMoreListings(
         }
     }
 
-    return getListingFeedPage(db, user.id, normalizedCursor)
+    return getListingFeedPage(db, normalizedCursor)
 }

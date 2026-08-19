@@ -3,6 +3,7 @@ import 'server-only'
 import type { ListingBrowseCardData } from '@/components/listings/listing-browse-card'
 import type {
     ListingCategory,
+    ListingStatus,
     ListingTransactionType,
 } from '@/lib/listings/domain'
 import type { createClient } from '@/lib/supabase/server'
@@ -66,14 +67,12 @@ export function normalizeListingFeedCursor(value: unknown): ListingFeedCursor | 
 
 export async function getListingFeedPage(
     db: Db,
-    userId: string,
     cursor: ListingFeedCursor | null,
 ): Promise<ListingFeedResult> {
     let listingsQuery = db
         .from('listings')
-        .select('id, owner_id, title, category, transaction_types, price_cents, published_at')
-        .eq('status', 'active')
-        .neq('owner_id', userId)
+        .select('id, owner_id, title, category, transaction_types, price_cents, status, published_at')
+        .in('status', ['active', 'reserved'])
         .order('published_at', { ascending: false })
         .order('id', { ascending: false })
         .limit(LISTING_FEED_PAGE_SIZE + 1)
@@ -177,6 +176,7 @@ export async function getListingFeedPage(
             category: row.category as ListingCategory,
             transaction_types: row.transaction_types as ListingTransactionType[],
             price_cents: row.price_cents,
+            status: row.status as ListingStatus,
             coverPhotoUrl: coverPath
                 ? signedCoverUrlByPath.get(coverPath) ?? null
                 : null,
