@@ -241,29 +241,28 @@ export async function acceptListingOffer(offerId: string) {
         return { success: false, error: "This listing already has an ongoing conversation. If it didn't work out, close it before accepting another offer." }
     }
 
-    // Accepting is mutual agreement -- both sides reserve immediately. A
-    // trade offer is unambiguously a trade, so active_transaction_type is
-    // set directly (no need to carry it through a request the way
-    // sell/gift/lend do via conversations.transaction_type).
-    const { data: reservedTarget, error: targetUpdateError } = await admin
-        .from('listings')
-        .update({ status: 'reserved', active_transaction_type: 'trade' })
-        .eq('id', offer.listing_id)
-        .eq('status', 'active')
-        .select('id')
-        .maybeSingle()
-
-    if (targetUpdateError || !reservedTarget) {
+    // Accepting is mutual agreement -- both sides reserve immediately, via
+    // the same reserveListing helper acceptConversationRequest uses, so a
+    // listing that raced onto some other reservation in between can't be
+    // silently double-booked here.
+    const targetReserved = await reserveListing(admin, offer.listing_id, userId)
+    if (!targetReserved) {
         return { success: false, error: 'Could not reserve this listing. Please try again.' }
     }
 
-    const { data: reservedOffered, error: offeredUpdateError } = await admin
+    const offeredReserved = await reserveListing(admin, offer.offered_listing_id)
+    if (!offeredReserved) {
+        await releaseListing(admin, offer.listing_id)
+        return { success: false, error: 'The offered listing is no longer available. Ask them to send a new offer.' }
+    }
+
+    // A trade offer is unambiguously a trade, so active_transaction_type is
+    // set directly here (no need to carry it through a request the way
+    // sell/gift/lend do via conversations.transaction_type).
+    await admin
         .from('listings')
-        .update({ status: 'reserved', active_transaction_type: 'trade' })
-        .eq('id', offer.offered_listing_id)
-        .eq('status', 'active')
-        .select('id')
-        .maybeSingle()
+        .update({ active_transaction_type: 'trade' })
+        .in('id', [offer.listing_id, offer.offered_listing_id])
 
     // Start the conversation before marking the offer accepted, so a failure
     // here rolls back the reservation instead of leaving both listings stuck

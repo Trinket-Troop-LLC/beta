@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { reserveListing, releaseListing } from '@/app/(beta-app)/troop/listing-reservation'
+import { reserveListing } from '@/app/(beta-app)/troop/listing-reservation'
 import { revalidatePath } from 'next/cache'
 import type { ListingTransactionType } from '@/lib/listings/domain'
 
@@ -160,11 +160,10 @@ export async function acceptConversationRequest(conversationId: string) {
 
     const { data: conversation } = await db
         .from('conversations')
-        .select('id, origin_type, origin_id')
+        .select('id, origin_type, origin_id, transaction_type')
         .eq('id', conversationId)
         .eq('status', 'pending')
         .neq('initiated_by', userId)
-0000000000000000000000000000000        .select('id, origin_type, origin_id, transaction_type')
         .maybeSingle()
 
     if (!conversation) return { success: false, error: 'This conversation request no longer exists.'}
@@ -173,30 +172,25 @@ export async function acceptConversationRequest(conversationId: string) {
     // if there's already a active conversation; i.e listing is reserved.
     // This must happen before the conversation is flipped to 'active' below --
     // otherwise a failed reservation would still leave the conversation active.
+    // Stamping active_transaction_type here (not just status) is what lets
+    // the owner's completion UI later tell a lend apart from a sell/gift on
+    // a listing that offers several types at once.
     const isListingRequest = conversation.origin_type === 'listing' && conversation.origin_id !== null
     if (isListingRequest) {
         const reserved = await reserveListing(admin, conversation.origin_id!, userId)
         if (!reserved) {
             return { success: false, error: 'An active conversation about this listing already exists. Mark it as fell through before accepting another request.'}
         }
-    }
-
-    // Accepting a listing request is the moment of owner agreement — that's
-    // when the listing actually reserves, not when the request was sent.
-    // Listing writes go through the admin client (see
-    // 20260810010000_enable_listing_posting.sql): authenticated clients can't
-    // mutate listings directly. Stamping active_transaction_type here (not
-    // just status) is what lets the owner's completion UI later tell a lend
-    // apart from a sell/gift on a listing that offers several types at once.
-    if (data.origin_type === 'listing' && data.origin_id) {
-        const admin = createAdminClient()
         await admin
             .from('listings')
-            .update({ status: 'reserved', active_transaction_type: data.transaction_type ?? null })
-            .eq('id', data.origin_id)
-            .eq('owner_id', userId)
-            .eq('status', 'active')
+            .update({ active_transaction_type: conversation.transaction_type ?? null })
+            .eq('id', conversation.origin_id!)
     }
+
+    await db
+        .from('conversations')
+        .update({ status: 'active' })
+        .eq('id', conversationId)
 
     revalidatePath('/messages')
     revalidatePath('/troop')

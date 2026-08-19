@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowLeft, UserRound, Send } from 'lucide-react'
-import { sendMessage, acceptConversationRequest, declineConversationRequest } from '../actions'
+import { sendMessage } from '../actions'
 import { markListingFulfilled, unreserveListing, markListingReturned } from '@/app/(beta-app)/troop/listing-lifecycle-actions'
 
 type Message = {
@@ -159,7 +159,7 @@ export function ChatView({
         setIsUpdatingListing(false)
     }
 
-    const isPendingForMe = currentStatus === 'pending' && !initiatedByMe
+    const isPendingForMe = status === 'pending' && !initiatedByMe
 
     return (
         <div className="flex min-h-screen flex-col">
