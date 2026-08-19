@@ -1,5 +1,6 @@
 'use server'
 
+import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 
@@ -113,11 +114,52 @@ export async function acceptConversationRequest(conversationId: string) {
         .eq('id', conversationId)
         .eq('status', 'pending')
         .neq('initiated_by', userId)
-        .select('id')
+        .select('id, origin_type, listing_id')
         .maybeSingle()
 
     if (error) return { success: false, error: 'Could not accept the request.' }
     if (!data) return { success: false, error: 'This request no longer exists.' }
+
+    if (data.origin_type === 'offer' && data.listing_id) {
+        const admin = createAdminClient()
+
+        // Listings can only be written by the service role (see
+        // supabase/migrations/20260810010000_enable_listing_posting.sql), so this
+        // reservation has to go through the admin client rather than RLS.
+        const { data: reserved, error: reserveError } = await admin
+            .from('listings')
+            .update({ status: 'reserved' })
+            .eq('id', data.listing_id)
+            .eq('status', 'active')
+            .select('id')
+            .maybeSingle()
+
+        if (reserveError || !reserved) {
+            // The listing was archived, deleted, or already reserved by another
+            // accepted offer in a race. Roll the conversation back rather than
+            // leaving it 'active' against a listing that was never reserved.
+            await db
+                .from('conversations')
+                .update({ status: 'pending' })
+                .eq('id', conversationId)
+                .eq('status', 'active')
+
+            return { success: false, error: 'This item is no longer available.' }
+        }
+
+        // A listing can only be reserved by one accepted offer at a time, so
+        // decline every other pending request on it.
+        await db
+            .from('conversations')
+            .delete()
+            .eq('listing_id', data.listing_id)
+            .eq('status', 'pending')
+            .neq('id', conversationId)
+
+        revalidatePath('/troop')
+        revalidatePath('/profile')
+        revalidatePath(`/troop/listings/${data.listing_id}`)
+    }
 
     revalidatePath('/messages')
     return { success: true }
