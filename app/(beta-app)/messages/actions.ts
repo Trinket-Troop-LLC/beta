@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { reserveListing, releaseListing } from '@/app/(beta-app)/troop/listing-reservation'
 import { revalidatePath } from 'next/cache'
 import type { ListingTransactionType } from '@/lib/listings/domain'
 
@@ -86,6 +87,22 @@ export async function requestConversation(
     const { db, userId } = await getCurrentUserId()
     if (!userId) return { success: false, error: 'You must be logged in.' }
 
+    // Unlike submitListingOffer, this used to skip re-checking listing status
+    // at creation time -- a client could still request a listing that had
+    // just been reserved (the page-render gate only hides the button).
+    if (originType === 'listing') {
+        const admin = createAdminClient()
+        const { data: listing } = await admin
+            .from('listings')
+            .select('id, status')
+            .eq('id', originId)
+            .maybeSingle()
+
+        if (!listing || listing.status !== 'active') {
+            return { success: false, error: 'This listing is no longer available.' }
+        }
+    }
+
     const existingId = await findExistingConversation(db, userId, otherUserId, originType, originId)
     if (existingId) {
         const { error: messageError } = await db.from('messages').insert({
@@ -112,7 +129,17 @@ export async function requestConversation(
         .select('id')
         .single()
 
-    if (convError || !conversation) return { success: false, error: 'Could not start the conversation.' }
+    if (convError || !conversation) {
+        // 23505 = the unique index added in
+        // 20260816000000_add_conversation_uniqueness_constraints.sql caught a
+        // duplicate request created concurrently with this one (e.g. a
+        // double-click) -- findExistingConversation's check-then-insert above
+        // isn't itself race-proof.
+        if (convError?.code === '23505') {
+            return { success: false, error: 'You already have a pending request for this.' }
+        }
+        return { success: false, error: 'Could not start the conversation.' }
+    }
 
     const { error: messageError } = await db.from('messages').insert({
         conversation_id: conversation.id,
@@ -129,17 +156,30 @@ export async function acceptConversationRequest(conversationId: string) {
     const { db, userId } = await getCurrentUserId()
     if (!userId) return { success: false, error: 'You must be logged in.' }
 
-    const { data, error } = await db
+    const admin = createAdminClient()
+
+    const { data: conversation } = await db
         .from('conversations')
-        .update({ status: 'active' })
+        .select('id, origin_type, origin_id')
         .eq('id', conversationId)
         .eq('status', 'pending')
         .neq('initiated_by', userId)
-        .select('id, origin_type, origin_id, transaction_type')
+0000000000000000000000000000000        .select('id, origin_type, origin_id, transaction_type')
         .maybeSingle()
 
-    if (error) return { success: false, error: 'Could not accept the request.' }
-    if (!data) return { success: false, error: 'This request no longer exists.' }
+    if (!conversation) return { success: false, error: 'This conversation request no longer exists.'}
+
+    // for buy / sell / loan requests, don't allow accepting a second request
+    // if there's already a active conversation; i.e listing is reserved.
+    // This must happen before the conversation is flipped to 'active' below --
+    // otherwise a failed reservation would still leave the conversation active.
+    const isListingRequest = conversation.origin_type === 'listing' && conversation.origin_id !== null
+    if (isListingRequest) {
+        const reserved = await reserveListing(admin, conversation.origin_id!, userId)
+        if (!reserved) {
+            return { success: false, error: 'An active conversation about this listing already exists. Mark it as fell through before accepting another request.'}
+        }
+    }
 
     // Accepting a listing request is the moment of owner agreement — that's
     // when the listing actually reserves, not when the request was sent.

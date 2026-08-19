@@ -43,6 +43,7 @@ export function ListingCard({
     const categoryLabel = listing.category === 'other'
         ? listing.other_category ?? LISTING_CATEGORY_LABELS.other
         : LISTING_CATEGORY_LABELS[listing.category]
+    const isReserved = listing.status === 'reserved'
 
     return (
         <article className="overflow-hidden rounded-2xl border border-border bg-card text-left shadow-sm">
@@ -53,7 +54,7 @@ export function ListingCard({
                         alt={listing.title}
                         fill
                         sizes="(max-width: 640px) 100vw, 320px"
-                        className="object-cover"
+                        className={`object-cover ${isReserved ? 'grayscale-[50%] opacity-40' : ''}`}
                     />
                 ) : (
                     <div className="flex size-full items-center justify-center text-muted-foreground">

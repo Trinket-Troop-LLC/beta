@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
+import { findPairedTradeListingId } from '@/app/(beta-app)/troop/listing-lifecycle-actions'
 
 const listingPhotosBucket = 'listing-photos'
 const deletableListingStatuses = ['active', 'reserved', 'fulfilled'] as const
@@ -220,6 +221,38 @@ async function readOwnedListingState(
     }
 }
 
+// Deleting a listing can't just archive it -- it may be mid-trade (reserved,
+// paired with another listing via an accepted offer) or have open
+// requests/conversations against it. Without this, deletion would silently
+// orphan the paired listing (stuck 'reserved' forever, owned by someone
+// else) and leave pending/active conversations pointing at a listing that no
+// longer exists -- the same class of bug markListingFulfilled/
+// unreserveListing already guard against for their own transitions.
+async function releaseListingConversationsAndPair(
+    admin: ReturnType<typeof createAdminClient>,
+    listingId: string,
+) {
+    const pairedListingId = await findPairedTradeListingId(admin, listingId)
+    if (pairedListingId) {
+        await admin
+            .from('listings')
+            .update({ status: 'active' })
+            .eq('id', pairedListingId)
+            .eq('status', 'reserved')
+    }
+
+    const { error } = await admin
+        .from('conversations')
+        .update({ status: 'closed' })
+        .in('origin_type', ['offer', 'listing'])
+        .in('origin_id', pairedListingId ? [listingId, pairedListingId] : [listingId])
+        .in('status', ['pending', 'active'])
+
+    if (error) {
+        console.error('Could not close conversations for deleted listing:', error)
+    }
+}
+
 async function claimDeletionTombstone(
     admin: ReturnType<typeof createAdminClient>,
     userId: string,
@@ -262,6 +295,7 @@ async function claimDeletionTombstone(
         && claim.data?.status === 'archived'
         && claim.data.published_at !== null
     ) {
+        await releaseListingConversationsAndPair(admin, claimedId)
         return { state: 'tombstone', listingId: claimedId }
     }
 

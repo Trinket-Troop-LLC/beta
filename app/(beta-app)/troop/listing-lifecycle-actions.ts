@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { signProfilePictureUrls } from '@/lib/supabase/profile-pictures'
 import { startActiveConversation } from '@/app/(beta-app)/messages/actions'
+import { reserveListing, releaseListing } from '@/app/(beta-app)/troop/listing-reservation'
 
 async function getCurrentUserId() {
     const db = await createClient()
@@ -133,12 +134,13 @@ export async function getPendingOffersForListing(listingId: string) {
 
 // A trade reserves two listings as one transaction (see acceptListingOffer).
 // Given either side, finds the other, so markListingFulfilled/unreserveListing
-// can move both together instead of leaving one stuck reserved. Ordered by
-// most recent since a listing can be reserved-then-released-then-reserved
-// again across separate accepted offers over its lifetime, and only the
-// current pairing matters. Returns null for a sell/gift listing, which never
-// has an accepted listing_offers row at all.
-async function findPairedTradeListingId(
+// (and deleteListing, in profile/listing-actions.ts) can move both together
+// instead of leaving one stuck reserved. Ordered by most recent since a
+// listing can be reserved-then-released-then-reserved again across separate
+// accepted offers over its lifetime, and only the current pairing matters.
+// Returns null for a sell/gift listing, which never has an accepted
+// listing_offers row at all.
+export async function findPairedTradeListingId(
     admin: ReturnType<typeof createAdminClient>,
     listingId: string,
 ): Promise<string | null> {
@@ -234,8 +236,9 @@ export async function acceptListingOffer(offerId: string) {
     if (!targetListing || targetListing.owner_id !== userId) {
         return { success: false, error: 'You are not the owner of this listing.' }
     }
+
     if (targetListing.status !== 'active') {
-        return { success: false, error: 'This listing is no longer active.' }
+        return { success: false, error: "This listing already has an ongoing conversation. If it didn't work out, close it before accepting another offer." }
     }
 
     // Accepting is mutual agreement -- both sides reserve immediately. A
@@ -262,17 +265,15 @@ export async function acceptListingOffer(offerId: string) {
         .select('id')
         .maybeSingle()
 
-    if (offeredUpdateError || !reservedOffered) {
-        // The offered listing wasn't available after all (e.g. it got tied up
-        // in a different accepted offer first) -- undo the target's
-        // reservation so we don't leave one side reserved with no match.
-        await admin
-            .from('listings')
-            .update({ status: 'active' })
-            .eq('id', offer.listing_id)
-            .eq('status', 'reserved')
+    // Start the conversation before marking the offer accepted, so a failure
+    // here rolls back the reservation instead of leaving both listings stuck
+    // reserved with an accepted offer and no conversation to show for it.
+    const conversationResult = await startActiveConversation(offer.offerer_id, 'offer', offer.listing_id)
 
-        return { success: false, error: 'The offered listing is no longer available. Ask them to send a new offer.' }
+    if (!conversationResult.success) {
+        await releaseListing(admin, offer.listing_id)
+        await releaseListing(admin, offer.offered_listing_id)
+        return { success: false, error: 'Could not start the conversation. Please try again.' }
     }
 
     await admin
@@ -280,22 +281,12 @@ export async function acceptListingOffer(offerId: string) {
         .update({ status: 'accepted' })
         .eq('id', offer.id)
 
-    // Any other pending offers on this listing are now moot.
-    await admin
-        .from('listing_offers')
-        .update({ status: 'declined' })
-        .eq('listing_id', offer.listing_id)
-        .eq('status', 'pending')
-        .neq('id', offer.id)
-
-    const conversationResult = await startActiveConversation(offer.offerer_id, 'offer', offer.listing_id)
+    // Other pending offers on this listing are left untouched — the owner
+    // decides whether to decline them manually, or accept one later if this
+    // trade falls through and the listing reopens.
 
     revalidatePath(`/troop/listings/${offer.listing_id}`)
     revalidatePath('/messages')
-
-    if (!conversationResult.success) {
-        return { success: false, error: 'Offer accepted, but the conversation could not be started.' }
-    }
 
     return { success: true, conversationId: conversationResult.conversationId }
 }
@@ -366,6 +357,22 @@ export async function markListingFulfilled(listingId: string) {
         revalidatePath(`/troop/listings/${pairedListingId}`)
     }
 
+    // other listings that were part of this exchange that didn't get accepted
+    const relatedListingIds = pairedListingId ? [listingId, pairedListingId] : [listingId]
+    await admin
+        .from('conversations')
+        .update({ status: 'closed'})
+        .in('origin_id', relatedListingIds)
+        .in('origin_type', ['listing', 'offer'])
+        .eq('status', 'pending')
+
+    await admin
+        .from('listing_offers')
+        .update({ status: 'declined' })
+        .in('listing_id', relatedListingIds)
+        .eq('status', 'pending')
+
+
     // close the linked conversation now that the transaction is done --
     // covers both trade offers ('offer') and direct sell/gift requests
     // ('listing'), which are the two origin types that link to a listing.
@@ -412,6 +419,22 @@ export async function unreserveListing(listingId: string) {
             .eq('id', pairedListingId)
             .eq('status', 'reserved')
         revalidatePath(`/troop/listings/${pairedListingId}`)
+    }
+
+    // close the linked conversation now that this deal fell through --
+    // otherwise it stays 'active' and a later accepted offer/request on this
+    // listing would create a second active conversation for the same listing.
+    // Covers both trade offers ('offer') and direct sell/gift requests
+    // ('listing'), which are the two origin types that link to a listing.
+    const { error: closeConversationError } = await admin
+        .from('conversations')
+        .update({ status: 'closed' })
+        .in('origin_type', ['offer', 'listing'])
+        .in('origin_id', pairedListingId ? [listingId, pairedListingId] : [listingId])
+        .eq('status', 'active')
+
+    if (closeConversationError) {
+        console.error('Could not close conversation for unreserved listing:', closeConversationError)
     }
 
     revalidatePath(`/troop/listings/${listingId}`)

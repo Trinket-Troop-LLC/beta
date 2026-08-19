@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { useState, useTransition } from 'react'
 import { ImageIcon, UserRound } from 'lucide-react'
 import { acceptListingOffer, declineListingOffer } from '../troop/listing-lifecycle-actions'
+import { acceptConversationRequest, declineConversationRequest } from './actions'
 
 type ConversationSummary = {
     id: string
@@ -49,12 +50,7 @@ function ConversationRow({ conversation }: { conversation: ConversationSummary }
             <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                     <p className="font-medium text-[#2c2c2c]">@{conversation.otherUser.username}</p>
-                    {conversation.status === 'pending' && !conversation.initiatedByMe && (
-                        <span className="rounded-full bg-[#7c9272] px-2 py-0.5 text-xs font-medium text-white">
-                            New
-                        </span>
-                    )}
-                    {conversation.status === 'pending' && conversation.initiatedByMe && (
+                    {conversation.status === 'pending' && (
                         <span className="rounded-full border border-[#ded8cc] px-2 py-0.5 text-xs font-medium text-[#7c8072]">
                             Pending
                         </span>
@@ -65,6 +61,87 @@ function ConversationRow({ conversation }: { conversation: ConversationSummary }
                 </p>
             </div>
         </Link>
+    )
+}
+
+function RequestRow({
+    conversation,
+    onResolved,
+}: {
+    conversation: ConversationSummary
+    onResolved: (conversationId: string) => void
+}) {
+    const [error, setError] = useState<string | null>(null)
+    const [isPending, startTransition] = useTransition()
+
+    function handleAccept() {
+        setError(null)
+        startTransition(async () => {
+            const result = await acceptConversationRequest(conversation.id)
+            if (!result.success) {
+                setError(result.error ?? 'Could not accept this request.')
+                return
+            }
+            onResolved(conversation.id)
+            window.location.href = `/messages/${conversation.id}`
+        })
+    }
+
+    function handleDecline() {
+        setError(null)
+        startTransition(async () => {
+            const result = await declineConversationRequest(conversation.id)
+            if (!result.success) {
+                setError(result.error ?? 'Could not decline this request.')
+                return
+            }
+            onResolved(conversation.id)
+        })
+    }
+
+    return (
+        <div className="flex flex-col gap-2 rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-4 shadow-sm">
+            <div className="flex items-center gap-3">
+                <div className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#ded8cc] bg-[#f2ede0]">
+                    {conversation.otherUser.profilePictureUrl ? (
+                        <Image
+                            src={conversation.otherUser.profilePictureUrl}
+                            alt={`${conversation.otherUser.username}'s profile picture`}
+                            width={48}
+                            height={48}
+                            className="size-full object-cover"
+                        />
+                    ) : (
+                        <UserRound className="size-6 text-[#9aaa90]" />
+                    )}
+                </div>
+                <div className="min-w-0 flex-1">
+                    <p className="font-medium text-[#2c2c2c]">@{conversation.otherUser.username}</p>
+                    <p className="truncate text-sm text-[#7c8072]">
+                        {conversation.lastMessagePreview ?? 'Say hello!'}
+                    </p>
+                </div>
+            </div>
+            <div className="flex justify-end gap-2">
+                <button
+                    type="button"
+                    onClick={handleAccept}
+                    disabled={isPending}
+                    className="rounded-lg bg-[#7c9272] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[#667b5f] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                    Accept
+                </button>
+                <button
+                    type="button"
+                    onClick={handleDecline}
+                    disabled={isPending}
+                    className="rounded-lg border border-[#ded8cc] px-3 py-1.5 text-xs font-medium text-[#7c8072] transition hover:bg-[#f5efe5] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                    Decline
+                </button>
+            </div>
+            {error && <p className="text-sm text-red-600">{error}</p>}
+        </div>
     )
 }
 
@@ -157,18 +234,18 @@ function OfferRow({
 }
 
 export function ConversationsList({
-    conversations,
+    conversations: initialConversations,
     offers: initialOffers,
 }: {
     conversations: ConversationSummary[]
     offers: OfferSummary[]
 }) {
+    const [conversations, setConversations] = useState(initialConversations)
+    const [offers, setOffers] = useState(initialOffers)
+
     const active = conversations.filter((c) => c.status === 'active')
     const needsMyResponse = conversations.filter((c) => c.status === 'pending' && !c.initiatedByMe)
     const waitingOnThem = conversations.filter((c) => c.status === 'pending' && c.initiatedByMe)
-    const pending = [...needsMyResponse, ...waitingOnThem]
-
-    const [offers, setOffers] = useState(initialOffers)
 
     const requestsBadgeCount = needsMyResponse.length + offers.length
 
@@ -178,6 +255,10 @@ export function ConversationsList({
 
     function handleOfferResolved(offerId: string) {
         setOffers((current) => current.filter((offer) => offer.offerId !== offerId))
+    }
+
+    function handleRequestResolved(conversationId: string) {
+        setConversations((current) => current.filter((c) => c.id !== conversationId))
     }
 
     return (
@@ -234,13 +315,16 @@ export function ConversationsList({
             )}
 
             {tab === 'requests' && (
-                pending.length === 0 ? (
+                needsMyResponse.length === 0 && waitingOnThem.length === 0 ? (
                     <div className="rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-6 text-left shadow-sm">
                         <p className="text-sm text-[#625f58]">No pending requests.</p>
                     </div>
                 ) : (
                     <div className="flex flex-col gap-3">
-                        {pending.map((c) => <ConversationRow key={c.id} conversation={c} />)}
+                        {needsMyResponse.map((c) => (
+                            <RequestRow key={c.id} conversation={c} onResolved={handleRequestResolved} />
+                        ))}
+                        {waitingOnThem.map((c) => <ConversationRow key={c.id} conversation={c} />)}
                     </div>
                 )
             )}
