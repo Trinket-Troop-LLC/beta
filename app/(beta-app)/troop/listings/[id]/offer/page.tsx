@@ -116,7 +116,7 @@ export default async function ListingOfferPage({
     }
 
     return (
-        <main className="min-h-screen bg-background px-4 py-8 pb-48 sm:px-6 sm:py-10">
+        <main className="min-h-screen bg-background px-4 pt-8 pb-64 sm:px-6 sm:pt-10">
             <Suspense fallback={null}>
                 <OfferContent listingId={id} />
             </Suspense>
