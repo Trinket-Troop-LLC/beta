@@ -704,7 +704,7 @@ export function ListingForm() {
                 className="flex flex-col gap-3 text-left text-foreground"
             >
                 <legend className="font-medium">How would you like to share it? *</legend>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2">
                     {LISTING_TRANSACTION_TYPES.map((type) => (
                         <label
                             key={type}

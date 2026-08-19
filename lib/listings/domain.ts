@@ -38,7 +38,7 @@ export const LISTING_CONDITION_LABELS: Record<ListingCondition, string> = {
     well_loved: 'well loved',
 }
 
-export const LISTING_TRANSACTION_TYPES = ['sell', 'trade', 'gift'] as const
+export const LISTING_TRANSACTION_TYPES = ['sell', 'trade', 'gift', 'lend'] as const
 
 export type ListingTransactionType = (typeof LISTING_TRANSACTION_TYPES)[number]
 
@@ -46,6 +46,7 @@ export const LISTING_TRANSACTION_TYPE_LABELS: Record<ListingTransactionType, str
     sell: 'sell',
     trade: 'trade',
     gift: 'gift',
+    lend: 'lend',
 }
 
 export const LISTING_STATUSES = [
@@ -85,6 +86,10 @@ export type Listing = {
     price_cents: number | null
     pickup_area: string
     status: ListingStatus
+    // Which selected transaction type the current reservation actually is
+    // (a listing can offer several at once, e.g. sell + trade + lend, but
+    // only one is ever in play while reserved). Null except while reserved.
+    active_transaction_type: ListingTransactionType | null
     published_at: string | null
     created_at: string
     updated_at: string

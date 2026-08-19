@@ -9,15 +9,30 @@ import { getMyOfferableListings, submitListingOffer } from '../../listing-lifecy
 import { formatListingPrice, type ListingTransactionType } from '@/lib/listings/domain'
 
 type OfferableListing = { id: string; title: string; coverPhotoUrl: string | null }
-type RequestableType = 'sell' | 'gift'
+type RequestableType = 'sell' | 'gift' | 'lend'
 
 function defaultRequestMessage(type: RequestableType, title: string, priceCents: number | null) {
-    if (type === 'sell') {
-        return priceCents !== null
-            ? `Hi! I'd like to buy "${title}" for ${formatListingPrice(priceCents)}.`
-            : `Hi! I'd like to buy "${title}".`
+    switch (type) {
+        case 'sell':
+            return priceCents !== null
+                ? `Hi! I'd like to buy "${title}" for ${formatListingPrice(priceCents)}.`
+                : `Hi! I'd like to buy "${title}".`
+        case 'gift':
+            return `Hi! I'd love to take "${title}" off your hands.`
+        case 'lend':
+            return `Hi! Could I borrow "${title}"?`
     }
-    return `Hi! I'd love to take "${title}" off your hands.`
+}
+
+function requestButtonLabel(type: RequestableType, priceCents: number | null) {
+    switch (type) {
+        case 'sell':
+            return priceCents !== null ? `Buy for ${formatListingPrice(priceCents)}` : 'Buy'
+        case 'gift':
+            return 'Request it'
+        case 'lend':
+            return 'Request to borrow'
+    }
 }
 
 export function ExchangeActions({
@@ -47,7 +62,7 @@ export function ExchangeActions({
         setActiveType(type)
         startTransition(async () => {
             const message = defaultRequestMessage(type, listingTitle, priceCents)
-            const result = await requestConversation(ownerId, listingId, message, 'listing')
+            const result = await requestConversation(ownerId, listingId, message, 'listing', type)
 
             if (!result.success) {
                 setError(result.error ?? 'Could not send your request. Please try again.')
@@ -87,7 +102,8 @@ export function ExchangeActions({
     return (
         <div className="mt-6 flex flex-col gap-2">
             {transactionTypes.map((type) => {
-                if (type === 'trade') {
+                switch (type) {
+                case 'trade':
                     return (
                         <div key="trade">
                             <button
@@ -160,23 +176,28 @@ export function ExchangeActions({
                             )}
                         </div>
                     )
+                case 'sell':
+                case 'gift':
+                case 'lend':
+                    return (
+                        <button
+                            key={type}
+                            type="button"
+                            onClick={() => handleRequest(type)}
+                            disabled={isPending}
+                            className="rounded-lg bg-[#7c9272] px-4 py-3 font-medium text-white transition hover:bg-[#667b5f] disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                            {isPending && activeType === type
+                                ? 'Sending…'
+                                : requestButtonLabel(type, priceCents)}
+                        </button>
+                    )
+                default:
+                    // Exhaustiveness check: a new ListingTransactionType added
+                    // to lib/listings/domain.ts without a case above fails to
+                    // compile here instead of silently rendering no button.
+                    return type satisfies never
                 }
-
-                return (
-                    <button
-                        key={type}
-                        type="button"
-                        onClick={() => handleRequest(type)}
-                        disabled={isPending}
-                        className="rounded-lg bg-[#7c9272] px-4 py-3 font-medium text-white transition hover:bg-[#667b5f] disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                        {isPending && activeType === type
-                            ? 'Sending…'
-                            : type === 'sell' && priceCents !== null
-                                ? `Buy for ${formatListingPrice(priceCents)}`
-                                : 'Request it'}
-                    </button>
-                )
             })}
 
             {error && (

@@ -241,16 +241,28 @@ export async function acceptListingOffer(offerId: string) {
         return { success: false, error: "This listing already has an ongoing conversation. If it didn't work out, close it before accepting another offer." }
     }
 
-    const reservedTarget = await reserveListing(admin, offer.listing_id)
-    if (!reservedTarget) {
-        return { success: false, error: 'This listing was just reserved by another offer. Please refresh and try again.' }
+    // Accepting is mutual agreement -- both sides reserve immediately, via
+    // the same reserveListing helper acceptConversationRequest uses, so a
+    // listing that raced onto some other reservation in between can't be
+    // silently double-booked here.
+    const targetReserved = await reserveListing(admin, offer.listing_id, userId)
+    if (!targetReserved) {
+        return { success: false, error: 'Could not reserve this listing. Please try again.' }
     }
 
-    const reservedOffered = await reserveListing(admin, offer.offered_listing_id)
-    if (!reservedOffered) {
+    const offeredReserved = await reserveListing(admin, offer.offered_listing_id)
+    if (!offeredReserved) {
         await releaseListing(admin, offer.listing_id)
         return { success: false, error: 'The offered listing is no longer available. Ask them to send a new offer.' }
     }
+
+    // A trade offer is unambiguously a trade, so active_transaction_type is
+    // set directly here (no need to carry it through a request the way
+    // sell/gift/lend do via conversations.transaction_type).
+    await admin
+        .from('listings')
+        .update({ active_transaction_type: 'trade' })
+        .in('id', [offer.listing_id, offer.offered_listing_id])
 
     // Start the conversation before marking the offer accepted, so a failure
     // here rolls back the reservation instead of leaving both listings stuck
@@ -323,7 +335,7 @@ export async function markListingFulfilled(listingId: string) {
     const admin = createAdminClient()
     const { data, error } = await admin
         .from('listings')
-        .update({ status: 'fulfilled' })
+        .update({ status: 'fulfilled', active_transaction_type: null })
         .eq('id', listingId)
         .eq('owner_id', userId)
         .eq('status', 'reserved')
@@ -338,7 +350,7 @@ export async function markListingFulfilled(listingId: string) {
     if (pairedListingId) {
         await admin
             .from('listings')
-            .update({ status: 'fulfilled' })
+            .update({ status: 'fulfilled', active_transaction_type: null })
             .eq('id', pairedListingId)
             .eq('status', 'reserved')
         revalidatePath(`/troop/listings/${pairedListingId}`)
@@ -387,7 +399,7 @@ export async function unreserveListing(listingId: string) {
     const admin = createAdminClient()
     const { data, error } = await admin
         .from('listings')
-        .update({ status: 'active' })
+        .update({ status: 'active', active_transaction_type: null })
         .eq('id', listingId)
         .eq('owner_id', userId)
         .eq('status', 'reserved')
@@ -402,7 +414,7 @@ export async function unreserveListing(listingId: string) {
     if (pairedListingId) {
         await admin
             .from('listings')
-            .update({ status: 'active' })
+            .update({ status: 'active', active_transaction_type: null })
             .eq('id', pairedListingId)
             .eq('status', 'reserved')
         revalidatePath(`/troop/listings/${pairedListingId}`)
@@ -422,6 +434,52 @@ export async function unreserveListing(listingId: string) {
 
     if (closeConversationError) {
         console.error('Could not close conversation for unreserved listing:', closeConversationError)
+    }
+
+    revalidatePath(`/troop/listings/${listingId}`)
+    revalidatePath('/messages')
+    revalidatePath('/profile')
+    return { success: true }
+}
+
+// Ends a lend reservation once the item is back. Unlike markListingFulfilled
+// (sell/gift/trade -- always terminal), a lend can go back out again, so the
+// owner chooses whether to relist it or take it off their profile. Only
+// valid while active_transaction_type is 'lend' -- sell/gift/trade
+// reservations use markListingFulfilled/unreserveListing instead.
+export async function markListingReturned(listingId: string, action: 'relist' | 'remove') {
+    const { userId } = await getCurrentUserId()
+    if (!userId) return { success: false, error: 'You must be logged in.' }
+
+    const admin = createAdminClient()
+    const { data, error } = await admin
+        .from('listings')
+        .update({
+            status: action === 'relist' ? 'active' : 'archived',
+            active_transaction_type: null,
+        })
+        .eq('id', listingId)
+        .eq('owner_id', userId)
+        .eq('status', 'reserved')
+        .eq('active_transaction_type', 'lend')
+        .select('id')
+        .maybeSingle()
+
+    if (error) return { success: false, error: 'Could not update this listing. Please try again.' }
+    if (!data) return { success: false, error: 'This listing is not currently out on loan.' }
+
+    // The loan with this borrower is over either way -- close the linked
+    // conversation, same as markListingFulfilled does for sell/gift/trade.
+    // Lending has no paired listing (that's a trade-only concept).
+    const { error: closeConversationError } = await admin
+        .from('conversations')
+        .update({ status: 'closed' })
+        .eq('origin_type', 'listing')
+        .eq('origin_id', listingId)
+        .eq('status', 'active')
+
+    if (closeConversationError) {
+        console.error('Could not close conversation for returned listing:', closeConversationError)
     }
 
     revalidatePath(`/troop/listings/${listingId}`)

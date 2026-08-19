@@ -2,8 +2,9 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { reserveListing, releaseListing } from '@/app/(beta-app)/troop/listing-reservation'
+import { reserveListing } from '@/app/(beta-app)/troop/listing-reservation'
 import { revalidatePath } from 'next/cache'
+import type { ListingTransactionType } from '@/lib/listings/domain'
 
 async function getCurrentUserId() {
     const db = await createClient()
@@ -71,13 +72,17 @@ export async function startActiveConversation(
     return { success: true, conversationId: data.id }
 }
 
-// Used when responding to a message board post, or requesting a sell/gift
-// listing — starts pending until accepted
+// Used when responding to a message board post, or requesting a sell/gift/
+// lend listing — starts pending until accepted. transactionType is only
+// meaningful for originType 'listing' — it's carried through to
+// acceptConversationRequest, which stamps it onto the listing as the
+// reservation actually happens.
 export async function requestConversation(
     otherUserId: string,
     originId: string,
     firstMessageContent: string,
-    originType: 'message_board' | 'listing' = 'message_board'
+    originType: 'message_board' | 'listing' = 'message_board',
+    transactionType?: ListingTransactionType,
 ) {
     const { db, userId } = await getCurrentUserId()
     if (!userId) return { success: false, error: 'You must be logged in.' }
@@ -117,6 +122,7 @@ export async function requestConversation(
             participant_two_id: otherUserId,
             origin_type: originType,
             origin_id: originId,
+            transaction_type: transactionType ?? null,
             status: 'pending',
             initiated_by: userId,
         })
@@ -154,7 +160,7 @@ export async function acceptConversationRequest(conversationId: string) {
 
     const { data: conversation } = await db
         .from('conversations')
-        .select('id, origin_type, origin_id')
+        .select('id, origin_type, origin_id, transaction_type')
         .eq('id', conversationId)
         .eq('status', 'pending')
         .neq('initiated_by', userId)
@@ -166,27 +172,25 @@ export async function acceptConversationRequest(conversationId: string) {
     // if there's already a active conversation; i.e listing is reserved.
     // This must happen before the conversation is flipped to 'active' below --
     // otherwise a failed reservation would still leave the conversation active.
+    // Stamping active_transaction_type here (not just status) is what lets
+    // the owner's completion UI later tell a lend apart from a sell/gift on
+    // a listing that offers several types at once.
     const isListingRequest = conversation.origin_type === 'listing' && conversation.origin_id !== null
     if (isListingRequest) {
         const reserved = await reserveListing(admin, conversation.origin_id!, userId)
         if (!reserved) {
             return { success: false, error: 'An active conversation about this listing already exists. Mark it as fell through before accepting another request.'}
         }
+        await admin
+            .from('listings')
+            .update({ active_transaction_type: conversation.transaction_type ?? null })
+            .eq('id', conversation.origin_id!)
     }
 
-    const { error } = await db
+    await db
         .from('conversations')
-        .update({ status: 'active'})
+        .update({ status: 'active' })
         .eq('id', conversationId)
-        .eq('status', 'pending')
-        .neq('initiated_by', userId)
-
-    if (error) {
-        // Roll back the reservation made above so the listing doesn't stay
-        // stuck reserved with no active conversation to show for it.
-        if (isListingRequest) await releaseListing(admin, conversation.origin_id!)
-        return { success: false, error: 'Could not accept this request at this time.'}
-    }
 
     revalidatePath('/messages')
     revalidatePath('/troop')

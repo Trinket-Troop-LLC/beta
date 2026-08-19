@@ -64,10 +64,10 @@ const listingDraftSchema = z
         }),
         transaction_types: z
             .array(z.enum(LISTING_TRANSACTION_TYPES, {
-                error: 'Choose only sell, trade, or gift.',
+                error: 'Choose only sell, trade, gift, or lend.',
             }))
-            .min(1, 'Choose whether you want to sell, trade, or gift this item.')
-            .max(3, 'Choose no more than sell, trade, and gift.')
+            .min(1, 'Choose whether you want to sell, trade, gift, or lend this item.')
+            .max(4, 'Choose no more than sell, trade, gift, and lend.')
             .transform((types) => [...new Set(types)]),
         price: z.string().trim().max(20, 'The price is too long.'),
         pickup_area: z
@@ -375,7 +375,7 @@ function getListingConstraintFailure(error: ProviderError) {
         {
             pattern: 'listings_transaction_types_check',
             field: 'transaction_types',
-            message: 'Choose one or more of sell, trade, or gift without duplicates.',
+            message: 'Choose one or more of sell, trade, gift, or lend without duplicates.',
         },
         {
             pattern: 'listings_price_check',
