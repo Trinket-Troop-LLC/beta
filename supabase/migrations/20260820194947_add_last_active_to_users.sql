@@ -1,0 +1,1 @@
+alter table users add column last_active_at timestamptz;

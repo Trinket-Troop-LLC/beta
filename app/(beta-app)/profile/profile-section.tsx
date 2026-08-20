@@ -9,6 +9,7 @@ import type { ListingCardData } from '@/components/listings/listing-card'
 import { compressProfilePicture } from '@/lib/compress-profile-picture'
 import { OwnerListingCard } from './owner-listing-card'
 import { updateProfile } from './profile-actions'
+import { formatLastActive } from '@/lib/last-active'
 
 type Responses = {
     neighborhood?: string
@@ -50,6 +51,7 @@ export function ProfileSection({
     username,
     preferredName,
     profilePictureUrl,
+    lastActive,
     responses,
     listings,
     listingsLoadError,
@@ -58,6 +60,7 @@ export function ProfileSection({
     username: string
     preferredName: string | null
     profilePictureUrl: string | null
+    lastActive: string | null
     responses: Responses
     listings: ListingCardData[]
     listingsLoadError: boolean
@@ -315,6 +318,7 @@ export function ProfileSection({
                         {preferredName && (
                             <p className="text-sm text-muted-foreground">{preferredName}</p>
                         )}
+                        <p className="text-xs text-[#9aa494]">{formatLastActive(lastActive)}</p>
                     </div>
                 </div>
 
