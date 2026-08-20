@@ -2,6 +2,8 @@ import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import { requireMember } from '@/lib/supabase/require-member'
 import { signProfilePictureUrl } from '@/lib/supabase/profile-pictures'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { findPairedTradeListingId } from '@/app/(beta-app)/troop/listing-lifecycle-actions'
 import { BetaAppChrome } from '@/components/beta-app-chrome'
 import { ChatView } from './chat-view'
 
@@ -44,7 +46,10 @@ async function ConversationContent({ conversationId }: { conversationId: string 
     // 'listing' and 'offer' conversations link back to a listing via
     // origin_id. Only surface the reservation controls (Mark complete /
     // Didn't work out, or the lend-specific relist/remove choice) to that
-    // listing's owner.
+    // listing's owner -- except for a trade ('offer'), which reserves two
+    // listings as one transaction (see acceptListingOffer). There, the other
+    // participant owns the *paired* listing, not origin_id, so look that up
+    // too or they'd never see the controls to mark their side complete.
     let ownedListing: { id: string; status: string; activeTransactionType: string | null } | null = null
     if ((conversation.origin_type === 'listing' || conversation.origin_type === 'offer') && conversation.origin_id) {
         const { data: linkedListing } = await db
@@ -58,6 +63,25 @@ async function ConversationContent({ conversationId }: { conversationId: string 
                 id: linkedListing.id,
                 status: linkedListing.status,
                 activeTransactionType: linkedListing.active_transaction_type,
+            }
+        } else if (linkedListing && conversation.origin_type === 'offer') {
+            const admin = createAdminClient()
+            const pairedListingId = await findPairedTradeListingId(admin, linkedListing.id)
+
+            if (pairedListingId) {
+                const { data: pairedListing } = await db
+                    .from('listings')
+                    .select('id, owner_id, status, active_transaction_type')
+                    .eq('id', pairedListingId)
+                    .maybeSingle()
+
+                if (pairedListing && pairedListing.owner_id === user.id) {
+                    ownedListing = {
+                        id: pairedListing.id,
+                        status: pairedListing.status,
+                        activeTransactionType: pairedListing.active_transaction_type,
+                    }
+                }
             }
         }
     }
