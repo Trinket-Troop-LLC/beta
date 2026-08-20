@@ -185,7 +185,6 @@ export function BetaApplicationForm() {
                                     type="checkbox"
                                     name="sms_consent"
                                     value="true"
-                                    required
                                     className="mt-1 size-4 accent-[#7c9272]"
                                 />
                                 <span>Yes, I would like to receive automated text messages from Trinket Troop
@@ -197,18 +196,31 @@ export function BetaApplicationForm() {
                                 Message &amp; data rates may apply depending on your mobile phone service plan. Reply HELP for help or
                                 STOP to opt out at any time.
                             </p>
-                            <p className="text-sm text-[#7c8072]">
-                                By checking this box you agree to our{' '}
-                                <a href="https://trinkettroop.com/sms-terms" target="_blank" rel="noreferrer" className="underline">
-                                    SMS Terms of Service
-                                </a>{' '}
-                                and{' '}
-                                <a href="https://trinkettroop.com/privacy-policy" target="_blank" rel="noreferrer" className="underline">
-                                    Privacy Policy
-                                </a>
-                                .
-                            </p>
                             <FieldError message={fieldErrors.sms_consent} />
+                        </fieldset>
+
+                        <fieldset className="flex flex-col gap-2 text-[#2c2c2c]">
+                            <label className="flex items-start gap-2">
+                                <input
+                                    type="checkbox"
+                                    name="tos_consent"
+                                    value="true"
+                                    required
+                                    className="mt-1 size-4 accent-[#7c9272]"
+                                />
+                                <span>
+                                    I agree to the{' '}
+                                    <a href="https://trinkettroop.com/sms-terms" target="_blank" rel="noreferrer" className="underline">
+                                        Terms of Service
+                                    </a>{' '}
+                                    and{' '}
+                                    <a href="https://trinkettroop.com/privacy-policy" target="_blank" rel="noreferrer" className="underline">
+                                        Privacy Policy
+                                    </a>
+                                    . *
+                                </span>
+                            </label>
+                            <FieldError message={fieldErrors.tos_consent} />
                         </fieldset>
 
                         <label className={labelClass}>

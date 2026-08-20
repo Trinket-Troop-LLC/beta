@@ -50,6 +50,7 @@ const betaApplicationSchema = z
         future_features: z.string().trim().max(3000),
         misc_thoughts: z.string().trim().max(3000),
         sms_consent: z.enum(['true', '']).transform((val) => val === 'true'),
+        tos_consent: z.enum(['true', '']).transform((val) => val === 'true'),
         website: z.string().max(200),
     })
     .superRefine((application, context) => {
@@ -60,11 +61,11 @@ const betaApplicationSchema = z
                 path: ['other_category'],
             })
         }
-        if (!application.sms_consent) {
+        if (!application.tos_consent) {
             context.addIssue({
                 code: 'custom',
-                message: 'Please agree to receive text messages to continue',
-                path: ['sms_consent'],
+                message: 'Please agree to the Terms of Service and Privacy Policy to continue',
+                path: ['tos_consent'],
             })
         }
     })
@@ -103,6 +104,7 @@ export async function submitBetaApplication(formData: FormData): Promise<SubmitR
         future_features: getText(formData, 'future_features'),
         misc_thoughts: getText(formData, 'misc_thoughts'),
         sms_consent: getText(formData, 'sms_consent'),
+        tos_consent: getText(formData, 'tos_consent'),
         website: getText(formData, 'website'),
     })
 
@@ -170,6 +172,7 @@ export async function submitBetaApplication(formData: FormData): Promise<SubmitR
         future_features,
         misc_thoughts,
         sms_consent,
+        tos_consent,
     } = validationFields.data
 
     const { error } = await db.from('applicants').insert({
@@ -190,6 +193,7 @@ export async function submitBetaApplication(formData: FormData): Promise<SubmitR
             misc_thoughts: misc_thoughts || null,
             profile_picture_path: profilePicturePath,
             sms_consent,
+            tos_consent,
         },
     })
 
