@@ -32,7 +32,8 @@ export function ChatView({
     currentUserId,
     otherUser,
     initialMessages,
-    ownedListing,
+    listing,
+    closedReason,
 }: {
     conversationId: string
     status: 'pending' | 'active'
@@ -40,18 +41,33 @@ export function ChatView({
     currentUserId: string
     otherUser: OtherUser
     initialMessages: Message[]
-    ownedListing: { id: string; status: string; activeTransactionType: string | null } | null
+    listing: { id: string; status: string; activeTransactionType: string | null; isOwner: boolean } | null
+    closedReason: 'fulfilled' | 'cancelled' | null
 }) {
     const router = useRouter()
     const [messages, setMessages] = useState(initialMessages)
     const [draft, setDraft] = useState('')
     const [isSending, setIsSending] = useState(false)
-    const [listingStatus, setListingStatus] = useState(ownedListing?.status ?? null)
+    const [listingStatus, setListingStatus] = useState(listing?.status ?? null)
+    // Once fulfilled/archived, "Members view available listings or their own"
+    // RLS stops a non-owner from reading the listing row at all, so their
+    // postgres_changes subscription on `listings` would never deliver that
+    // final transition (Realtime evaluates the SELECT policy against the new
+    // row). `conversations` has no such status gating for participants, so
+    // closed_reason on that row -- not listing.status -- is the reliable
+    // signal for "the deal is done" on the non-owner side.
+    const [dealFulfilled, setDealFulfilled] = useState(closedReason === 'fulfilled')
     const [isUpdatingListing, setIsUpdatingListing] = useState(false)
     const [listingActionError, setListingActionError] = useState<string | null>(null)
     const [showReturnChoice, setShowReturnChoice] = useState(false)
     const bottomRef = useRef<HTMLDivElement>(null)
-    const isLend = ownedListing?.activeTransactionType === 'lend'
+    const isLend = listing?.activeTransactionType === 'lend'
+    // handleMarkFulfilled/handleMarkReturned/handleUnreserve already redirect
+    // the clicking user straight off the server action's return value -- this
+    // ref stops the realtime listener below from redirecting them a second
+    // time (possibly away from wherever they've since navigated to) when the
+    // echo of their own update comes back over the subscription.
+    const hasHandledClosureRef = useRef(false)
 
     useEffect(() => {
         const db = createClient()
@@ -89,7 +105,70 @@ export function ChatView({
                         }
                     }
                 )
-                .subscribe()
+
+            // Only the owner reliably keeps read access to the listing across
+            // every status it can reach (see the dealFulfilled comment above),
+            // so this drives the owner's reserved/fulfilled/archived banners
+            // and controls. The non-owner side's "deal is done" signal comes
+            // from the conversations listener below instead.
+            if (listing?.isOwner) {
+                channel = channel.on(
+                    'postgres_changes',
+                    {
+                        event: 'UPDATE',
+                        schema: 'public',
+                        table: 'listings',
+                        filter: `id=eq.${listing.id}`,
+                    },
+                    (payload) => {
+                        setListingStatus((payload.new as { status: string }).status)
+                    }
+                )
+            }
+
+            channel = channel.on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'conversations',
+                    filter: `id=eq.${conversationId}`,
+                },
+                (payload) => {
+                    if (hasHandledClosureRef.current) return
+                    const newClosedReason = (payload.new as { closed_reason: string | null }).closed_reason
+                    if (newClosedReason === 'fulfilled') {
+                        hasHandledClosureRef.current = true
+                        setDealFulfilled(true)
+                        router.push(`/review/${conversationId}`)
+                    } else if (newClosedReason === 'cancelled') {
+                        hasHandledClosureRef.current = true
+                        router.push('/messages')
+                    }
+                }
+            )
+
+            // declineConversationRequest deletes the row outright rather than
+            // updating its status (see 20260815010000_allow_decline_conversation_delete.sql),
+            // so the initiator -- who can sit on this page watching a pending
+            // request, since there's no "active" gate on viewing it -- needs
+            // its own DELETE listener to get pushed out when it's declined.
+            channel = channel.on(
+                'postgres_changes',
+                {
+                    event: 'DELETE',
+                    schema: 'public',
+                    table: 'conversations',
+                    filter: `id=eq.${conversationId}`,
+                },
+                () => {
+                    if (hasHandledClosureRef.current) return
+                    hasHandledClosureRef.current = true
+                    router.push('/messages')
+                }
+            )
+
+            channel.subscribe()
         }
 
         setup()
@@ -98,7 +177,7 @@ export function ChatView({
             cancelled = true
             if (channel) db.removeChannel(channel)
         }
-    }, [conversationId, currentUserId])
+    }, [conversationId, currentUserId, listing, router])
 
     // Mark as read on open, covering messages that arrived before this view
     // mounted (the realtime handler above only catches ones that arrive
@@ -132,11 +211,12 @@ export function ChatView({
     }
 
     async function handleMarkFulfilled() {
-        if (!ownedListing || isUpdatingListing) return
+        if (!listing?.isOwner || isUpdatingListing) return
         setIsUpdatingListing(true)
         setListingActionError(null)
-        const result = await markListingFulfilled(ownedListing.id)
+        const result = await markListingFulfilled(listing.id)
         if (result.success) {
+            hasHandledClosureRef.current = true
             setListingStatus('fulfilled')
             router.push(`/review/${result.reviewConversationId ?? conversationId}`)
         } else {
@@ -146,12 +226,14 @@ export function ChatView({
     }
 
     async function handleUnreserve() {
-        if (!ownedListing || isUpdatingListing) return
+        if (!listing?.isOwner || isUpdatingListing) return
         setIsUpdatingListing(true)
         setListingActionError(null)
-        const result = await unreserveListing(ownedListing.id)
+        const result = await unreserveListing(listing.id)
         if (result.success) {
+            hasHandledClosureRef.current = true
             setListingStatus('active')
+            router.push('/messages')
         } else {
             setListingActionError(result.error ?? 'Could not update this listing.')
         }
@@ -159,13 +241,15 @@ export function ChatView({
     }
 
     async function handleMarkReturned(action: 'relist' | 'remove') {
-        if (!ownedListing || isUpdatingListing) return
+        if (!listing?.isOwner || isUpdatingListing) return
         setIsUpdatingListing(true)
         setListingActionError(null)
-        const result = await markListingReturned(ownedListing.id, action)
+        const result = await markListingReturned(listing.id, action)
         if (result.success) {
+            hasHandledClosureRef.current = true
             setListingStatus(action === 'relist' ? 'active' : 'archived')
             setShowReturnChoice(false)
+            router.push(`/review/${result.reviewConversationId ?? conversationId}`)
         } else {
             setListingActionError(result.error ?? 'Could not update this listing.')
         }
@@ -197,7 +281,7 @@ export function ChatView({
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 py-4">
-                {listingStatus === 'reserved' && isLend && (
+                {listingStatus === 'reserved' && isLend && listing?.isOwner && (
                     <div className="mb-4 rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-4 text-center shadow-sm">
                         {!showReturnChoice ? (
                             <>
@@ -249,7 +333,7 @@ export function ChatView({
                         )}
                     </div>
                 )}
-                {listingStatus === 'reserved' && !isLend && (
+                {listingStatus === 'reserved' && !isLend && listing?.isOwner && (
                     <div className="mb-4 rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-4 text-center shadow-sm">
                         <p className="mb-3 text-sm text-[#625f58]">
                             This listing is reserved for @{otherUser.username}.
@@ -275,12 +359,12 @@ export function ChatView({
                         )}
                     </div>
                 )}
-                {listingStatus === 'fulfilled' && (
+                {(listingStatus === 'fulfilled' || (dealFulfilled && listingStatus !== 'archived')) && (
                     <div className="mb-4 rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-4 text-center shadow-sm">
                         <p className="text-sm text-[#625f58]">This listing is marked complete.</p>
                     </div>
                 )}
-                {listingStatus === 'archived' && ownedListing && (
+                {listingStatus === 'archived' && listing?.isOwner && (
                     <div className="mb-4 rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-4 text-center shadow-sm">
                         <p className="text-sm text-[#625f58]">This item was taken off your profile.</p>
                     </div>
