@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { type ApplicantStatus, isApplicantStatus } from './applicant-status'
-import { sendApprovalText } from '@/lib/sms/notifications/approval'
+import { sendApprovalText } from '@/lib/sms/messages/approval'
 
 // Creates the real account for an approved applicant, but doesn't email them —
 // that happens separately, later, once the beta app is actually ready to use.

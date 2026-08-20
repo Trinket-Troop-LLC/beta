@@ -179,6 +179,38 @@ export function BetaApplicationForm() {
                             <FieldError message={fieldErrors.phone_number} />
                         </label>
 
+                        <fieldset className="flex flex-col gap-2 text-[#2c2c2c]">
+                            <label className="flex items-start gap-2">
+                                <input
+                                    type="checkbox"
+                                    name="sms_consent"
+                                    value="true"
+                                    required
+                                    className="mt-1 size-4 accent-[#7c9272]"
+                                />
+                                <span>Yes, I would like to receive automated text messages from Trinket Troop
+                                    about account approval, account help, and important updates. I understand I will receive up to BLANK
+                                    messages per month.
+                                </span>
+                            </label>
+                            <p className="text-sm text-[#7c8072]">
+                                Message &amp; data rates may apply depending on your mobile phone service plan. Reply HELP for help or
+                                STOP to opt out at any time.
+                            </p>
+                            <p className="text-sm text-[#7c8072]">
+                                By checking this box you agree to our{' '}
+                                <a href="https://trinkettroop.com/sms-terms" target="_blank" rel="noreferrer" className="underline">
+                                    SMS Terms of Service
+                                </a>{' '}
+                                and{' '}
+                                <a href="https://trinkettroop.com/privacy-policy" target="_blank" rel="noreferrer" className="underline">
+                                    Privacy Policy
+                                </a>
+                                .
+                            </p>
+                            <FieldError message={fieldErrors.sms_consent} />
+                        </fieldset>
+
                         <label className={labelClass}>
                             <span>username *</span>
                             <input
