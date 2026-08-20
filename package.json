@@ -23,6 +23,7 @@
     "react-dom": "^19.0.0",
     "tailwind-merge": "^3.3.0",
     "twilio": "^6.0.2",
+    "web-push": "^3.6.7",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -32,6 +33,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/web-push": "^3.6.4",
     "autoprefixer": "^10.4.20",
     "esbuild": "^0.28.2",
     "eslint": "^9",

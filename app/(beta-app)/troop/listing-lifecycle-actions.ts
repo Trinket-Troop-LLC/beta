@@ -6,6 +6,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { signProfilePictureUrls } from '@/lib/supabase/profile-pictures'
 import { startActiveConversation } from '@/app/(beta-app)/messages/actions'
 import { reserveListing, releaseListing } from '@/app/(beta-app)/troop/listing-reservation'
+import { createNotification } from '@/lib/notifications/create'
 
 async function getCurrentUserId() {
     const db = await createClient()
@@ -207,6 +208,13 @@ export async function submitListingOffer(targetListingId: string, offeredListing
         return { success: false, error: 'Could not send your offer. Please try again.' }
     }
 
+    await createNotification({
+        recipientId: targetListing.owner_id,
+        type: 'listing_interest',
+        actorId: userId,
+        relatedListingId: targetListingId,
+    })
+
     revalidatePath(`/troop/listings/${targetListingId}`)
     return { success: true }
 }
@@ -375,21 +383,40 @@ export async function markListingFulfilled(listingId: string) {
     // close the linked conversation now that the transaction is done --
     // covers both trade offers ('offer') and direct sell/gift requests
     // ('listing'), which are the two origin types that link to a listing.
-    const { error: closeConversationError } = await admin
+    const { data: closedConversations, error: closeConversationError } = await admin
         .from('conversations')
         .update({ status: 'closed' })
         .in('origin_type', ['offer', 'listing'])
         .in('origin_id', pairedListingId ? [listingId, pairedListingId] : [listingId])
         .eq('status', 'active')
+        .select('id, participant_one_id, participant_two_id')
 
     if (closeConversationError) {
         console.error('Could not close conversation for fulfilled listing:', closeConversationError)
     }
 
+    // Prompt both sides to review the exchange: the other participant gets
+    // notified now, and the caller (who just marked it complete) is sent
+    // straight into the review flow by the returned conversation id.
+    const exchangeConversation = closedConversations?.[0] ?? null
+    if (exchangeConversation) {
+        const otherUserId = exchangeConversation.participant_one_id === userId
+            ? exchangeConversation.participant_two_id
+            : exchangeConversation.participant_one_id
+
+        await createNotification({
+            recipientId: otherUserId,
+            type: 'exchange_complete_review_prompt',
+            actorId: userId,
+            relatedConversationId: exchangeConversation.id,
+            relatedListingId: listingId,
+        })
+    }
+
     revalidatePath(`/troop/listings/${listingId}`)
     revalidatePath('/messages')
     revalidatePath('/profile')
-    return { success: true }
+    return { success: true, reviewConversationId: exchangeConversation?.id ?? null }
 }
 
 export async function unreserveListing(listingId: string) {
@@ -425,15 +452,30 @@ export async function unreserveListing(listingId: string) {
     // listing would create a second active conversation for the same listing.
     // Covers both trade offers ('offer') and direct sell/gift requests
     // ('listing'), which are the two origin types that link to a listing.
-    const { error: closeConversationError } = await admin
+    const { data: closedConversations, error: closeConversationError } = await admin
         .from('conversations')
         .update({ status: 'closed' })
         .in('origin_type', ['offer', 'listing'])
         .in('origin_id', pairedListingId ? [listingId, pairedListingId] : [listingId])
         .eq('status', 'active')
+        .select('id, participant_one_id, participant_two_id')
 
     if (closeConversationError) {
         console.error('Could not close conversation for unreserved listing:', closeConversationError)
+    }
+
+    for (const conversation of closedConversations ?? []) {
+        const otherUserId = conversation.participant_one_id === userId
+            ? conversation.participant_two_id
+            : conversation.participant_one_id
+
+        await createNotification({
+            recipientId: otherUserId,
+            type: 'exchange_cancelled',
+            actorId: userId,
+            relatedConversationId: conversation.id,
+            relatedListingId: listingId,
+        })
     }
 
     revalidatePath(`/troop/listings/${listingId}`)

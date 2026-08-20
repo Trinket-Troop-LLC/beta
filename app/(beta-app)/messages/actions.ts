@@ -5,6 +5,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { reserveListing } from '@/app/(beta-app)/troop/listing-reservation'
 import { revalidatePath } from 'next/cache'
 import type { ListingTransactionType } from '@/lib/listings/domain'
+import { createNotification } from '@/lib/notifications/create'
+import { sendPushNotification } from '@/lib/notifications/push-send'
 
 async function getCurrentUserId() {
     const db = await createClient()
@@ -111,6 +113,16 @@ export async function requestConversation(
             content: firstMessageContent,
         })
         if (messageError) return { success: false, error: 'Could not send your message.' }
+
+        if (originType === 'listing') {
+            await createNotification({
+                recipientId: otherUserId,
+                type: 'listing_interest',
+                actorId: userId,
+                relatedListingId: originId,
+            })
+        }
+
         revalidatePath('/messages')
         return { success: true, conversationId: existingId }
     }
@@ -147,6 +159,15 @@ export async function requestConversation(
         content: firstMessageContent,
     })
     if (messageError) return { success: false, error: 'Could not send your message.' }
+
+    if (originType === 'listing') {
+        await createNotification({
+            recipientId: otherUserId,
+            type: 'listing_interest',
+            actorId: userId,
+            relatedListingId: originId,
+        })
+    }
 
     revalidatePath('/messages')
     return { success: true, conversationId: conversation.id }
@@ -232,6 +253,49 @@ export async function sendMessage(conversationId: string, content: string) {
 
     if (error || !data) return { success: false, error: 'Could not send message. This conversation may not be active yet.' }
 
+    // Unread messages get a push notification and a badge count (see
+    // markMessagesRead/getUnreadMessageCount), but deliberately never a row
+    // in `notifications` -- that list is for discrete events, not every
+    // message in an open-ended chat.
+    const { data: conversation } = await db
+        .from('conversations')
+        .select('participant_one_id, participant_two_id')
+        .eq('id', conversationId)
+        .maybeSingle()
+
+    if (conversation) {
+        const recipientId = conversation.participant_one_id === userId
+            ? conversation.participant_two_id
+            : conversation.participant_one_id
+
+        const { data: sender } = await db.from('users').select('username').eq('id', userId).maybeSingle()
+        const preview = trimmed.length > 120 ? `${trimmed.slice(0, 117)}...` : trimmed
+
+        await sendPushNotification(recipientId, {
+            title: sender?.username ? `New message from @${sender.username}` : 'New message',
+            body: preview,
+            url: `${process.env.NEXT_PUBLIC_SITE_URL ?? ''}/messages/${conversationId}`,
+        })
+    }
+
     revalidatePath('/messages')
     return { success: true, message: data }
+}
+
+// Marks every message in a conversation not sent by the caller as read --
+// called when the caller opens/is viewing that conversation. Drives the
+// unread badge on the Messages tab (see lib/messages/get-unread-count.ts).
+export async function markMessagesRead(conversationId: string) {
+    const { db, userId } = await getCurrentUserId()
+    if (!userId) return { success: false, error: 'You must be logged in.' }
+
+    const { error } = await db
+        .from('messages')
+        .update({ read_at: new Date().toISOString() })
+        .eq('conversation_id', conversationId)
+        .neq('sender_id', userId)
+        .is('read_at', null)
+
+    if (error) return { success: false, error: 'Could not mark messages read.' }
+    return { success: true }
 }

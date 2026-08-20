@@ -1,7 +1,8 @@
 import { Suspense } from 'react'
 import { requireMember } from '@/lib/supabase/require-member'
 import { signProfilePictureUrl, signProfilePictureUrls } from '@/lib/supabase/profile-pictures'
-import { BetaBottomNav } from '@/components/beta-bottom-nav'
+import { BetaAppChrome } from '@/components/beta-app-chrome'
+import { PushNotificationToggle } from '@/components/push-notification-toggle'
 import { ProfileSection } from './profile-section'
 import { ProfileViewSwitcher } from './profile-view-switcher'
 import { MyTroop } from './my-troop'
@@ -113,6 +114,9 @@ async function ProfileContent({ searchParams }: { searchParams: ProfileSearchPar
 
     return (
         <>
+            <div className="mb-4 text-left">
+                <PushNotificationToggle />
+            </div>
             <ProfileViewSwitcher
                 profileView={
                     <ProfileSection
@@ -164,7 +168,7 @@ export default function ProfilePage({ searchParams }: { searchParams: ProfileSea
                     <ProfileContent searchParams={searchParams} />
                 </div>
             </Suspense>
-            <BetaBottomNav />
+            <BetaAppChrome />
         </main>
     )
 }

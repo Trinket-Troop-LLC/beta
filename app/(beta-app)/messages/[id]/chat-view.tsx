@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowLeft, UserRound, Send } from 'lucide-react'
-import { sendMessage } from '../actions'
+import { sendMessage, markMessagesRead } from '../actions'
 import { markListingFulfilled, unreserveListing, markListingReturned } from '@/app/(beta-app)/troop/listing-lifecycle-actions'
 
 type Message = {
@@ -41,6 +42,7 @@ export function ChatView({
     initialMessages: Message[]
     ownedListing: { id: string; status: string; activeTransactionType: string | null } | null
 }) {
+    const router = useRouter()
     const [messages, setMessages] = useState(initialMessages)
     const [draft, setDraft] = useState('')
     const [isSending, setIsSending] = useState(false)
@@ -82,6 +84,9 @@ export function ChatView({
                             if (prev.some((m) => m.id === newMessage.id)) return prev
                             return [...prev, newMessage]
                         })
+                        if (newMessage.sender_id !== currentUserId) {
+                            markMessagesRead(conversationId)
+                        }
                     }
                 )
                 .subscribe()
@@ -93,6 +98,13 @@ export function ChatView({
             cancelled = true
             if (channel) db.removeChannel(channel)
         }
+    }, [conversationId, currentUserId])
+
+    // Mark as read on open, covering messages that arrived before this view
+    // mounted (the realtime handler above only catches ones that arrive
+    // while it's open).
+    useEffect(() => {
+        markMessagesRead(conversationId)
     }, [conversationId])
 
     useEffect(() => {
@@ -126,6 +138,7 @@ export function ChatView({
         const result = await markListingFulfilled(ownedListing.id)
         if (result.success) {
             setListingStatus('fulfilled')
+            router.push(`/review/${result.reviewConversationId ?? conversationId}`)
         } else {
             setListingActionError(result.error ?? 'Could not update this listing.')
         }

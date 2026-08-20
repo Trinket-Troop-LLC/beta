@@ -92,3 +92,40 @@ self.addEventListener("activate", (event) => {
 });
 
 serwist.addEventListeners();
+
+// Payload shape matches PushPayload in lib/notifications/push-send.ts.
+self.addEventListener("push", (event) => {
+  if (!event.data) return;
+
+  let payload: { title: string; body: string; url: string };
+  try {
+    payload = event.data.json();
+  } catch {
+    return;
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(payload.title, {
+      body: payload.body,
+      icon: "/icon.png",
+      data: { url: payload.url },
+    }),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = (event.notification.data as { url?: string } | undefined)?.url;
+  if (!url) return;
+
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url === url && "focus" in client) {
+          return client.focus();
+        }
+      }
+      return self.clients.openWindow(url);
+    }),
+  );
+});
