@@ -234,6 +234,30 @@ export async function declineConversationRequest(conversationId: string) {
     return { success: true }
 }
 
+// A plain participant-initiated close -- no accept/decline, no listing
+// transaction involved. Either side of an active conversation can end it;
+// once closed, `findExistingConversation` won't reuse the thread, so a new
+// message to the same person/origin starts a fresh request instead.
+export async function closeConversation(conversationId: string) {
+    const { db, userId } = await getCurrentUserId()
+    if (!userId) return { success: false, error: 'You must be logged in.' }
+
+    const { data: closed, error } = await db
+        .from('conversations')
+        .update({ status: 'closed', closed_reason: 'closed' })
+        .eq('id', conversationId)
+        .eq('status', 'active')
+        .or(`participant_one_id.eq.${userId},participant_two_id.eq.${userId}`)
+        .select('id')
+        .maybeSingle()
+
+    if (error) return { success: false, error: 'Could not end this conversation.' }
+    if (!closed) return { success: false, error: 'This conversation could not be found.' }
+
+    revalidatePath('/messages')
+    return { success: true }
+}
+
 export async function sendMessage(conversationId: string, content: string) {
     const { db, userId } = await getCurrentUserId()
     if (!userId) return { success: false, error: 'You must be logged in.' }

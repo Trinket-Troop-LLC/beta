@@ -6,8 +6,9 @@ import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowLeft, UserRound, Send } from 'lucide-react'
-import { sendMessage, markMessagesRead } from '../actions'
+import { sendMessage, markMessagesRead, closeConversation } from '../actions'
 import { markListingFulfilled, unreserveListing, markListingReturned } from '@/app/(beta-app)/troop/listing-lifecycle-actions'
+import { formatLastActive } from '@/lib/last-active'
 
 type Message = {
     id: string
@@ -23,6 +24,7 @@ type OtherUser = {
     id: string
     username: string
     profilePictureUrl: string | null
+    lastActiveAt: string | null
 }
 
 export function ChatView({
@@ -34,6 +36,7 @@ export function ChatView({
     initialMessages,
     listing,
     closedReason,
+    originType,
 }: {
     conversationId: string
     status: 'pending' | 'active'
@@ -42,7 +45,8 @@ export function ChatView({
     otherUser: OtherUser
     initialMessages: Message[]
     listing: { id: string; status: string; activeTransactionType: string | null; isOwner: boolean } | null
-    closedReason: 'fulfilled' | 'cancelled' | null
+    closedReason: 'fulfilled' | 'cancelled' | 'closed' | null
+    originType: string
 }) {
     const router = useRouter()
     const [messages, setMessages] = useState(initialMessages)
@@ -60,7 +64,15 @@ export function ChatView({
     const [isUpdatingListing, setIsUpdatingListing] = useState(false)
     const [listingActionError, setListingActionError] = useState<string | null>(null)
     const [showReturnChoice, setShowReturnChoice] = useState(false)
+    const [isEnding, setIsEnding] = useState(false)
+    const [showEndConfirm, setShowEndConfirm] = useState(false)
+    const [endError, setEndError] = useState<string | null>(null)
     const bottomRef = useRef<HTMLDivElement>(null)
+    // Listing-linked threads already have their own domain-specific ways to
+    // close (mark complete / didn't work out / unreserve below) -- a plain
+    // "end conversation" control is only for threads with no transaction
+    // attached to them, so it can't be used to dodge that flow.
+    const canEndConversation = originType === 'message_board' || originType === 'direct'
     const isLend = listing?.activeTransactionType === 'lend'
     // handleMarkFulfilled/handleMarkReturned/handleUnreserve already redirect
     // the clicking user straight off the server action's return value -- this
@@ -141,7 +153,7 @@ export function ChatView({
                         hasHandledClosureRef.current = true
                         setDealFulfilled(true)
                         router.push(`/review/${conversationId}`)
-                    } else if (newClosedReason === 'cancelled') {
+                    } else if (newClosedReason === 'cancelled' || newClosedReason === 'closed') {
                         hasHandledClosureRef.current = true
                         router.push('/messages')
                     }
@@ -256,6 +268,21 @@ export function ChatView({
         setIsUpdatingListing(false)
     }
 
+    async function handleEndConversation() {
+        if (isEnding) return
+        setIsEnding(true)
+        setEndError(null)
+        const result = await closeConversation(conversationId)
+        if (result.success) {
+            hasHandledClosureRef.current = true
+            router.push('/messages')
+        } else {
+            setEndError(result.error ?? 'Could not end this conversation.')
+            setIsEnding(false)
+            setShowEndConfirm(false)
+        }
+    }
+
     const isPendingForMe = status === 'pending' && !initiatedByMe
 
     return (
@@ -277,8 +304,47 @@ export function ChatView({
                         <UserRound className="size-4 text-[#9aaa90]" />
                     )}
                 </div>
-                <p className="font-medium text-[#2c2c2c]">@{otherUser.username}</p>
+                <div className="min-w-0 flex-1">
+                    <p className="font-medium text-[#2c2c2c]">@{otherUser.username}</p>
+                    <p className="text-xs text-[#9aa494]">{formatLastActive(otherUser.lastActiveAt)}</p>
+                </div>
+                {canEndConversation && status === 'active' && (
+                    showEndConfirm ? (
+                        <div className="flex shrink-0 items-center gap-2 text-xs">
+                            <span className="text-[#625f58]">End this conversation?</span>
+                            <button
+                                type="button"
+                                onClick={handleEndConversation}
+                                disabled={isEnding}
+                                className="rounded-full bg-red-600 px-2.5 py-1 font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                End
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setShowEndConfirm(false)}
+                                disabled={isEnding}
+                                className="rounded-full border border-[#ded8cc] px-2.5 py-1 font-medium text-[#625f58] transition hover:bg-[#f5efe5]"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    ) : (
+                        <button
+                            type="button"
+                            onClick={() => setShowEndConfirm(true)}
+                            className="shrink-0 rounded-full px-2.5 py-1 text-xs font-medium text-[#7c8072] transition hover:bg-[#f5efe5] hover:text-[#30392d]"
+                        >
+                            End conversation
+                        </button>
+                    )
+                )}
             </div>
+            {endError && (
+                <p role="alert" className="border-b border-[#ded8cc]/70 bg-[#faf7f0]/90 px-4 py-2 text-sm text-red-600">
+                    {endError}
+                </p>
+            )}
 
             <div className="flex-1 overflow-y-auto px-4 py-4">
                 {listingStatus === 'reserved' && isLend && listing?.isOwner && (

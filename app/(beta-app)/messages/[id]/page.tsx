@@ -31,7 +31,7 @@ async function ConversationContent({ conversationId }: { conversationId: string 
 
     const { data: otherProfile } = await db
         .from('users')
-        .select('id, username, responses')
+        .select('id, username, responses, last_active_at')
         .eq('id', otherUserId)
         .single()
 
@@ -114,10 +114,12 @@ async function ConversationContent({ conversationId }: { conversationId: string 
                 id: otherUserId,
                 username: otherProfile?.username ?? 'Unknown',
                 profilePictureUrl: otherUserPictureUrl,
+                lastActiveAt: otherProfile?.last_active_at ?? null,
             }}
             initialMessages={messages ?? []}
             listing={listing}
             closedReason={conversation.closed_reason ?? null}
+            originType={conversation.origin_type}
         />
     )
 }

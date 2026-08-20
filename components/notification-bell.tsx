@@ -3,11 +3,11 @@ import { Bell } from 'lucide-react'
 
 export function NotificationBell({ unreadCount }: { unreadCount: number }) {
     return (
-        <div className="fixed inset-x-0 top-0 z-40 flex justify-end px-4 pt-4">
+        <div className="pointer-events-none fixed inset-x-0 top-0 z-40 flex justify-end px-4 pt-4">
             <Link
                 href="/notifications"
                 aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
-                className="relative flex size-11 items-center justify-center rounded-full border border-[#ded8cc] bg-[#fffdf9]/95 text-[#30392d] shadow-lg backdrop-blur transition hover:bg-[#f5efe5]"
+                className="pointer-events-auto relative flex size-11 items-center justify-center rounded-full border border-[#ded8cc] bg-[#fffdf9]/95 text-[#30392d] shadow-lg backdrop-blur transition hover:bg-[#f5efe5]"
             >
                 <Bell size={18} />
                 {unreadCount > 0 && (

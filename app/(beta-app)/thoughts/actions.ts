@@ -2,11 +2,12 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { createNotification } from '@/lib/notifications/create'
+import { requestConversation } from '@/app/(beta-app)/messages/actions'
 
 const bulletinPhotosBucket = 'bulletin-photos'
 const maxBulletinPhotoCount = 4
 const maxBulletinContentLength = 2000
+const maxBulletinMessageLength = 1000
 const bulletinPhotoNamePattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(jpg|png)$/
 
 type ActionResult = { success: boolean; error?: string }
@@ -58,6 +59,8 @@ function getOwnedBulletinPhotoPaths(userId: string, imagePaths: string[]): strin
 export async function createBulletinPost(
     content: string,
     imagePaths: string[],
+    allowMessages: boolean,
+    visibility: 'public' | 'troop'
 ): Promise<CreatePostResult> {
     const { db, userId } = await getCurrentUserId()
     if (!userId) return { success: false, error: 'You must be logged in to create a post' }
@@ -80,6 +83,8 @@ export async function createBulletinPost(
         .insert({
             author_id: userId,
             content: trimmedContent,
+            allow_messages: allowMessages,
+            visibility: visibility,
         })
         .select('id')
         .single()
@@ -184,38 +189,52 @@ export async function createBulletinReply(
         }
     }
 
-    // notify whoever this reply was actually directed at: the parent
-    // reply's author if this is a nested reply, otherwise the original
-    // post's author — never notify someone replying to themselves
-    let recipientId: string | null = null
-
-    if (resolvedParentReplyId) {
-        const { data: parentReply } = await db
-            .from('bulletin_replies')
-            .select('author_id')
-            .eq('id', resolvedParentReplyId)
-            .maybeSingle()
-        recipientId = parentReply?.author_id ?? null
-    } else {
-        const { data: post } = await db
-            .from('bulletin_posts')
-            .select('author_id')
-            .eq('id', postId)
-            .maybeSingle()
-        recipientId = post?.author_id ?? null
-    }
-
-    if (recipientId && recipientId !== userId) {
-        await createNotification({
-            recipientId,
-            type: 'bulletin_reply',
-            actorId: userId,
-            relatedBulletinPostId: postId,
-        })
-    }
-
     revalidatePath('/thoughts')
     return { success: true, replyId: reply.id, parentReplyId: resolvedParentReplyId }
+}
+
+type RequestMessageResult =
+    | { success: true; conversationId: string }
+    | { success: false; error: string }
+
+// Sends the opening DM for "respond to this post" -- reuses the same
+// pending-until-accepted conversation flow as replying to a listing (see
+// requestConversation), so this always lands in the recipient's Requests
+// tab as a message request rather than an open thread.
+export async function requestBulletinMessage(postId: string, message: string): Promise<RequestMessageResult> {
+    const { db, userId } = await getCurrentUserId()
+    if (!userId) return { success: false, error: 'You must be logged in to send a message' }
+
+    const trimmed = message.trim()
+    if (!trimmed) {
+        return { success: false, error: 'Write a message to send' }
+    }
+    if (trimmed.length > maxBulletinMessageLength) {
+        return { success: false, error: `Keep it to ${maxBulletinMessageLength} characters or fewer` }
+    }
+
+    const { data: post } = await db
+        .from('bulletin_posts')
+        .select('id, author_id, allow_messages')
+        .eq('id', postId)
+        .maybeSingle()
+
+    if (!post) {
+        return { success: false, error: 'That post could not be found.' }
+    }
+    if (post.author_id === userId) {
+        return { success: false, error: "You can't message yourself about your own post." }
+    }
+    if (!post.allow_messages) {
+        return { success: false, error: 'This person has turned off messages for this post.' }
+    }
+
+    const result = await requestConversation(post.author_id, post.id, trimmed, 'message_board')
+    if (!result.success) {
+        return { success: false, error: result.error ?? 'Could not send your message.' }
+    }
+
+    return { success: true, conversationId: result.conversationId }
 }
 
 export async function deletePost(postId: string): Promise<ActionResult> {
