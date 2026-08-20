@@ -3,7 +3,7 @@ import { Suspense } from 'react'
 import { requireMember } from '@/lib/supabase/require-member'
 import { signProfilePictureUrls } from '@/lib/supabase/profile-pictures'
 import { signBulletinPhotoUrls } from '@/lib/supabase/bulletin-photos'
-import { BetaBottomNav } from '@/components/beta-bottom-nav'
+import { BetaAppChrome } from '@/components/beta-app-chrome'
 import { BulletinFeed } from './bulletin-feed'
 import type { BulletinAuthor, BulletinPost, BulletinReply } from './types'
 
@@ -152,7 +152,7 @@ export default function ThoughtsPage() {
             <Suspense fallback={null}>
                 <ThoughtsContent />
             </Suspense>
-            <BetaBottomNav />
+            <BetaAppChrome />
         </main>
     )
 }

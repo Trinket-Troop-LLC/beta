@@ -12,7 +12,7 @@ const tabs = [
   { id: "profile", label: "Profile", icon: UserRound, href: "/profile" },
 ] as const;
 
-export function BetaBottomNav() {
+export function BetaBottomNav({ unreadMessageCount = 0 }: { unreadMessageCount?: number }) {
   const pathname = usePathname();
 
   const activeTab = tabs.find((tab) => tab.href === pathname) ?? tabs[0];
@@ -28,14 +28,21 @@ export function BetaBottomNav() {
               <Link
                 key={id}
                 href={href}
-                className={`flex flex-1 flex-col items-center justify-center rounded-full px-3 py-2 transition ${
+                className={`relative flex flex-1 flex-col items-center justify-center rounded-full px-3 py-2 transition ${
                   isActive
                     ? "bg-[#7c9272] text-white"
                     : "text-[#625f58] hover:bg-[#f5efe5] hover:text-[#30392d]"
                 }`}
                 aria-current={isActive ? "page" : undefined}
               >
-                <Icon size={18} />
+                <span className="relative">
+                  <Icon size={18} />
+                  {id === "messages" && unreadMessageCount > 0 && (
+                    <span className="absolute -right-2 -top-1.5 flex min-w-[16px] items-center justify-center rounded-full bg-[#c1443f] px-1 text-[9px] font-semibold text-white">
+                      {unreadMessageCount > 9 ? "9+" : unreadMessageCount}
+                    </span>
+                  )}
+                </span>
                 <span className="mt-1 text-[11px] font-medium">{label}</span>
               </Link>
             );

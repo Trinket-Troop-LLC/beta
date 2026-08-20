@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { createNotification } from '@/lib/notifications/create'
 
 type ActionResult = { success: boolean; error?: string }
 
@@ -55,6 +56,13 @@ export async function sendFriendRequest(addresseeId: string): Promise<ActionResu
         return { success: false, error: 'Could not send the request. Please try again.' }
     }
 
+    // send notification to user who got sent the request
+    await createNotification({
+        recipientId: addresseeId,
+        type: 'friend_request',
+        actorId: userId,
+    })
+
     revalidatePath('/profile')
     return { success: true }
 }
@@ -73,7 +81,7 @@ export async function acceptFriendRequest(friendshipId: string): Promise<ActionR
         .eq('id', friendshipId)
         .eq('addressee_id', userId)
         .eq('status', 'pending')
-        .select('id')
+        .select('id, requester_id')
         .maybeSingle()
 
     if (error) {
@@ -83,6 +91,13 @@ export async function acceptFriendRequest(friendshipId: string): Promise<ActionR
     if (!updated) {
         return { success: false, error: 'This request no longer exists.' }
     }
+
+    // send notification to person who sent the friend request
+    await createNotification({
+        recipientId: updated.requester_id,
+        type: 'friend_request_accepted',
+        actorId: userId,
+    })
 
     revalidatePath('/profile')
     return { success: true }

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { createNotification } from '@/lib/notifications/create'
 
 const bulletinPhotosBucket = 'bulletin-photos'
 const maxBulletinPhotoCount = 4
@@ -181,6 +182,36 @@ export async function createBulletinReply(
         if (photosError) {
             return { success: false, error: 'Reply posted, but photos could not be attached' }
         }
+    }
+
+    // notify whoever this reply was actually directed at: the parent
+    // reply's author if this is a nested reply, otherwise the original
+    // post's author — never notify someone replying to themselves
+    let recipientId: string | null = null
+
+    if (resolvedParentReplyId) {
+        const { data: parentReply } = await db
+            .from('bulletin_replies')
+            .select('author_id')
+            .eq('id', resolvedParentReplyId)
+            .maybeSingle()
+        recipientId = parentReply?.author_id ?? null
+    } else {
+        const { data: post } = await db
+            .from('bulletin_posts')
+            .select('author_id')
+            .eq('id', postId)
+            .maybeSingle()
+        recipientId = post?.author_id ?? null
+    }
+
+    if (recipientId && recipientId !== userId) {
+        await createNotification({
+            recipientId,
+            type: 'bulletin_reply',
+            actorId: userId,
+            relatedBulletinPostId: postId,
+        })
     }
 
     revalidatePath('/thoughts')

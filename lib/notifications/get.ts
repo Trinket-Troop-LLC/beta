@@ -15,7 +15,7 @@ export type NotificationSummary = {
 
 const NOTIFICATION_PAGE_SIZE = 30
 
-export async function getMyNotifications(): Promise
+export async function getMyNotifications(): Promise<
     { success: true; notifications: NotificationSummary[]; unreadCount: number } | { success: false; error: string }
 > {
     const db = await createClient()
@@ -62,4 +62,21 @@ export async function getMyNotifications(): Promise
     const unreadCount = notifications.filter((n) => !n.readAt).length
 
     return { success: true, notifications, unreadCount }
+}
+
+// Lightweight count-only query for the bell badge, so rendering it on every
+// page doesn't pull the full actor-joined notification list just to show a
+// number.
+export async function getUnreadNotificationCount(): Promise<number> {
+    const db = await createClient()
+    const { data: { user } } = await db.auth.getUser()
+    if (!user) return 0
+
+    const { count } = await db
+        .from('notifications')
+        .select('id', { count: 'exact', head: true })
+        .eq('recipient_id', user.id)
+        .is('read_at', null)
+
+    return count ?? 0
 }

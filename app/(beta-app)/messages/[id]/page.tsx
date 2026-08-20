@@ -2,7 +2,7 @@ import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import { requireMember } from '@/lib/supabase/require-member'
 import { signProfilePictureUrl } from '@/lib/supabase/profile-pictures'
-import { BetaBottomNav } from '@/components/beta-bottom-nav'
+import { BetaAppChrome } from '@/components/beta-app-chrome'
 import { ChatView } from './chat-view'
 
 async function ConversationContent({ conversationId }: { conversationId: string }) {
@@ -87,7 +87,7 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
             <Suspense fallback={null}>
                 <ConversationContent conversationId={id} />
             </Suspense>
-            <BetaBottomNav />
+            <BetaAppChrome />
         </main>
     )
 }
