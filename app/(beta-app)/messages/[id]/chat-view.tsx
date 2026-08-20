@@ -6,8 +6,9 @@ import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowLeft, UserRound, Send } from 'lucide-react'
-import { sendMessage, markMessagesRead } from '../actions'
+import { sendMessage, markMessagesRead, closeConversation } from '../actions'
 import { markListingFulfilled, unreserveListing, markListingReturned } from '@/app/(beta-app)/troop/listing-lifecycle-actions'
+import { formatLastActive } from '@/lib/last-active'
 
 type Message = {
     id: string
@@ -23,6 +24,7 @@ type OtherUser = {
     id: string
     username: string
     profilePictureUrl: string | null
+    lastActiveAt: string | null
 }
 
 export function ChatView({
@@ -32,7 +34,9 @@ export function ChatView({
     currentUserId,
     otherUser,
     initialMessages,
-    ownedListing,
+    listing,
+    closedReason,
+    originType,
 }: {
     conversationId: string
     status: 'pending' | 'active'
@@ -40,18 +44,42 @@ export function ChatView({
     currentUserId: string
     otherUser: OtherUser
     initialMessages: Message[]
-    ownedListing: { id: string; status: string; activeTransactionType: string | null } | null
+    listing: { id: string; status: string; activeTransactionType: string | null; isOwner: boolean } | null
+    closedReason: 'fulfilled' | 'cancelled' | 'closed' | null
+    originType: string
 }) {
     const router = useRouter()
     const [messages, setMessages] = useState(initialMessages)
     const [draft, setDraft] = useState('')
     const [isSending, setIsSending] = useState(false)
-    const [listingStatus, setListingStatus] = useState(ownedListing?.status ?? null)
+    const [listingStatus, setListingStatus] = useState(listing?.status ?? null)
+    // Once fulfilled/archived, "Members view available listings or their own"
+    // RLS stops a non-owner from reading the listing row at all, so their
+    // postgres_changes subscription on `listings` would never deliver that
+    // final transition (Realtime evaluates the SELECT policy against the new
+    // row). `conversations` has no such status gating for participants, so
+    // closed_reason on that row -- not listing.status -- is the reliable
+    // signal for "the deal is done" on the non-owner side.
+    const [dealFulfilled, setDealFulfilled] = useState(closedReason === 'fulfilled')
     const [isUpdatingListing, setIsUpdatingListing] = useState(false)
     const [listingActionError, setListingActionError] = useState<string | null>(null)
     const [showReturnChoice, setShowReturnChoice] = useState(false)
+    const [isEnding, setIsEnding] = useState(false)
+    const [showEndConfirm, setShowEndConfirm] = useState(false)
+    const [endError, setEndError] = useState<string | null>(null)
     const bottomRef = useRef<HTMLDivElement>(null)
-    const isLend = ownedListing?.activeTransactionType === 'lend'
+    // Listing-linked threads already have their own domain-specific ways to
+    // close (mark complete / didn't work out / unreserve below) -- a plain
+    // "end conversation" control is only for threads with no transaction
+    // attached to them, so it can't be used to dodge that flow.
+    const canEndConversation = originType === 'message_board' || originType === 'direct'
+    const isLend = listing?.activeTransactionType === 'lend'
+    // handleMarkFulfilled/handleMarkReturned/handleUnreserve already redirect
+    // the clicking user straight off the server action's return value -- this
+    // ref stops the realtime listener below from redirecting them a second
+    // time (possibly away from wherever they've since navigated to) when the
+    // echo of their own update comes back over the subscription.
+    const hasHandledClosureRef = useRef(false)
 
     useEffect(() => {
         const db = createClient()
@@ -89,7 +117,70 @@ export function ChatView({
                         }
                     }
                 )
-                .subscribe()
+
+            // Only the owner reliably keeps read access to the listing across
+            // every status it can reach (see the dealFulfilled comment above),
+            // so this drives the owner's reserved/fulfilled/archived banners
+            // and controls. The non-owner side's "deal is done" signal comes
+            // from the conversations listener below instead.
+            if (listing?.isOwner) {
+                channel = channel.on(
+                    'postgres_changes',
+                    {
+                        event: 'UPDATE',
+                        schema: 'public',
+                        table: 'listings',
+                        filter: `id=eq.${listing.id}`,
+                    },
+                    (payload) => {
+                        setListingStatus((payload.new as { status: string }).status)
+                    }
+                )
+            }
+
+            channel = channel.on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'conversations',
+                    filter: `id=eq.${conversationId}`,
+                },
+                (payload) => {
+                    if (hasHandledClosureRef.current) return
+                    const newClosedReason = (payload.new as { closed_reason: string | null }).closed_reason
+                    if (newClosedReason === 'fulfilled') {
+                        hasHandledClosureRef.current = true
+                        setDealFulfilled(true)
+                        router.push(`/review/${conversationId}`)
+                    } else if (newClosedReason === 'cancelled' || newClosedReason === 'closed') {
+                        hasHandledClosureRef.current = true
+                        router.push('/messages')
+                    }
+                }
+            )
+
+            // declineConversationRequest deletes the row outright rather than
+            // updating its status (see 20260815010000_allow_decline_conversation_delete.sql),
+            // so the initiator -- who can sit on this page watching a pending
+            // request, since there's no "active" gate on viewing it -- needs
+            // its own DELETE listener to get pushed out when it's declined.
+            channel = channel.on(
+                'postgres_changes',
+                {
+                    event: 'DELETE',
+                    schema: 'public',
+                    table: 'conversations',
+                    filter: `id=eq.${conversationId}`,
+                },
+                () => {
+                    if (hasHandledClosureRef.current) return
+                    hasHandledClosureRef.current = true
+                    router.push('/messages')
+                }
+            )
+
+            channel.subscribe()
         }
 
         setup()
@@ -98,7 +189,7 @@ export function ChatView({
             cancelled = true
             if (channel) db.removeChannel(channel)
         }
-    }, [conversationId, currentUserId])
+    }, [conversationId, currentUserId, listing, router])
 
     // Mark as read on open, covering messages that arrived before this view
     // mounted (the realtime handler above only catches ones that arrive
@@ -132,11 +223,12 @@ export function ChatView({
     }
 
     async function handleMarkFulfilled() {
-        if (!ownedListing || isUpdatingListing) return
+        if (!listing?.isOwner || isUpdatingListing) return
         setIsUpdatingListing(true)
         setListingActionError(null)
-        const result = await markListingFulfilled(ownedListing.id)
+        const result = await markListingFulfilled(listing.id)
         if (result.success) {
+            hasHandledClosureRef.current = true
             setListingStatus('fulfilled')
             router.push(`/review/${result.reviewConversationId ?? conversationId}`)
         } else {
@@ -146,12 +238,14 @@ export function ChatView({
     }
 
     async function handleUnreserve() {
-        if (!ownedListing || isUpdatingListing) return
+        if (!listing?.isOwner || isUpdatingListing) return
         setIsUpdatingListing(true)
         setListingActionError(null)
-        const result = await unreserveListing(ownedListing.id)
+        const result = await unreserveListing(listing.id)
         if (result.success) {
+            hasHandledClosureRef.current = true
             setListingStatus('active')
+            router.push('/messages')
         } else {
             setListingActionError(result.error ?? 'Could not update this listing.')
         }
@@ -159,17 +253,34 @@ export function ChatView({
     }
 
     async function handleMarkReturned(action: 'relist' | 'remove') {
-        if (!ownedListing || isUpdatingListing) return
+        if (!listing?.isOwner || isUpdatingListing) return
         setIsUpdatingListing(true)
         setListingActionError(null)
-        const result = await markListingReturned(ownedListing.id, action)
+        const result = await markListingReturned(listing.id, action)
         if (result.success) {
+            hasHandledClosureRef.current = true
             setListingStatus(action === 'relist' ? 'active' : 'archived')
             setShowReturnChoice(false)
+            router.push(`/review/${result.reviewConversationId ?? conversationId}`)
         } else {
             setListingActionError(result.error ?? 'Could not update this listing.')
         }
         setIsUpdatingListing(false)
+    }
+
+    async function handleEndConversation() {
+        if (isEnding) return
+        setIsEnding(true)
+        setEndError(null)
+        const result = await closeConversation(conversationId)
+        if (result.success) {
+            hasHandledClosureRef.current = true
+            router.push('/messages')
+        } else {
+            setEndError(result.error ?? 'Could not end this conversation.')
+            setIsEnding(false)
+            setShowEndConfirm(false)
+        }
     }
 
     const isPendingForMe = status === 'pending' && !initiatedByMe
@@ -193,11 +304,50 @@ export function ChatView({
                         <UserRound className="size-4 text-[#9aaa90]" />
                     )}
                 </div>
-                <p className="font-medium text-[#2c2c2c]">@{otherUser.username}</p>
+                <div className="min-w-0 flex-1">
+                    <p className="font-medium text-[#2c2c2c]">@{otherUser.username}</p>
+                    <p className="text-xs text-[#9aa494]">{formatLastActive(otherUser.lastActiveAt)}</p>
+                </div>
+                {canEndConversation && status === 'active' && (
+                    showEndConfirm ? (
+                        <div className="flex shrink-0 items-center gap-2 text-xs">
+                            <span className="text-[#625f58]">End this conversation?</span>
+                            <button
+                                type="button"
+                                onClick={handleEndConversation}
+                                disabled={isEnding}
+                                className="rounded-full bg-red-600 px-2.5 py-1 font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                End
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setShowEndConfirm(false)}
+                                disabled={isEnding}
+                                className="rounded-full border border-[#ded8cc] px-2.5 py-1 font-medium text-[#625f58] transition hover:bg-[#f5efe5]"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    ) : (
+                        <button
+                            type="button"
+                            onClick={() => setShowEndConfirm(true)}
+                            className="shrink-0 rounded-full px-2.5 py-1 text-xs font-medium text-[#7c8072] transition hover:bg-[#f5efe5] hover:text-[#30392d]"
+                        >
+                            End conversation
+                        </button>
+                    )
+                )}
             </div>
+            {endError && (
+                <p role="alert" className="border-b border-[#ded8cc]/70 bg-[#faf7f0]/90 px-4 py-2 text-sm text-red-600">
+                    {endError}
+                </p>
+            )}
 
             <div className="flex-1 overflow-y-auto px-4 py-4">
-                {listingStatus === 'reserved' && isLend && (
+                {listingStatus === 'reserved' && isLend && listing?.isOwner && (
                     <div className="mb-4 rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-4 text-center shadow-sm">
                         {!showReturnChoice ? (
                             <>
@@ -249,7 +399,7 @@ export function ChatView({
                         )}
                     </div>
                 )}
-                {listingStatus === 'reserved' && !isLend && (
+                {listingStatus === 'reserved' && !isLend && listing?.isOwner && (
                     <div className="mb-4 rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-4 text-center shadow-sm">
                         <p className="mb-3 text-sm text-[#625f58]">
                             This listing is reserved for @{otherUser.username}.
@@ -275,12 +425,12 @@ export function ChatView({
                         )}
                     </div>
                 )}
-                {listingStatus === 'fulfilled' && (
+                {(listingStatus === 'fulfilled' || (dealFulfilled && listingStatus !== 'archived')) && (
                     <div className="mb-4 rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-4 text-center shadow-sm">
                         <p className="text-sm text-[#625f58]">This listing is marked complete.</p>
                     </div>
                 )}
-                {listingStatus === 'archived' && ownedListing && (
+                {listingStatus === 'archived' && listing?.isOwner && (
                     <div className="mb-4 rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-4 text-center shadow-sm">
                         <p className="text-sm text-[#625f58]">This item was taken off your profile.</p>
                     </div>

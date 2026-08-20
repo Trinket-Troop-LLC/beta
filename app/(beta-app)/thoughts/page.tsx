@@ -14,7 +14,7 @@ async function ThoughtsContent() {
 
     const { data: postRows } = await db
         .from('bulletin_posts')
-        .select('id, author_id, content, created_at')
+        .select('id, author_id, content, created_at, visibility, allow_messages')
         .order('created_at', { ascending: false })
         .limit(maxPosts)
 
@@ -130,6 +130,8 @@ async function ThoughtsContent() {
         createdAt: post.created_at,
         photoUrls: postPhotosByPostId.get(post.id) ?? [],
         replies: repliesByPostId.get(post.id) ?? [],
+        visibility: post.visibility,
+        allowMessages: post.allow_messages,
     }))
 
     const currentUser: BulletinAuthor = authorsById.get(user.id) ?? {
@@ -138,10 +140,27 @@ async function ThoughtsContent() {
         profilePictureUrl: null,
     }
 
+    // "My Troop" view filters the already-fetched feed down to accepted
+    // friends (RLS already keeps troop-visibility posts from non-friends out
+    // of `posts` entirely -- this just also hides public posts from
+    // strangers when that view is selected).
+    const { data: friendshipRows } = await db
+        .from('friendships')
+        .select('requester_id, addressee_id')
+        .eq('status', 'accepted')
+        .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`)
+
+    const troopAuthorIds = [
+        user.id,
+        ...(friendshipRows ?? []).map((row) =>
+            row.requester_id === user.id ? row.addressee_id : row.requester_id
+        ),
+    ]
+
     return (
         <div className="mx-auto w-full max-w-2xl text-left">
             <h1 className="mb-4 text-3xl font-semibold text-[#30392d]">Thoughts</h1>
-            <BulletinFeed initialPosts={feedPosts} currentUser={currentUser} />
+            <BulletinFeed initialPosts={feedPosts} currentUser={currentUser} troopAuthorIds={troopAuthorIds} />
         </div>
     )
 }

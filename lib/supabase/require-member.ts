@@ -29,6 +29,12 @@ export async function requireMember() {
     if (!profile) {
         redirect('/')
     }
-
+    
+    db.from('users')
+        .update({ last_active_at: new Date().toISOString() })
+        .eq('id', user.id)
+        .or(`last_active_at.is.null,last_active_at.lt.${new Date(Date.now() - 5 * 60 * 1000).toISOString()}`)
+        .then()    
+    
     return { db, user, profile }
 }

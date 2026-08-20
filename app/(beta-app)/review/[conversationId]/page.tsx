@@ -10,7 +10,7 @@ async function ReviewContent({ conversationId }: { conversationId: string }) {
 
     const { data: conversation } = await db
         .from('conversations')
-        .select('id, participant_one_id, participant_two_id, origin_type, origin_id')
+        .select('id, participant_one_id, participant_two_id, origin_type, origin_id, closed_reason')
         .eq('id', conversationId)
         .maybeSingle()
 
@@ -46,7 +46,7 @@ async function ReviewContent({ conversationId }: { conversationId: string }) {
         <div className="w-full max-w-md">
             <h1 className="mb-2 text-2xl font-semibold text-[#30392d]">Review the exchange</h1>
 
-            {listing?.status !== 'fulfilled' ? (
+            {conversation.closed_reason !== 'fulfilled' ? (
                 <div className="rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-4">
                     <p className="text-sm text-[#625f58]">This exchange isn&apos;t marked complete yet.</p>
                 </div>
@@ -60,7 +60,7 @@ async function ReviewContent({ conversationId }: { conversationId: string }) {
                 <ReviewForm
                     conversationId={conversationId}
                     revieweeUsername={revieweeUsername}
-                    listingTitle={listing.title ?? null}
+                    listingTitle={listing?.title ?? null}
                 />
             )}
         </div>

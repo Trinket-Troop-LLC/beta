@@ -15,7 +15,7 @@ async function ProfileContent({ searchParams }: { searchParams: ProfileSearchPar
     const { profile, db, user } = await requireMember()
     const { data: fullProfile } = await db
         .from('users')
-        .select('email, first_name, preferred_name, username, responses, created_at')
+        .select('email, first_name, preferred_name, username, responses, created_at, last_active_at')
         .eq('id', user.id)
         .single()
 
@@ -123,6 +123,7 @@ async function ProfileContent({ searchParams }: { searchParams: ProfileSearchPar
                         username={fullProfile?.username ?? profile.username}
                         preferredName={fullProfile?.preferred_name || fullProfile?.first_name || null}
                         profilePictureUrl={profilePictureUrl}
+                        lastActive={fullProfile?.last_active_at}
                         responses={fullProfile?.responses ?? null}
                         listings={listings}
                         listingsLoadError={listingsLoadError}

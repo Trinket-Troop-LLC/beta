@@ -31,7 +31,7 @@ async function ConversationContent({ conversationId }: { conversationId: string 
 
     const { data: otherProfile } = await db
         .from('users')
-        .select('id, username, responses')
+        .select('id, username, responses, last_active_at')
         .eq('id', otherUserId)
         .single()
 
@@ -46,11 +46,20 @@ async function ConversationContent({ conversationId }: { conversationId: string 
     // 'listing' and 'offer' conversations link back to a listing via
     // origin_id. Only surface the reservation controls (Mark complete /
     // Didn't work out, or the lend-specific relist/remove choice) to that
-    // listing's owner -- except for a trade ('offer'), which reserves two
-    // listings as one transaction (see acceptListingOffer). There, the other
-    // participant owns the *paired* listing, not origin_id, so look that up
-    // too or they'd never see the controls to mark their side complete.
-    let ownedListing: { id: string; status: string; activeTransactionType: string | null } | null = null
+    // listing's owner (isOwner) -- except for a trade ('offer'), which
+    // reserves two listings as one transaction (see acceptListingOffer).
+    // There, the other participant owns the *paired* listing, not origin_id,
+    // so look that up too or they'd never see the controls to mark their
+    // side complete. Everyone else in the conversation (a buyer in a plain
+    // sell/gift, or a borrower in a lend) still gets the listing back with
+    // isOwner: false, so ChatView can show them the live status/redirect
+    // without exposing owner-only controls.
+    let listing: {
+        id: string
+        status: string
+        activeTransactionType: string | null
+        isOwner: boolean
+    } | null = null
     if ((conversation.origin_type === 'listing' || conversation.origin_type === 'offer') && conversation.origin_id) {
         const { data: linkedListing } = await db
             .from('listings')
@@ -59,10 +68,11 @@ async function ConversationContent({ conversationId }: { conversationId: string 
             .maybeSingle()
 
         if (linkedListing && linkedListing.owner_id === user.id) {
-            ownedListing = {
+            listing = {
                 id: linkedListing.id,
                 status: linkedListing.status,
                 activeTransactionType: linkedListing.active_transaction_type,
+                isOwner: true,
             }
         } else if (linkedListing && conversation.origin_type === 'offer') {
             const admin = createAdminClient()
@@ -76,12 +86,20 @@ async function ConversationContent({ conversationId }: { conversationId: string 
                     .maybeSingle()
 
                 if (pairedListing && pairedListing.owner_id === user.id) {
-                    ownedListing = {
+                    listing = {
                         id: pairedListing.id,
                         status: pairedListing.status,
                         activeTransactionType: pairedListing.active_transaction_type,
+                        isOwner: true,
                     }
                 }
+            }
+        } else if (linkedListing) {
+            listing = {
+                id: linkedListing.id,
+                status: linkedListing.status,
+                activeTransactionType: linkedListing.active_transaction_type,
+                isOwner: false,
             }
         }
     }
@@ -96,9 +114,12 @@ async function ConversationContent({ conversationId }: { conversationId: string 
                 id: otherUserId,
                 username: otherProfile?.username ?? 'Unknown',
                 profilePictureUrl: otherUserPictureUrl,
+                lastActiveAt: otherProfile?.last_active_at ?? null,
             }}
             initialMessages={messages ?? []}
-            ownedListing={ownedListing}
+            listing={listing}
+            closedReason={conversation.closed_reason ?? null}
+            originType={conversation.origin_type}
         />
     )
 }

@@ -2,9 +2,10 @@
 
 import Image from 'next/image'
 import { useState } from 'react'
-import { MessageCircle, Trash2, UserRound } from 'lucide-react'
+import { MessageCircle, Send, Trash2, UserRound } from 'lucide-react'
 import { deletePost, deleteReply } from './actions'
 import { BulletinComposer } from './bulletin-composer'
+import { BulletinMessageModal } from './bulletin-message-modal'
 import type { BulletinAuthor, BulletinPost, BulletinReply } from './types'
 
 function formatRelativeTime(iso: string) {
@@ -147,6 +148,8 @@ function PostItem({
     const [showReplies, setShowReplies] = useState(false)
     const [replyTarget, setReplyTarget] = useState<{ parentReplyId?: string; username?: string } | null>(null)
     const [isDeleting, setIsDeleting] = useState(false)
+    const [showMessageModal, setShowMessageModal] = useState(false)
+    const isOwnPost = post.author.id === currentUser.id
 
     async function handleDelete() {
         if (isDeleting) return
@@ -183,10 +186,17 @@ function PostItem({
                 <Avatar author={post.author} />
                 <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
-                        <p className="font-medium text-[#30392d]">@{post.author.username}</p>
+                        <div className="flex items-center gap-1.5">
+                            <p className="font-medium text-[#30392d]">@{post.author.username}</p>
+                            {post.visibility === 'troop' && (
+                                <span className="rounded-full bg-[#f2ede0] px-1.5 py-0.5 text-[10px] font-medium text-[#7c9272]">
+                                    Troop
+                                </span>
+                            )}
+                        </div>
                         <div className="flex shrink-0 items-center gap-2">
                             <span className="text-xs text-[#7c8072]">{formatRelativeTime(post.createdAt)}</span>
-                            {post.author.id === currentUser.id && (
+                            {isOwnPost && (
                                 <button
                                     type="button"
                                     onClick={handleDelete}
@@ -227,6 +237,16 @@ function PostItem({
                         Write a reply
                     </button>
                 )}
+                {!isOwnPost && post.allowMessages && (
+                    <button
+                        type="button"
+                        onClick={() => setShowMessageModal(true)}
+                        className="ml-auto flex items-center gap-1.5 text-sm font-medium text-[#7c9272] transition hover:text-[#5f7258]"
+                    >
+                        <Send size={14} />
+                        Message
+                    </button>
+                )}
             </div>
 
             {showReplies && replies.length > 0 && (
@@ -254,6 +274,14 @@ function PostItem({
                     onCancel={() => setReplyTarget(null)}
                 />
             )}
+
+            {showMessageModal && (
+                <BulletinMessageModal
+                    postId={post.id}
+                    recipientUsername={post.author.username}
+                    onClose={() => setShowMessageModal(false)}
+                />
+            )}
         </article>
     )
 }
@@ -261,11 +289,15 @@ function PostItem({
 export function BulletinFeed({
     initialPosts,
     currentUser,
+    troopAuthorIds,
 }: {
     initialPosts: BulletinPost[]
     currentUser: BulletinAuthor
+    troopAuthorIds: string[]
 }) {
     const [posts, setPosts] = useState(initialPosts)
+    const [view, setView] = useState<'all' | 'troop'>('all')
+    const troopAuthorIdSet = new Set(troopAuthorIds)
 
     function handlePosted(post: BulletinPost) {
         setPosts((current) => [post, ...current])
@@ -281,16 +313,46 @@ export function BulletinFeed({
             : post))
     }
 
+    // Troop-only posts are RLS-visible in the general feed query (so a
+    // friend's troop post can still be counted/found), but they should only
+    // ever be shown inside the My Troop view, never mixed into All.
+    const visiblePosts = view === 'troop'
+        ? posts.filter((post) => troopAuthorIdSet.has(post.author.id))
+        : posts.filter((post) => post.visibility === 'public')
+
     return (
         <div className="flex flex-col gap-4">
             <BulletinComposer variant="post" currentUser={currentUser} onPosted={handlePosted} />
 
-            {posts.length === 0 ? (
+            <div className="flex rounded-full border border-[#ded8cc] bg-[#fffdf9] p-1">
+                <button
+                    type="button"
+                    onClick={() => setView('all')}
+                    className={`flex-1 rounded-full px-3 py-1.5 text-sm font-medium transition ${
+                        view === 'all' ? 'bg-[#7c9272] text-white' : 'text-[#625f58] hover:bg-[#f5efe5]'
+                    }`}
+                >
+                    All
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setView('troop')}
+                    className={`flex-1 rounded-full px-3 py-1.5 text-sm font-medium transition ${
+                        view === 'troop' ? 'bg-[#7c9272] text-white' : 'text-[#625f58] hover:bg-[#f5efe5]'
+                    }`}
+                >
+                    My Troop
+                </button>
+            </div>
+
+            {visiblePosts.length === 0 ? (
                 <p className="rounded-2xl border border-dashed border-[#ded8cc] bg-[#fffdf9] p-6 text-center text-sm text-[#625f58]">
-                    No posts yet — be the first to share something with the troop.
+                    {view === 'troop'
+                        ? 'No posts from your troop yet.'
+                        : 'No posts yet — be the first to share something with the troop.'}
                 </p>
             ) : (
-                posts.map((post) => (
+                visiblePosts.map((post) => (
                     <PostItem
                         key={post.id}
                         post={post}

@@ -385,7 +385,7 @@ export async function markListingFulfilled(listingId: string) {
     // ('listing'), which are the two origin types that link to a listing.
     const { data: closedConversations, error: closeConversationError } = await admin
         .from('conversations')
-        .update({ status: 'closed' })
+        .update({ status: 'closed', closed_reason: 'fulfilled' })
         .in('origin_type', ['offer', 'listing'])
         .in('origin_id', pairedListingId ? [listingId, pairedListingId] : [listingId])
         .eq('status', 'active')
@@ -454,7 +454,7 @@ export async function unreserveListing(listingId: string) {
     // ('listing'), which are the two origin types that link to a listing.
     const { data: closedConversations, error: closeConversationError } = await admin
         .from('conversations')
-        .update({ status: 'closed' })
+        .update({ status: 'closed', closed_reason: 'cancelled' })
         .in('origin_type', ['offer', 'listing'])
         .in('origin_id', pairedListingId ? [listingId, pairedListingId] : [listingId])
         .eq('status', 'active')
@@ -512,22 +512,41 @@ export async function markListingReturned(listingId: string, action: 'relist' | 
 
     // The loan with this borrower is over either way -- close the linked
     // conversation, same as markListingFulfilled does for sell/gift/trade.
-    // Lending has no paired listing (that's a trade-only concept).
-    const { error: closeConversationError } = await admin
+    // Lending has no paired listing (that's a trade-only concept). Either
+    // outcome (relist or remove) means the loan itself concluded normally,
+    // so both count as review-eligible, same as a sell/gift/trade fulfillment.
+    const { data: closedConversations, error: closeConversationError } = await admin
         .from('conversations')
-        .update({ status: 'closed' })
+        .update({ status: 'closed', closed_reason: 'fulfilled' })
         .eq('origin_type', 'listing')
         .eq('origin_id', listingId)
         .eq('status', 'active')
+        .select('id, participant_one_id, participant_two_id')
 
     if (closeConversationError) {
         console.error('Could not close conversation for returned listing:', closeConversationError)
     }
 
+    // Prompt both sides to review the loan, same as markListingFulfilled.
+    const exchangeConversation = closedConversations?.[0] ?? null
+    if (exchangeConversation) {
+        const otherUserId = exchangeConversation.participant_one_id === userId
+            ? exchangeConversation.participant_two_id
+            : exchangeConversation.participant_one_id
+
+        await createNotification({
+            recipientId: otherUserId,
+            type: 'exchange_complete_review_prompt',
+            actorId: userId,
+            relatedConversationId: exchangeConversation.id,
+            relatedListingId: listingId,
+        })
+    }
+
     revalidatePath(`/troop/listings/${listingId}`)
     revalidatePath('/messages')
     revalidatePath('/profile')
-    return { success: true }
+    return { success: true, reviewConversationId: exchangeConversation?.id ?? null }
 }
 
 // All pending trade offers across every listing the current user owns,

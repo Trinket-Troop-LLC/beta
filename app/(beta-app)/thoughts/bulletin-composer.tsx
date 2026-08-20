@@ -40,9 +40,11 @@ export function BulletinComposer(props: BulletinComposerProps) {
     const [progress, setProgress] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
     const inputRef = useRef<HTMLInputElement>(null)
+    const [allowMessages, setAllowMessages] = useState(true)
+    const [visibility, setVisibility] = useState<'public' | 'troop'>('public')
 
     const photosRef = useRef(photos)
-photosRef.current = photos
+    photosRef.current = photos
 
     useEffect(() => {
         return () => {
@@ -153,7 +155,7 @@ photosRef.current = photos
             const photoUrls = photos.map((photo) => photo.previewUrl)
 
             if (variant === 'post') {
-                const result = await createBulletinPost(trimmed, uploadedPaths)
+                const result = await createBulletinPost(trimmed, uploadedPaths, allowMessages, visibility)
 
                 if (!result.success) {
                     throw new Error(result.error)
@@ -166,6 +168,8 @@ photosRef.current = photos
                     createdAt: new Date().toISOString(),
                     photoUrls,
                     replies: [],
+                    visibility,
+                    allowMessages,
                 })
             } else {
                 const result = await createBulletinReply(
@@ -191,6 +195,9 @@ photosRef.current = photos
                 })
             }
 
+            setAllowMessages(true)
+            setVisibility('public')
+
             setContent('')
             setPhotos([])
         } catch (submitError) {
@@ -215,6 +222,38 @@ photosRef.current = photos
                 <p className="text-xs font-medium text-[#7c9272]">
                     Replying to @{props.replyingToUsername}
                 </p>
+            )}
+
+            {variant === 'post' && (
+                <>
+                    <label className="flex items-center gap-2 text-sm text-[#2c2c2c]">
+                        <input
+                            type="checkbox"
+                            checked={allowMessages}
+                            onChange={(e) => setAllowMessages(e.target.checked)}
+                            className="size-4 accent-[#7c9272]"
+                        />
+                        Allow people to message me about this post
+                    </label>
+
+                    <label className="flex flex-col gap-1 text-sm text-[#2c2c2c]">
+                        Who can see this post?
+                        <select
+                            value={visibility}
+                            onChange={(e) => setVisibility(e.target.value as 'public' | 'troop')}
+                            className="rounded-lg border border-[#d8d1c5] bg-white px-4 py-3 text-black outline-none transition focus:border-[#7c9272] focus:ring-2 focus:ring-[#7c9272]/20"
+                        >
+                            <option value="public">Public</option>
+                            <option value="troop">Troop only</option>
+                        </select>
+                    </label>
+
+                    {visibility === 'troop' && (
+                        <p className="text-xs text-[#7c8072]">
+                            Only your troop members will be able to see this post. This can&apos;t be changed later.
+                        </p>
+                    )}
+                </>
             )}
             <textarea
                 value={content}
