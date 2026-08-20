@@ -6,6 +6,7 @@ import { useState, useTransition } from 'react'
 import { ImageIcon, UserRound } from 'lucide-react'
 import { acceptListingOffer, declineListingOffer } from '../troop/listing-lifecycle-actions'
 import { acceptConversationRequest, declineConversationRequest } from './actions'
+import { formatLastActive } from '@/lib/last-active'
 
 type ConversationSummary = {
     id: string
@@ -15,6 +16,7 @@ type ConversationSummary = {
         id: string
         username: string
         profilePictureUrl: string | null
+        lastActiveAt: string | null
     }
     lastMessagePreview: string | null
     updatedAt: string
@@ -50,7 +52,12 @@ function ConversationRow({ conversation }: { conversation: ConversationSummary }
             <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                     <p className="font-medium text-[#2c2c2c]">@{conversation.otherUser.username}</p>
-                    {conversation.status === 'pending' && (
+                    {conversation.status === 'pending' && !conversation.initiatedByMe && (
+                        <span className="rounded-full bg-[#7c9272] px-2 py-0.5 text-xs font-medium text-white">
+                            New
+                        </span>
+                    )}
+                    {conversation.status === 'pending' && conversation.initiatedByMe && (
                         <span className="rounded-full border border-[#ded8cc] px-2 py-0.5 text-xs font-medium text-[#7c8072]">
                             Pending
                         </span>
@@ -59,6 +66,11 @@ function ConversationRow({ conversation }: { conversation: ConversationSummary }
                 <p className="truncate text-sm text-[#7c8072]">
                     {conversation.lastMessagePreview ?? 'Say hello!'}
                 </p>
+                {conversation.status === 'active' && (
+                    <p className="text-xs text-[#9aa494]">
+                        {formatLastActive(conversation.otherUser.lastActiveAt)}
+                    </p>
+                )}
             </div>
         </Link>
     )

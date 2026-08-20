@@ -21,7 +21,7 @@ async function MessagesContent() {
 
     const { data: profiles } = await db
         .from('users')
-        .select('id, username, responses')
+        .select('id, username, responses, last_active_at')
         .in('id', otherUserIds)
 
     const paths = profiles?.map((p) => p.responses?.profile_picture_path) ?? []
@@ -54,6 +54,7 @@ async function MessagesContent() {
                 id: otherUserId,
                 username: profile?.username ?? 'Unknown',
                 profilePictureUrl: (path && signedUrlsByPath.get(path)) ?? null,
+                lastActiveAt: profile?.last_active_at ?? null,
             },
             lastMessagePreview: lastMessage
                 ? (lastMessage.content ?? (lastMessage.image_path ? 'Sent a photo' : ''))
