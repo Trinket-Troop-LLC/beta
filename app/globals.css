@@ -35,6 +35,21 @@
        clamp, so it's centralized here rather than repeated per-page — that repetition is what
        let the home page and why-us/about drift onto two different clamp formulas before. */
     --canvas-text: clamp(14px, 1vw + 8px, 20px);
+
+    /* Canvas-page type scale, relative to --canvas-text. Before this existed, each page's h1
+       and body copy picked its own em multiplier independently and drifted apart (h1 was
+       1.85em/2.14em/1.57em across home/why-us/about; body was 1em/1.14em/1.14em) for no real
+       reason — apply these instead of a fresh text-[Xem] guess per element. */
+    --text-heading: 1.85em;
+    --text-body: 1.1em;
+    --text-label: 0.85em;
+    --text-caption: 0.8em;
+
+    /* Canvas-page spacing scale. --gap-tight is the title-to-body relationship (already used
+       consistently); --gap-base is the relationship between related items in a stack, e.g.
+       paragraph-to-paragraph. */
+    --gap-tight: 0.6em;
+    --gap-base: 1em;
   }
   .dark {
     --background: 0 0% 3.9%;

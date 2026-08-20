@@ -9,28 +9,17 @@ export const metadata: Metadata = {
 
 export default function WhyUsPage() {
     return (
-        <main className="relative flex min-h-screen flex-col overflow-x-hidden bg-background font-inter">
+        <main
+            className="relative flex min-h-screen flex-col overflow-x-hidden bg-background font-inter"
+            style={{ fontSize: 'var(--canvas-text)' }}
+        >
             <MissionLogoHeader />
 
             {/* Sizing scales off --canvas-text, shared with home/about/mission so all four pages
-                sit on the same type scale. Illustrations flank the text column the same way
-                home's bag/vase do — bag.png is reused directly (same already-rotated export,
-                top-left anchored); boot.png replaces the old vase-big.png sliver, which was a
-                pre-masked strip so thin it read as barely-there and cut across the paragraph
-                column rather than flanking it. */}
-            <div
-                className="relative flex-1"
-                style={{ fontSize: 'var(--canvas-text)' }}
-            >
-                <Image
-                    src="/mission/bag.png"
-                    alt=""
-                    width={243}
-                    height={265}
-                    aria-hidden="true"
-                    className="pointer-events-none absolute left-[-32.34%] top-[48%] w-[17.5em] lg:left-[-12.97%] lg:top-[42%] lg:w-[19em]"
-                />
-
+                sit on the same type scale — set on <main> so the shared header inherits it too.
+                boot.png flanks the text column the same way home's vase does — an already-
+                rotated export, top-left anchored. */}
+            <div className="relative flex-1">
                 <Image
                     src="/mission/boot.png"
                     alt=""
@@ -44,11 +33,11 @@ export default function WhyUsPage() {
                     page, with the same max-width and title-to-body gap so all three pages read
                     the same way. */}
                 <div className="absolute inset-x-0 top-[10.3%] mx-auto flex max-w-[40ch] flex-col gap-[0.6em] lg:top-[10.82%] lg:max-w-[54ch]">
-                    <h1 className="text-balance font-sophie-chalk text-[2.14em] text-foreground">
+                    <h1 className="text-balance font-sophie-chalk text-[length:var(--text-heading)] text-foreground">
                         Why trinket troop?
                     </h1>
 
-                    <div className="flex flex-col gap-[1em] text-[1.14em] leading-[1.4] text-[#2c2c2c]">
+                    <div className="flex flex-col gap-[var(--gap-base)] text-[length:var(--text-body)] leading-[1.4] text-[#2c2c2c]">
                         <p>
                             New York City is filled to the brim with interesting things and even more interesting
                             people. So why is the peer-to-peer exchange landscape so bleak? Transactions that flake,
