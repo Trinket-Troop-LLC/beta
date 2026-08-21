@@ -90,10 +90,10 @@ export default function PrivacyPolicyPage() {
                             <h3 className={subheadingClass}>Information we collect through cookies:</h3>
                             <p className={bodyClass}>
                                 We automatically collect certain information about your interaction with the Site
-                                (&quot;Usage Data&quot;) using cookies, pixels, and similar technologies. Usage Data may
-                                include device information, browser information, your IP address, and other
-                                information about how you access and use the Site. For specific information about the
-                                cookies used to power our Site, see https://www.shopify.com/legal/cookies.
+                                (&quot;Usage Data&quot;) using cookies, pixels, and similar technologies &mdash;
+                                primarily to keep you signed in and remember your session. Usage Data may include
+                                device information, browser information, your IP address, and other information
+                                about how you access and use the Site.
                             </p>
                         </div>
 
@@ -101,10 +101,11 @@ export default function PrivacyPolicyPage() {
                             <h3 className={subheadingClass}>Information we obtain from third parties:</h3>
                             <p className={bodyClass}>
                                 We may obtain information about you from vendors and service providers who support our
-                                Site and Services, such as our hosting provider (Shopify) and our text-messaging
-                                provider (Twilio). Any information we obtain from third parties is treated in
-                                accordance with this Privacy Policy; we are not responsible for the accuracy of
-                                information provided to us by third parties or for their own privacy practices.
+                                Site and Services, such as our hosting provider (Vercel), our database and account
+                                infrastructure provider (Supabase), and our text-messaging provider (Twilio). Any
+                                information we obtain from third parties is treated in accordance with this Privacy
+                                Policy; we are not responsible for the accuracy of information provided to us by third
+                                parties or for their own privacy practices.
                             </p>
                         </div>
                     </div>
@@ -181,7 +182,7 @@ export default function PrivacyPolicyPage() {
                         <h2 className={headingClass}>How We Disclose Personal Information</h2>
                         <p className={bodyClass}>We may disclose your personal information to:</p>
                         <ul className={`list-disc ${listClass}`}>
-                            <li>Vendors who perform services on our behalf (e.g., Shopify for hosting, Twilio for text messaging, cloud storage providers)</li>
+                            <li>Vendors who perform services on our behalf (e.g., Vercel for hosting, Supabase for our database and account infrastructure, Twilio for text messaging)</li>
                             <li>Other members, as necessary to facilitate a trade (e.g., your display name and general neighborhood, and any listing or message content you choose to share)</li>
                             <li>Our affiliates, in our legitimate interest to run the business</li>
                             <li>
