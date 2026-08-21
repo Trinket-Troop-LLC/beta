@@ -1,26 +1,26 @@
 import { Suspense } from 'react'
 import { notFound, redirect } from 'next/navigation'
 import { requireMember } from '@/lib/supabase/require-member'
-import { signProfilePictureUrl, signProfilePictureUrls } from '@/lib/supabase/profile-pictures'
+import { signProfilePictureUrl } from '@/lib/supabase/profile-pictures'
 import type { ListingBrowseCardData } from '@/components/listings/listing-browse-card'
 import { OtherProfileSection } from './other-profile-section'
 import type { Relationship } from '../friendship-actions'
 
-async function OtherProfileContent({ profileId }: { profileId: string }) {
+async function OtherProfileContent({ username }: { username: string }) {
     const { db, user } = await requireMember()
-
-    if (profileId === user.id) {
-        redirect('/profile')
-    }
 
     const { data: target } = await db
         .from('users')
         .select('id, username, preferred_name, first_name, responses, last_active_at')
-        .eq('id', profileId)
+        .eq('username', username)
         .maybeSingle()
 
     if (!target) {
         notFound()
+    }
+
+    if (target.id === user.id) {
+        redirect('/profile')
     }
 
     const profilePictureUrl = await signProfilePictureUrl(db, target.responses?.profile_picture_path)
@@ -28,7 +28,7 @@ async function OtherProfileContent({ profileId }: { profileId: string }) {
     const { data: listingRows } = await db
         .from('listings')
         .select('id, title, transaction_types, price_cents, status, published_at')
-        .eq('owner_id', profileId)
+        .eq('owner_id', target.id)
         .in('status', ['active', 'reserved'])
         .order('published_at', { ascending: false })
 
@@ -42,9 +42,15 @@ async function OtherProfileContent({ profileId }: { profileId: string }) {
         : { data: [] }
 
     const coverPaths = coverPhotos?.map((photo) => photo.storage_path) ?? []
-    const signedUrlByPath = await signProfilePictureUrls(db, coverPaths)
+    const { data: signedCoverPhotos } = coverPaths.length > 0
+        ? await db.storage.from('listing-photos').createSignedUrls(coverPaths, 3600)
+        : { data: [] }
+
     const coverPathByListingId = new Map(
         coverPhotos?.map((photo) => [photo.listing_id, photo.storage_path]) ?? [],
+    )
+    const signedUrlByPath = new Map(
+        signedCoverPhotos?.map((photo) => [photo.path, photo.signedUrl]) ?? [],
     )
 
     const listings: ListingBrowseCardData[] = (listingRows ?? []).map((listing) => {
@@ -62,7 +68,7 @@ async function OtherProfileContent({ profileId }: { profileId: string }) {
     const { data: friendshipRow } = await db
         .from('friendships')
         .select('id, requester_id, addressee_id, status')
-        .or(`and(requester_id.eq.${user.id},addressee_id.eq.${profileId}),and(requester_id.eq.${profileId},addressee_id.eq.${user.id})`)
+        .or(`and(requester_id.eq.${user.id},addressee_id.eq.${target.id}),and(requester_id.eq.${target.id},addressee_id.eq.${user.id})`)
         .maybeSingle()
 
     let relationship: Relationship = 'none'
@@ -78,7 +84,7 @@ async function OtherProfileContent({ profileId }: { profileId: string }) {
 
     return (
         <OtherProfileSection
-            profileId={profileId}
+            profileId={target.id}
             username={target.username}
             preferredName={target.preferred_name || target.first_name || null}
             profilePictureUrl={profilePictureUrl}
@@ -91,14 +97,14 @@ async function OtherProfileContent({ profileId }: { profileId: string }) {
     )
 }
 
-export default async function OtherProfilePage({ params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params
+export default async function OtherProfilePage({ params }: { params: Promise<{ username: string }> }) {
+    const { username } = await params
 
     return (
         <main className="relative flex min-h-screen flex-col items-center justify-center bg-background px-4 pb-28 text-center">
             <Suspense fallback={null}>
                 <div className="w-full max-w-3xl py-10">
-                    <OtherProfileContent profileId={id} />
+                    <OtherProfileContent username={username} />
                 </div>
             </Suspense>
         </main>

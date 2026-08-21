@@ -19,12 +19,12 @@ import { getPendingOffersForListing } from '../../listing-lifecycle-actions'
 
 function OwnerCard({
     isOwner,
-    ownerId,
+    ownerUsername,
     pictureUrl,
     displayName,
 }: {
     isOwner: boolean
-    ownerId: string
+    ownerUsername: string | null
     pictureUrl: string | null
     displayName: string
 }) {
@@ -46,13 +46,13 @@ function OwnerCard({
         </>
     )
 
-    if (isOwner) {
+    if (isOwner || !ownerUsername) {
         return <div className="mt-6 flex items-center gap-3 rounded-2xl border border-border p-4">{content}</div>
     }
 
     return (
         <Link
-            href={`/profile/${ownerId}`}
+            href={`/profile/${encodeURIComponent(ownerUsername)}`}
             className="mt-6 flex items-center gap-3 rounded-2xl border border-border p-4 transition hover:bg-secondary/50"
         >
             {content}
@@ -206,7 +206,7 @@ async function ListingDetailContent({ listingId }: { listingId: string }) {
 
                 <OwnerCard
                     isOwner={isOwner}
-                    ownerId={listing.owner_id}
+                    ownerUsername={owner?.username ?? null}
                     pictureUrl={ownerPictureUrl}
                     displayName={ownerDisplayName}
                 />
