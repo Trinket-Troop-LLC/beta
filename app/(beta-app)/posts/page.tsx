@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import { BetaBottomNav } from '@/components/beta-bottom-nav'
 import { requireMember } from '@/lib/supabase/require-member'
+import { Skeleton } from '@/components/ui/skeleton'
 import { ListingForm } from './listing-form'
 
 async function PostsContent() {
@@ -23,10 +24,23 @@ async function PostsContent() {
     )
 }
 
+function PostsSkeleton() {
+    return (
+        <div className="mx-auto w-full max-w-2xl">
+            <div className="mb-7 text-left">
+                <Skeleton className="mb-2 h-4 w-32" />
+                <Skeleton className="mb-3 h-9 w-56" />
+                <Skeleton className="h-4 w-full max-w-xl" />
+            </div>
+            <Skeleton className="h-96 w-full rounded-2xl" />
+        </div>
+    )
+}
+
 export default function PostsPage() {
     return (
         <main className="min-h-screen bg-background px-4 py-10 pb-32 sm:px-6">
-            <Suspense fallback={null}>
+            <Suspense fallback={<PostsSkeleton />}>
                 <PostsContent />
             </Suspense>
             <BetaBottomNav />
