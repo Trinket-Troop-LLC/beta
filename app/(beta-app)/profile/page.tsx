@@ -84,6 +84,9 @@ async function ProfileContent({ searchParams }: { searchParams: ProfileSearchPar
         .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`)
 
     const friendIds = fullMyTroop?.map((row) => row.requester_id === user.id ? row.addressee_id : row.requester_id) ?? []
+    const friendshipIdByFriendId = new Map(
+        fullMyTroop?.map((row) => [row.requester_id === user.id ? row.addressee_id : row.requester_id, row.id]) ?? [],
+    )
 
     // outgoing (sent) requests — keep the friendship row id alongside each person's id
     const { data: outgoingRequests } = await db
@@ -105,7 +108,8 @@ async function ProfileContent({ searchParams }: { searchParams: ProfileSearchPar
     const incomingMap = new Map(incomingRequests?.map((row) => [row.requester_id, row.id]) ?? [])
     const incomingFriendsIds = [...incomingMap.keys()]
 
-    const friendsWithPictures = await resolveProfilesWithPictures(db, friendIds)
+    const friendsWithPictures = (await resolveProfilesWithPictures(db, friendIds))
+        .map((person) => ({ ...person, friendshipId: friendshipIdByFriendId.get(person.id)! }))
     const outgoingWithPictures = (await resolveProfilesWithPictures(db, requestedFriendsIds))
         .map((person) => ({ ...person, friendshipId: outgoingMap.get(person.id)! }))
     const incomingWithPictures = (await resolveProfilesWithPictures(db, incomingFriendsIds))
