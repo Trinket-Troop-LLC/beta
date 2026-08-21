@@ -6,12 +6,12 @@ import { Avatar } from '@/components/avatar'
 
 function cardBackgroundClasses(originType: string): string {
     if (originType === 'listing' || originType === 'offer') {
-        return 'border-[#e8dcc0] bg-[#faf3e0] hover:bg-[#f5ecd4]'
+        return 'bg-listing-chat'
     }
     if (originType === 'message_board') {
-        return 'border-rose-200 bg-rose-50 hover:bg-rose-100'
+        return 'bg-bulletin-chat/70'
     }
-    return 'border-[#ded8cc] bg-[#fffdf9] hover:bg-[#f5efe5]'
+    return 'bg-card hover:bg-secondary'
 }
 
 function OriginIcon({ originType }: { originType: string }) {
@@ -66,7 +66,7 @@ export function ChatCard({
     return (
         <Link
             href={href}
-            className={`relative flex gap-3 rounded-2xl border p-4 shadow-sm transition ${cardBackgroundClasses(originType)}`}
+            className={`relative flex gap-3 rounded-2xl border border-card-border/50 p-4 shadow-sm transition ${cardBackgroundClasses(originType)}`}
         >
             <OriginIcon originType={originType} />
 

@@ -24,7 +24,7 @@ export function NotificationCard({
     onDecline: () => void
 }) {
     return (
-        <div className="flex flex-col gap-2 rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-4 shadow-sm">
+            <div className="flex flex-col gap-2 rounded-2xl border border-card-border/50 bg-card p-4 shadow-sm">
             <div className="flex gap-3">
                 <Avatar username={username} profilePictureUrl={profilePictureUrl} />
 
@@ -39,7 +39,7 @@ export function NotificationCard({
                                 type="button"
                                 onClick={onChat}
                                 disabled={isPending}
-                                className="rounded-md bg-[#7c9272] px-4 py-.5 text-xs font-medium text-white transition hover:bg-[#667b5f] disabled:cursor-not-allowed disabled:opacity-60"
+                                className="rounded-md bg-chat-action px-4 py-0.5 text-button font-medium text-chat-action-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 Chat
                             </button>
@@ -47,7 +47,7 @@ export function NotificationCard({
                                 type="button"
                                 onClick={onDecline}
                                 disabled={isPending}
-                                className="rounded-md border border-[#ded8cc] px-4 py-.5 text-xs font-medium text-[#7c8072] transition hover:bg-[#f5efe5] disabled:cursor-not-allowed disabled:opacity-60"
+                                className="rounded-md border border-decline-action px-4 py-0.5 text-button font-medium text-decline-action transition hover:bg-decline-action/10 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 Decline
                             </button>
