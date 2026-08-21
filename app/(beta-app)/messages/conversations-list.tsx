@@ -1,16 +1,17 @@
 'use client'
 
-import Link from 'next/link'
 import { useState, useTransition } from 'react'
 import { acceptListingOffer, declineListingOffer } from '../troop/listing-lifecycle-actions'
 import { acceptConversationRequest, declineConversationRequest } from './actions'
-import { formatLastActive } from '@/lib/last-active'
-import { Avatar, NotificationCard } from '@/components/messages/notification-card'
+import { NotificationCard } from '@/components/messages/notification-card'
+import { ChatCard } from '@/components/messages/chat-card'
 
 type ConversationSummary = {
     id: string
     status: 'pending' | 'active'
     initiatedByMe: boolean
+    originType: string
+    title: string | null
     otherUser: {
         id: string
         username: string
@@ -18,6 +19,7 @@ type ConversationSummary = {
         lastActiveAt: string | null
     }
     lastMessagePreview: string | null
+    lastMessageAt: string | null
     updatedAt: string
 }
 
@@ -27,36 +29,6 @@ type OfferSummary = {
     targetListing: { id: string; title: string }
     offerer: { id: string; username: string; profilePictureUrl: string | null }
     offeredListing: { id: string; title: string; coverPhotoUrl: string | null }
-}
-
-function ConversationRow({ conversation }: { conversation: ConversationSummary }) {
-    return (
-        <Link
-            href={`/messages/${conversation.id}`}
-            className="flex items-center gap-3 rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-4 shadow-sm transition hover:bg-[#f5efe5]"
-        >
-            <Avatar username={conversation.otherUser.username} profilePictureUrl={conversation.otherUser.profilePictureUrl} />
-
-            <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                    <p className="font-medium text-[#2c2c2c]">@{conversation.otherUser.username}</p>
-                    {conversation.status === 'pending' && conversation.initiatedByMe && (
-                        <span className="rounded-full border border-[#ded8cc] px-2 py-0.5 text-xs font-medium text-[#7c8072]">
-                            Pending
-                        </span>
-                    )}
-                </div>
-                <p className="truncate text-sm text-[#7c8072]">
-                    {conversation.lastMessagePreview ?? 'Say hello!'}
-                </p>
-                {conversation.status === 'active' && (
-                    <p className="text-xs text-[#9aa494]">
-                        {formatLastActive(conversation.otherUser.lastActiveAt)}
-                    </p>
-                )}
-            </div>
-        </Link>
-    )
 }
 
 function RequestCard({
@@ -260,7 +232,21 @@ export function ConversationsList({
                     </div>
                 ) : (
                     <div className="flex flex-col gap-3">
-                        {messages.map((c) => <ConversationRow key={c.id} conversation={c} />)}
+                        {messages.map((c) => (
+                            <ChatCard
+                                key={c.id}
+                                href={`/messages/${c.id}`}
+                                username={c.otherUser.username}
+                                profilePictureUrl={c.otherUser.profilePictureUrl}
+                                lastActiveAt={c.otherUser.lastActiveAt}
+                                isActive={c.status === 'active'}
+                                isPending={c.status === 'pending' && c.initiatedByMe}
+                                originType={c.originType}
+                                title={c.title}
+                                lastMessagePreview={c.lastMessagePreview}
+                                lastMessageAt={c.lastMessageAt}
+                            />
+                        ))}
                     </div>
                 )
             )}

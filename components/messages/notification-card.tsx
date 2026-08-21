@@ -1,33 +1,8 @@
 'use client'
 
-import Image from 'next/image'
-import { UserRound } from 'lucide-react'
 import type { ReactNode } from 'react'
-
-function formatTimestamp(isoDate: string): string {
-    return new Date(isoDate).toLocaleString(undefined, {
-        hour: 'numeric',
-        minute: '2-digit',
-    })
-}
-
-export function Avatar({ username, profilePictureUrl }: { username: string; profilePictureUrl: string | null }) {
-    return (
-        <div className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#ded8cc] bg-[#f2ede0]">
-            {profilePictureUrl ? (
-                <Image
-                    src={profilePictureUrl}
-                    alt={`${username}'s profile picture`}
-                    width={80}
-                    height={80}
-                    className="size-full object-cover"
-                />
-            ) : (
-                <UserRound className="size-8 text-[#9aaa90]" />
-            )}
-        </div>
-    )
-}
+import { Avatar } from '@/components/avatar'
+import { formatTimestamp } from '@/lib/format-timestamp'
 
 export function NotificationCard({
     username,
