@@ -49,6 +49,8 @@ const betaApplicationSchema = z
         pain_points: z.string().trim().max(3000),
         future_features: z.string().trim().max(3000),
         misc_thoughts: z.string().trim().max(3000),
+        sms_consent: z.enum(['true', '']).transform((val) => val === 'true'),
+        tos_consent: z.enum(['true', '']).transform((val) => val === 'true'),
         website: z.string().max(200),
     })
     .superRefine((application, context) => {
@@ -57,6 +59,13 @@ const betaApplicationSchema = z
                 code: 'custom',
                 message: 'Please describe the other category',
                 path: ['other_category'],
+            })
+        }
+        if (!application.tos_consent) {
+            context.addIssue({
+                code: 'custom',
+                message: 'Please agree to the Terms of Service and Privacy Policy to continue',
+                path: ['tos_consent'],
             })
         }
     })
@@ -94,6 +103,8 @@ export async function submitBetaApplication(formData: FormData): Promise<SubmitR
         pain_points: getText(formData, 'pain_points'),
         future_features: getText(formData, 'future_features'),
         misc_thoughts: getText(formData, 'misc_thoughts'),
+        sms_consent: getText(formData, 'sms_consent'),
+        tos_consent: getText(formData, 'tos_consent'),
         website: getText(formData, 'website'),
     })
 
@@ -160,6 +171,8 @@ export async function submitBetaApplication(formData: FormData): Promise<SubmitR
         pain_points,
         future_features,
         misc_thoughts,
+        sms_consent,
+        tos_consent,
     } = validationFields.data
 
     const { error } = await db.from('applicants').insert({
@@ -170,6 +183,8 @@ export async function submitBetaApplication(formData: FormData): Promise<SubmitR
         phone_number,
         username,
         status: 'pending',
+        sms_consent,
+        tos_consent,
         responses: {
             neighborhood,
             emojis,
