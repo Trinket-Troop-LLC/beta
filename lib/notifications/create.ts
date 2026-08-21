@@ -65,10 +65,12 @@ async function buildPushPayload(
                 url: `${siteUrl}${input.relatedConversationId ? `/messages/${input.relatedConversationId}` : '/messages'}`,
             }
         case 'exchange_cancelled':
+            // The conversation is already closed by the time this fires (see
+            // unreserveListing) -- send them to the listing instead of a dead thread.
             return {
                 title: 'Exchange cancelled',
                 body: `${who} cancelled an exchange.`,
-                url: `${siteUrl}/troop`,
+                url: `${siteUrl}${input.relatedListingId ? `/troop/listings/${input.relatedListingId}` : '/troop'}`,
             }
         case 'exchange_complete_review_prompt':
             return {

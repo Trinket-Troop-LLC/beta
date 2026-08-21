@@ -48,7 +48,9 @@ function notificationHref(notification: NotificationSummary): string {
         case 'bulletin_message':
             return notification.relatedConversationId ? `/messages/${notification.relatedConversationId}` : '/messages'
         case 'exchange_cancelled':
-            return notification.relatedConversationId ? `/messages/${notification.relatedConversationId}` : '/messages'
+            // The conversation is closed by the time this fires (see
+            // unreserveListing) -- send them to the listing instead of a dead thread.
+            return notification.relatedListingId ? `/troop/listings/${notification.relatedListingId}` : '/troop'
         case 'exchange_complete_review_prompt':
             return notification.relatedConversationId ? `/review/${notification.relatedConversationId}` : '/troop'
         default:
