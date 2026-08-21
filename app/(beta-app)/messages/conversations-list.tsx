@@ -1,10 +1,15 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useRef, useState, useTransition } from 'react'
 import { acceptListingOffer, declineListingOffer } from '../troop/listing-lifecycle-actions'
 import { acceptConversationRequest, declineConversationRequest } from './actions'
 import { NotificationCard } from '@/components/messages/notification-card'
 import { ChatCard } from '@/components/messages/chat-card'
+import {
+    SentOfferCard,
+    type OfferableListing,
+    type SentOfferSummary,
+} from '@/components/messages/sent-offer-card'
 
 type ConversationSummary = {
     id: string
@@ -139,17 +144,25 @@ function OfferCard({
 type NotificationItem =
     | { kind: 'request'; timestamp: string; conversation: ConversationSummary }
     | { kind: 'offer'; timestamp: string; offer: OfferSummary }
+    | { kind: 'sent-offer'; timestamp: string; offer: SentOfferSummary }
 
 export function ConversationsList({
     conversations: initialConversations,
     offers: initialOffers,
+    sentOffers: initialSentOffers,
+    sentOffersError,
 }: {
     conversations: ConversationSummary[]
     offers: OfferSummary[]
+    sentOffers: SentOfferSummary[]
+    sentOffersError: string | null
 }) {
     const [conversations, setConversations] = useState(initialConversations)
     const [offers, setOffers] = useState(initialOffers)
+    const [sentOffers, setSentOffers] = useState(initialSentOffers)
     const [tab, setTab] = useState<'notifications' | 'messages'>('notifications')
+    const [statusAnnouncement, setStatusAnnouncement] = useState('')
+    const notificationsTabRef = useRef<HTMLButtonElement>(null)
 
     const needsMyResponse = conversations.filter((c) => c.status === 'pending' && !c.initiatedByMe)
     const messages = conversations.filter((c) => c.status === 'active' || c.initiatedByMe)
@@ -165,10 +178,30 @@ export function ConversationsList({
             timestamp: offer.createdAt,
             offer,
         })),
+        ...sentOffers.map((offer): NotificationItem => ({
+            kind: 'sent-offer',
+            timestamp: offer.updatedAt,
+            offer,
+        })),
     ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
 
     function handleOfferResolved(offerId: string) {
         setOffers((current) => current.filter((offer) => offer.offerId !== offerId))
+    }
+
+    function handleSentOfferChanged(offerId: string, offeredListing: OfferableListing) {
+        setSentOffers((current) => current.map((offer) => offer.offerId === offerId
+            ? { ...offer, offeredListing, updatedAt: new Date().toISOString() }
+            : offer))
+    }
+
+    function handleSentOfferWithdrawn(offerId: string, targetListingTitle: string) {
+        setSentOffers((current) => current.filter((offer) => offer.offerId !== offerId))
+        setStatusAnnouncement('')
+        requestAnimationFrame(() => {
+            setStatusAnnouncement(`Offer for ${targetListingTitle} was withdrawn.`)
+            notificationsTabRef.current?.focus()
+        })
     }
 
     function handleRequestResolved(conversationId: string) {
@@ -177,10 +210,14 @@ export function ConversationsList({
 
     return (
         <div className="w-full max-w-md">
+            <p role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+                {statusAnnouncement}
+            </p>
             <h1 className="mb-6 text-3xl font-semibold text-[#30392d]">Messages</h1>
 
             <div className="mb-4 flex rounded-full border border-[#ded8cc] bg-[#fffdf9] p-1">
                 <button
+                    ref={notificationsTabRef}
                     onClick={() => setTab('notifications')}
                     className={`flex-1 rounded-full px-3 py-2 text-sm font-medium transition ${
                         tab === 'notifications' ? 'bg-[#7c9272] text-white' : 'text-[#625f58] hover:bg-[#f5efe5]'
@@ -204,25 +241,43 @@ export function ConversationsList({
             </div>
 
             {tab === 'notifications' && (
-                notifications.length === 0 ? (
-                    <div className="rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-6 text-left shadow-sm">
-                        <p className="text-sm text-[#625f58]">No notifications right now.</p>
-                    </div>
-                ) : (
-                    <div className="flex flex-col gap-3">
-                        {notifications.map((item) =>
+                <div className="flex flex-col gap-3">
+                    {sentOffersError && (
+                        <div
+                            role="alert"
+                            className="rounded-2xl border border-red-200 bg-red-50 p-4 text-left text-sm text-red-700 shadow-sm"
+                        >
+                            {sentOffersError}
+                        </div>
+                    )}
+
+                    {notifications.length === 0 ? (
+                        <div className="rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-6 text-left shadow-sm">
+                            <p className="text-sm text-[#625f58]">
+                                {sentOffersError ? 'No other notifications right now.' : 'No notifications right now.'}
+                            </p>
+                        </div>
+                    ) : (
+                        notifications.map((item) =>
                             item.kind === 'request' ? (
                                 <RequestCard
                                     key={item.conversation.id}
                                     conversation={item.conversation}
                                     onResolved={handleRequestResolved}
                                 />
-                            ) : (
+                            ) : item.kind === 'offer' ? (
                                 <OfferCard key={item.offer.offerId} offer={item.offer} onResolved={handleOfferResolved} />
+                            ) : (
+                                <SentOfferCard
+                                    key={item.offer.offerId}
+                                    offer={item.offer}
+                                    onChanged={handleSentOfferChanged}
+                                    onWithdrawn={handleSentOfferWithdrawn}
+                                />
                             )
-                        )}
-                    </div>
-                )
+                        )
+                    )}
+                </div>
             )}
 
             {tab === 'messages' && (

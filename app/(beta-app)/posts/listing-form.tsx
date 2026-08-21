@@ -155,6 +155,7 @@ export function ListingForm() {
     const router = useRouter()
     const [category, setCategory] = useState('')
     const [transactionTypes, setTransactionTypes] = useState<ListingTransactionType[]>([])
+    const [idealTradeDescription, setIdealTradeDescription] = useState('')
     const [photos, setPhotos] = useState<File[]>([])
     const [photoPreviews, setPhotoPreviews] = useState<string[]>([])
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
@@ -373,15 +374,13 @@ export function ListingForm() {
         setError(null)
         setFieldErrors({})
 
-        if (photos.length < 1 || photos.length > maxPhotoCount) {
+        if (photos.length > maxPhotoCount) {
             setFieldErrors({
-                photos: photos.length < 1
-                    ? 'Choose at least one photo.'
-                    : `Choose no more than ${maxPhotoCount} photos.`,
+                photos: `Choose no more than ${maxPhotoCount} photos.`,
             })
             setError(createPostingError(
                 'PHOTO_COUNT_INVALID',
-                'This listing was not posted because it needs between 1 and 5 photos.',
+                'This listing was not posted because it can have no more than 5 photos.',
             ))
             return
         }
@@ -552,15 +551,15 @@ export function ListingForm() {
             )}
 
             <fieldset className="flex flex-col gap-3 text-left">
-                <legend className="font-medium text-foreground">Photos *</legend>
+                <legend className="font-medium text-foreground">Photos (optional)</legend>
                 <label className="flex cursor-pointer items-center justify-center gap-3 rounded-2xl border border-dashed border-border bg-secondary/60 px-4 py-8 text-center transition hover:bg-secondary has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary has-[:focus-visible]:ring-offset-2">
                     <Images className="size-6 text-primary" />
                     <span>
                         <span className="block font-medium text-foreground">
-                            {photos.length > 0 ? 'Choose different photos' : 'Choose 1–5 photos'}
+                            {photos.length > 0 ? 'Choose different photos' : 'Choose up to 5 photos'}
                         </span>
                         <span className="mt-1 block text-sm text-muted-foreground">
-                            PNG or JPEG; the first photo will be the cover
+                            PNG or JPEG; without one, we’ll make a placeholder from your listing
                         </span>
                     </span>
                     <input
@@ -732,6 +731,30 @@ export function ListingForm() {
                     message={fieldErrors.transaction_types}
                 />
             </fieldset>
+
+            {transactionTypes.includes('trade') && (
+                <label className={labelClass}>
+                    <span className="font-medium">What would your ideal trade look like? (optional)</span>
+                    <textarea
+                        name="ideal_trade_description"
+                        maxLength={1000}
+                        rows={4}
+                        value={idealTradeDescription}
+                        onChange={(event) => setIdealTradeDescription(event.target.value)}
+                        placeholder="Share the kinds of trinkets, styles, or swaps you would be excited about."
+                        aria-invalid={Boolean(fieldErrors.ideal_trade_description)}
+                        aria-describedby={fieldErrors.ideal_trade_description ? 'listing-ideal-trade-error' : 'listing-ideal-trade-hint'}
+                        className={inputClass}
+                    />
+                    <span id="listing-ideal-trade-hint" className="text-sm text-muted-foreground">
+                        This helps other members shape a trade offer. You can still consider anything.
+                    </span>
+                    <FieldError
+                        id="listing-ideal-trade-error"
+                        message={fieldErrors.ideal_trade_description}
+                    />
+                </label>
+            )}
 
             {transactionTypes.includes('sell') && (
                 <label className={labelClass}>

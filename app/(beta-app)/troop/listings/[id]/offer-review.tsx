@@ -3,7 +3,8 @@
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
-import { ImageIcon, UserRound } from 'lucide-react'
+import { UserRound } from 'lucide-react'
+import { ListingPlaceholder } from '@/components/listings/listing-placeholder'
 import { acceptListingOffer, declineListingOffer } from '../../listing-lifecycle-actions'
 
 type OfferSummary = {
@@ -64,9 +65,7 @@ export function OfferReview({ offers: initialOffers }: { offers: OfferSummary[] 
                                     className="object-cover"
                                 />
                             ) : (
-                                <div className="flex size-full items-center justify-center text-muted-foreground">
-                                    <ImageIcon className="size-5" />
-                                </div>
+                                <ListingPlaceholder title={offer.offeredListing.title} compact />
                             )}
                         </div>
                         <div className="min-w-0 flex-1">

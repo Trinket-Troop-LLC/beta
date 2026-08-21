@@ -47,7 +47,7 @@ export async function getListingsView(cursor: unknown = null): Promise<GetListin
 
     let query = db
         .from('listings')
-        .select('id, title, transaction_types, price_cents, status, published_at')
+        .select('id, title, category, transaction_types, price_cents, status, published_at')
         .in('status', ['active', 'reserved'])
         .order('published_at', { ascending: false })
         .order('id', { ascending: false })
@@ -111,6 +111,7 @@ export async function getListingsView(cursor: unknown = null): Promise<GetListin
         return {
             id: listing.id,
             title: listing.title,
+            category: listing.category,
             transaction_types: listing.transaction_types,
             price_cents: listing.price_cents,
             status: listing.status,

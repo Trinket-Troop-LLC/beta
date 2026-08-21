@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
-import { ImageIcon } from 'lucide-react'
+import { ListingPlaceholder } from '@/components/listings/listing-placeholder'
 import { requestConversation } from '@/app/(beta-app)/messages/actions'
 import { getMyOfferableListings, submitListingOffer } from '../../listing-lifecycle-actions'
 import { formatListingPrice, type ListingTransactionType } from '@/lib/listings/domain'
@@ -153,9 +153,7 @@ export function ExchangeActions({
                                                                     className="object-cover"
                                                                 />
                                                             ) : (
-                                                                <div className="flex size-full items-center justify-center text-muted-foreground">
-                                                                    <ImageIcon className="size-4" />
-                                                                </div>
+                                                                <ListingPlaceholder title={listing.title} compact />
                                                             )}
                                                         </div>
                                                         <span className="truncate text-sm text-foreground">{listing.title}</span>

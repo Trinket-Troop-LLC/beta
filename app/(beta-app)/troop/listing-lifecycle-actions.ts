@@ -4,9 +4,13 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { signProfilePictureUrls } from '@/lib/supabase/profile-pictures'
-import { startActiveConversation } from '@/app/(beta-app)/messages/actions'
-import { reserveListing, releaseListing } from '@/app/(beta-app)/troop/listing-reservation'
 import { createNotification } from '@/lib/notifications/create'
+
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+function isUuid(value: unknown): value is string {
+    return typeof value === 'string' && uuidPattern.test(value)
+}
 
 async function getCurrentUserId() {
     const db = await createClient()
@@ -15,6 +19,15 @@ async function getCurrentUserId() {
 }
 
 type OfferableListing = { id: string; title: string; coverPhotoUrl: string | null }
+
+export type SentPendingListingOffer = {
+    offerId: string
+    createdAt: string
+    updatedAt: string
+    targetListing: { id: string; title: string }
+    targetOwner: { id: string; username: string; profilePictureUrl: string | null }
+    offeredListing: { id: string; title: string; coverPhotoUrl: string | null }
+}
 
 // The buyer's own active listings, to pick from when offering a trade.
 export async function getMyOfferableListings(excludeListingId: string) {
@@ -26,6 +39,7 @@ export async function getMyOfferableListings(excludeListingId: string) {
         .select('id, title')
         .eq('owner_id', userId)
         .eq('status', 'active')
+        .contains('transaction_types', ['trade'])
         .neq('id', excludeListingId)
         .order('created_at', { ascending: false })
 
@@ -127,6 +141,122 @@ export async function getPendingOffersForListing(listingId: string) {
     return { success: true as const, offers }
 }
 
+// Pending trade offers sent by the current member. Reads use the service
+// client only after authentication and always scope the offer query to the
+// caller, which also lets stale target rows remain renderable if their normal
+// member visibility changed after the offer was sent.
+export async function getMySentPendingOffers() {
+    const { db, userId } = await getCurrentUserId()
+    if (!userId) return { success: false as const, error: 'You must be logged in.' }
+
+    const admin = createAdminClient()
+    const { data: offerRows, error: offersError } = await admin
+        .from('listing_offers')
+        .select('id, listing_id, offered_listing_id, created_at, updated_at')
+        .eq('offerer_id', userId)
+        .eq('status', 'pending')
+        .order('updated_at', { ascending: false })
+
+    if (offersError) return { success: false as const, error: 'Could not load your sent offers.' }
+    if (!offerRows || offerRows.length === 0) {
+        return { success: true as const, offers: [] as SentPendingListingOffer[] }
+    }
+
+    const targetListingIds = [...new Set(offerRows.map((offer) => offer.listing_id))]
+    const offeredListingIds = [...new Set(offerRows.map((offer) => offer.offered_listing_id))]
+
+    const [targetListingsResult, offeredListingsResult, coverPhotosResult] = await Promise.all([
+        admin
+            .from('listings')
+            .select('id, owner_id, title')
+            .in('id', targetListingIds),
+        admin
+            .from('listings')
+            .select('id, title')
+            .in('id', offeredListingIds),
+        admin
+            .from('listing_photos')
+            .select('listing_id, storage_path')
+            .in('listing_id', offeredListingIds)
+            .eq('position', 0),
+    ])
+
+    if (targetListingsResult.error || offeredListingsResult.error) {
+        return { success: false as const, error: 'Could not load the listings for your sent offers.' }
+    }
+
+    const targetListings = targetListingsResult.data ?? []
+    const offeredListings = offeredListingsResult.data ?? []
+    const targetOwnerIds = [...new Set(targetListings.map((listing) => listing.owner_id))]
+    const { data: targetOwners, error: targetOwnersError } = await admin
+        .from('users')
+        .select('id, username, responses')
+        .in('id', targetOwnerIds)
+
+    if (targetOwnersError) {
+        return { success: false as const, error: 'Could not load the members for your sent offers.' }
+    }
+
+    const coverPhotos = coverPhotosResult.data ?? []
+    const coverPaths = coverPhotos.map((photo) => photo.storage_path)
+    const { data: signedPhotos } = coverPaths.length > 0
+        ? await db.storage.from('listing-photos').createSignedUrls(coverPaths, 3600)
+        : { data: [] }
+    const avatarPaths = targetOwners?.map((owner) => owner.responses?.profile_picture_path) ?? []
+    const avatarUrlByPath = await signProfilePictureUrls(db, avatarPaths)
+
+    const targetListingById = new Map(targetListings.map((listing) => [listing.id, listing]))
+    const targetOwnerById = new Map(targetOwners?.map((owner) => [owner.id, owner]) ?? [])
+    const offeredListingById = new Map(offeredListings.map((listing) => [listing.id, listing]))
+    const coverPathByListingId = new Map(
+        coverPhotos.map((photo) => [photo.listing_id, photo.storage_path]),
+    )
+    const signedUrlByPath = new Map(
+        signedPhotos?.map((photo) => [photo.path, photo.signedUrl]) ?? [],
+    )
+
+    const hasMissingRelatedRow = offerRows.some((offer) => {
+        const targetListing = targetListingById.get(offer.listing_id)
+        return !targetListing
+            || !targetOwnerById.has(targetListing.owner_id)
+            || !offeredListingById.has(offer.offered_listing_id)
+    })
+
+    if (hasMissingRelatedRow) {
+        return { success: false as const, error: 'One or more sent offers could not be loaded.' }
+    }
+
+    const offers: SentPendingListingOffer[] = offerRows.map((offer) => {
+        const targetListing = targetListingById.get(offer.listing_id)!
+        const targetOwner = targetOwnerById.get(targetListing.owner_id)!
+        const offeredListing = offeredListingById.get(offer.offered_listing_id)!
+        const avatarPath = targetOwner.responses?.profile_picture_path
+        const coverPath = coverPathByListingId.get(offeredListing.id)
+
+        return {
+            offerId: offer.id,
+            createdAt: offer.created_at,
+            updatedAt: offer.updated_at,
+            targetListing: {
+                id: targetListing.id,
+                title: targetListing.title,
+            },
+            targetOwner: {
+                id: targetOwner.id,
+                username: targetOwner.username ?? 'Unknown',
+                profilePictureUrl: (avatarPath && avatarUrlByPath.get(avatarPath)) ?? null,
+            },
+            offeredListing: {
+                id: offeredListing.id,
+                title: offeredListing.title,
+                coverPhotoUrl: coverPath ? signedUrlByPath.get(coverPath) ?? null : null,
+            },
+        }
+    })
+
+    return { success: true as const, offers }
+}
+
 // Listing writes go through the admin client throughout this file (see
 // 20260810010000_enable_listing_posting.sql) -- authenticated clients can
 // only read listings/listing_offers directly, never mutate them. Ownership
@@ -170,7 +300,7 @@ export async function submitListingOffer(targetListingId: string, offeredListing
 
     const { data: offeredListing } = await admin
         .from('listings')
-        .select('id')
+        .select('id, transaction_types')
         .eq('id', offeredListingId)
         .eq('owner_id', userId)
         .eq('status', 'active')
@@ -180,9 +310,13 @@ export async function submitListingOffer(targetListingId: string, offeredListing
         return { success: false, error: 'That listing is no longer available to offer.' }
     }
 
+    if (!offeredListing.transaction_types.includes('trade')) {
+        return { success: false, error: 'That listing is not available for trade.' }
+    }
+
     const { data: targetListing } = await admin
         .from('listings')
-        .select('id, owner_id, status')
+        .select('id, owner_id, status, transaction_types')
         .eq('id', targetListingId)
         .maybeSingle()
 
@@ -191,6 +325,9 @@ export async function submitListingOffer(targetListingId: string, offeredListing
     }
     if (targetListing.owner_id === userId) {
         return { success: false, error: 'You cannot offer on your own listing.' }
+    }
+    if (!targetListing.transaction_types.includes('trade')) {
+        return { success: false, error: 'This listing is not accepting trades.' }
     }
 
     const { error } = await admin
@@ -216,100 +353,171 @@ export async function submitListingOffer(targetListingId: string, offeredListing
     })
 
     revalidatePath(`/troop/listings/${targetListingId}`)
+    revalidatePath('/messages')
+    return { success: true }
+}
+
+export async function updatePendingListingOffer(offerId: string, offeredListingId: string) {
+    if (!isUuid(offerId) || !isUuid(offeredListingId)) {
+        return { success: false, error: 'This offer update is invalid.' }
+    }
+
+    const { userId } = await getCurrentUserId()
+    if (!userId) return { success: false, error: 'You must be logged in.' }
+
+    const admin = createAdminClient()
+    const { data: offer, error: offerError } = await admin
+        .from('listing_offers')
+        .select('id, listing_id, offered_listing_id, offerer_id, status, updated_at')
+        .eq('id', offerId)
+        .eq('offerer_id', userId)
+        .eq('status', 'pending')
+        .maybeSingle()
+
+    if (offerError) return { success: false, error: 'Could not load this offer. Please try again.' }
+    if (!offer) return { success: false, error: 'This offer is no longer available to edit.' }
+    if (offer.listing_id === offeredListingId) {
+        return { success: false, error: 'You cannot offer a listing for itself.' }
+    }
+
+    const [targetListingResult, replacementListingResult] = await Promise.all([
+        admin
+            .from('listings')
+            .select('id, owner_id, status, transaction_types')
+            .eq('id', offer.listing_id)
+            .maybeSingle(),
+        admin
+            .from('listings')
+            .select('id, owner_id, status, transaction_types')
+            .eq('id', offeredListingId)
+            .maybeSingle(),
+    ])
+
+    if (targetListingResult.error || replacementListingResult.error) {
+        return { success: false, error: 'Could not verify the listings for this offer.' }
+    }
+
+    const targetListing = targetListingResult.data
+    const replacementListing = replacementListingResult.data
+    const targetIsTradeable = targetListing
+        && targetListing.owner_id !== userId
+        && targetListing.status === 'active'
+        && targetListing.transaction_types.includes('trade')
+    const replacementIsTradeable = replacementListing
+        && replacementListing.owner_id === userId
+        && replacementListing.status === 'active'
+        && replacementListing.transaction_types.includes('trade')
+
+    if (!targetIsTradeable) {
+        return { success: false, error: 'The requested listing is no longer available for trade.' }
+    }
+    if (!replacementIsTradeable) {
+        return { success: false, error: 'Choose one of your active trade listings.' }
+    }
+
+    // updated_at is a version token maintained by the listing-offer trigger.
+    // If acceptance, withdrawal, or another edit wins the race, this update
+    // matches no row instead of overwriting that newer state.
+    const { data: updatedOffer, error: updateError } = await admin
+        .from('listing_offers')
+        .update({ offered_listing_id: offeredListingId })
+        .eq('id', offer.id)
+        .eq('listing_id', offer.listing_id)
+        .eq('offered_listing_id', offer.offered_listing_id)
+        .eq('offerer_id', userId)
+        .eq('status', 'pending')
+        .eq('updated_at', offer.updated_at)
+        .select('id')
+        .maybeSingle()
+
+    if (updateError) return { success: false, error: 'Could not update this offer. Please try again.' }
+    if (!updatedOffer) return { success: false, error: 'This offer changed before it could be updated.' }
+
+    revalidatePath(`/troop/listings/${offer.listing_id}`)
+    revalidatePath('/messages')
+    return { success: true }
+}
+
+export async function withdrawPendingListingOffer(offerId: string) {
+    if (!isUuid(offerId)) return { success: false, error: 'This offer is invalid.' }
+
+    const { userId } = await getCurrentUserId()
+    if (!userId) return { success: false, error: 'You must be logged in.' }
+
+    const admin = createAdminClient()
+    const { data: withdrawnOffer, error } = await admin
+        .from('listing_offers')
+        .update({ status: 'withdrawn' })
+        .eq('id', offerId)
+        .eq('offerer_id', userId)
+        .eq('status', 'pending')
+        .select('id, listing_id')
+        .maybeSingle()
+
+    if (error) return { success: false, error: 'Could not withdraw this offer. Please try again.' }
+    if (!withdrawnOffer) return { success: false, error: 'This offer is no longer available to withdraw.' }
+
+    revalidatePath(`/troop/listings/${withdrawnOffer.listing_id}`)
+    revalidatePath('/messages')
     return { success: true }
 }
 
 export async function acceptListingOffer(offerId: string) {
+    if (!isUuid(offerId)) return { success: false, error: 'This offer is invalid.' }
+
     const { userId } = await getCurrentUserId()
     if (!userId) return { success: false, error: 'You must be logged in.' }
 
     const admin = createAdminClient()
 
-    const { data: offer } = await admin
+    const { data: offer, error: offerError } = await admin
         .from('listing_offers')
-        .select('id, listing_id, offered_listing_id, offerer_id, status')
+        .select('listing_id')
         .eq('id', offerId)
         .maybeSingle()
 
-    if (!offer || offer.status !== 'pending') {
-        return { success: false, error: 'This offer is no longer available.' }
+    if (offerError) return { success: false, error: 'Could not load this offer. Please try again.' }
+    if (!offer) return { success: false, error: 'This offer is no longer available.' }
+
+    // The RPC claims the offer, reserves both listings, and activates the
+    // conversation inside one PostgreSQL transaction. Concurrent edits,
+    // withdrawals, and acceptances therefore cannot leave partial state.
+    const { data: conversationId, error: acceptError } = await admin.rpc(
+        'accept_pending_listing_offer',
+        {
+            p_offer_id: offerId,
+            p_owner_id: userId,
+        },
+    )
+
+    if (acceptError || !conversationId) {
+        return {
+            success: false,
+            error: 'This offer changed or one of its listings is no longer available for trade.',
+        }
     }
-
-    const { data: targetListing } = await admin
-        .from('listings')
-        .select('id, owner_id, status')
-        .eq('id', offer.listing_id)
-        .maybeSingle()
-
-    if (!targetListing || targetListing.owner_id !== userId) {
-        return { success: false, error: 'You are not the owner of this listing.' }
-    }
-
-    if (targetListing.status !== 'active') {
-        return { success: false, error: "This listing already has an ongoing conversation. If it didn't work out, close it before accepting another offer." }
-    }
-
-    // Accepting is mutual agreement -- both sides reserve immediately, via
-    // the same reserveListing helper acceptConversationRequest uses, so a
-    // listing that raced onto some other reservation in between can't be
-    // silently double-booked here.
-    const targetReserved = await reserveListing(admin, offer.listing_id, userId)
-    if (!targetReserved) {
-        return { success: false, error: 'Could not reserve this listing. Please try again.' }
-    }
-
-    const offeredReserved = await reserveListing(admin, offer.offered_listing_id)
-    if (!offeredReserved) {
-        await releaseListing(admin, offer.listing_id)
-        return { success: false, error: 'The offered listing is no longer available. Ask them to send a new offer.' }
-    }
-
-    // A trade offer is unambiguously a trade, so active_transaction_type is
-    // set directly here (no need to carry it through a request the way
-    // sell/gift/lend do via conversations.transaction_type).
-    await admin
-        .from('listings')
-        .update({ active_transaction_type: 'trade' })
-        .in('id', [offer.listing_id, offer.offered_listing_id])
-
-    // Start the conversation before marking the offer accepted, so a failure
-    // here rolls back the reservation instead of leaving both listings stuck
-    // reserved with an accepted offer and no conversation to show for it.
-    const conversationResult = await startActiveConversation(offer.offerer_id, 'offer', offer.listing_id)
-
-    if (!conversationResult.success) {
-        await releaseListing(admin, offer.listing_id)
-        await releaseListing(admin, offer.offered_listing_id)
-        return { success: false, error: 'Could not start the conversation. Please try again.' }
-    }
-
-    await admin
-        .from('listing_offers')
-        .update({ status: 'accepted' })
-        .eq('id', offer.id)
-
-    // Other pending offers on this listing are left untouched — the owner
-    // decides whether to decline them manually, or accept one later if this
-    // trade falls through and the listing reopens.
 
     revalidatePath(`/troop/listings/${offer.listing_id}`)
     revalidatePath('/messages')
 
-    return { success: true, conversationId: conversationResult.conversationId }
+    return { success: true, conversationId }
 }
 
 export async function declineListingOffer(offerId: string) {
+    if (!isUuid(offerId)) return { success: false, error: 'This offer is invalid.' }
+
     const { userId } = await getCurrentUserId()
     if (!userId) return { success: false, error: 'You must be logged in.' }
 
     const admin = createAdminClient()
 
-    const { data: offer } = await admin
+    const { data: offer, error: offerError } = await admin
         .from('listing_offers')
-        .select('id, listing_id, status')
+        .select('id, listing_id, offered_listing_id, offerer_id, status, updated_at')
         .eq('id', offerId)
         .maybeSingle()
 
+    if (offerError) return { success: false, error: 'Could not load this offer. Please try again.' }
     if (!offer || offer.status !== 'pending') {
         return { success: false, error: 'This offer is no longer available.' }
     }
@@ -324,15 +532,23 @@ export async function declineListingOffer(offerId: string) {
         return { success: false, error: 'You are not the owner of this listing.' }
     }
 
-    const { error } = await admin
+    const { data: declinedOffer, error } = await admin
         .from('listing_offers')
         .update({ status: 'declined' })
-        .eq('id', offerId)
+        .eq('id', offer.id)
+        .eq('listing_id', offer.listing_id)
+        .eq('offered_listing_id', offer.offered_listing_id)
+        .eq('offerer_id', offer.offerer_id)
         .eq('status', 'pending')
+        .eq('updated_at', offer.updated_at)
+        .select('id')
+        .maybeSingle()
 
     if (error) return { success: false, error: 'Could not decline this offer. Please try again.' }
+    if (!declinedOffer) return { success: false, error: 'This offer changed before it could be declined.' }
 
     revalidatePath(`/troop/listings/${offer.listing_id}`)
+    revalidatePath('/messages')
     return { success: true }
 }
 

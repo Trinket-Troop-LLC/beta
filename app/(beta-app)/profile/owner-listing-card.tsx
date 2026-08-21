@@ -1,7 +1,8 @@
 'use client'
 
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { LoaderCircle, Trash2 } from 'lucide-react'
+import { LoaderCircle, Pencil, Trash2 } from 'lucide-react'
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { ListingCard, type ListingCardData } from '@/components/listings/listing-card'
 import { deleteListing } from './listing-actions'
@@ -93,19 +94,37 @@ export function OwnerListingCard({
 
     const footer = (
         <div className="space-y-3">
-            <button
-                ref={deleteButtonRef}
-                type="button"
-                onClick={openConfirmation}
-                disabled={isConfirming}
-                aria-expanded={isConfirming}
-                aria-controls={confirmationPanelId}
-                className="inline-flex items-center gap-2 rounded-full border border-destructive/30 px-3.5 py-2 text-xs font-semibold text-destructive transition hover:bg-destructive/10 disabled:cursor-default disabled:opacity-50"
-                aria-label={`${triggerLabel}: ${listing.title}`}
-            >
-                <Trash2 className="size-3.5" aria-hidden="true" />
-                {triggerLabel}
-            </button>
+            <div className="flex flex-wrap gap-2">
+                {listing.status === 'active' && (
+                    <Link
+                        href={`/profile/listings/${listing.id}/edit`}
+                        className="inline-flex items-center gap-2 rounded-full border border-border px-3.5 py-2 text-xs font-semibold text-foreground transition hover:bg-secondary"
+                        aria-label={`Edit listing: ${listing.title}`}
+                    >
+                        <Pencil className="size-3.5" aria-hidden="true" />
+                        Edit listing
+                    </Link>
+                )}
+                <button
+                    ref={deleteButtonRef}
+                    type="button"
+                    onClick={openConfirmation}
+                    disabled={isConfirming}
+                    aria-expanded={isConfirming}
+                    aria-controls={confirmationPanelId}
+                    className="inline-flex items-center gap-2 rounded-full border border-destructive/30 px-3.5 py-2 text-xs font-semibold text-destructive transition hover:bg-destructive/10 disabled:cursor-default disabled:opacity-50"
+                    aria-label={`${triggerLabel}: ${listing.title}`}
+                >
+                    <Trash2 className="size-3.5" aria-hidden="true" />
+                    {triggerLabel}
+                </button>
+            </div>
+
+            {listing.status === 'reserved' && (
+                <p className="text-xs leading-5 text-muted-foreground">
+                    Editing is locked while this exchange is active.
+                </p>
+            )}
 
             {isConfirming && (
                 <div
