@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import {
     AdminDashboardClient,
@@ -14,7 +15,7 @@ export default async function AdminDashboardContent() {
     // checks if user is real
     const { data: { user } } = await db.auth.getUser()
     if (!user) {
-        redirect('/auth/login')
+        redirect('/auth/login?next=/admin')
     }
 
     // checks if user is an admin
@@ -38,9 +39,17 @@ export default async function AdminDashboardContent() {
     return (
         <div className="min-h-screen bg-[#faf7f0] px-4 py-10">
             <div className="mx-auto max-w-[1400px]">
-                <h1 className="mb-6 text-center text-2xl font-bold text-[#2c2c2c]">
-                    Community Signups
-                </h1>
+                <div className="mb-6 flex flex-col items-center justify-between gap-4 sm:flex-row">
+                    <h1 className="text-center text-2xl font-bold text-[#2c2c2c] sm:text-left">
+                        Community Signups
+                    </h1>
+                    <Link
+                        href="/troop"
+                        className="rounded-lg border border-[#7c9272] bg-[#fffdf9] px-4 py-2 text-sm font-semibold text-[#455442] transition hover:bg-[#f2ede0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c9272] focus-visible:ring-offset-2"
+                    >
+                        Open beta app
+                    </Link>
+                </div>
                 <AdminDashboardClient
                     applicants={applicantsWithProfilePictures}
                     generalInterests={generalInterests ?? []}
