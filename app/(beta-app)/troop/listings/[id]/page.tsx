@@ -2,14 +2,16 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
-import { ImageIcon, UserRound } from 'lucide-react'
+import { UserRound } from 'lucide-react'
 import { requireMember } from '@/lib/supabase/require-member'
 import { signProfilePictureUrl } from '@/lib/supabase/profile-pictures'
+import { PhotoCarousel } from '@/components/listings/photo-carousel'
+import { TransactionTypePill } from '@/components/listings/transaction-type-pill'
+import { LabeledField } from '@/components/listings/labeled-field'
 import {
     LISTING_CATEGORY_LABELS,
     LISTING_CONDITION_LABELS,
     LISTING_STATUS_LABELS,
-    LISTING_TRANSACTION_TYPE_LABELS,
     formatListingPrice,
     type ListingTransactionType,
 } from '@/lib/listings/domain'
@@ -65,7 +67,7 @@ async function ListingDetailContent({ listingId }: { listingId: string }) {
 
     const { data: listing } = await db
         .from('listings')
-        .select('id, owner_id, title, description, category, other_category, condition, transaction_types, price_cents, pickup_area, status, published_at')
+        .select('id, owner_id, title, description, category, other_category, condition, transaction_types, price_cents, pickup_area, nuance, status, published_at')
         .eq('id', listingId)
         .maybeSingle()
 
@@ -106,40 +108,13 @@ async function ListingDetailContent({ listingId }: { listingId: string }) {
         : null
 
 
-    const sharingLabels = listing.transaction_types.map((type: string) =>
-        type === 'sell' && listing.price_cents !== null
-            ? formatListingPrice(listing.price_cents)
-            : LISTING_TRANSACTION_TYPE_LABELS[type as keyof typeof LISTING_TRANSACTION_TYPE_LABELS],
-    )
     const categoryLabel = listing.category === 'other'
         ? listing.other_category ?? LISTING_CATEGORY_LABELS.other
         : LISTING_CATEGORY_LABELS[listing.category as keyof typeof LISTING_CATEGORY_LABELS]
 
     return (
         <div className="mx-auto w-full max-w-2xl text-left">
-            <div className="flex gap-2 overflow-x-auto rounded-2xl snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                {photoUrls.length > 0 ? (
-                    photoUrls.map((url, index) => (
-                        <div
-                            key={url}
-                            className="relative aspect-square w-full flex-none snap-center overflow-hidden rounded-2xl bg-secondary"
-                        >
-                            <Image
-                                src={url}
-                                alt={`${listing.title} photo ${index + 1}`}
-                                fill
-                                sizes="(max-width: 640px) 100vw, 640px"
-                                className="object-cover"
-                                priority={index === 0}
-                            />
-                        </div>
-                    ))
-                ) : (
-                    <div className="flex aspect-square w-full flex-none items-center justify-center rounded-2xl bg-secondary text-muted-foreground">
-                        <ImageIcon className="size-12" />
-                    </div>
-                )}
-            </div>
+            <PhotoCarousel photoUrls={photoUrls} title={listing.title} />
 
             <div className="mt-5">
                 <div className="flex items-start justify-between gap-3">
@@ -151,9 +126,22 @@ async function ListingDetailContent({ listingId }: { listingId: string }) {
                     )}
                 </div>
 
-                <span className="mt-1 block text-lg font-semibold text-primary">
-                    {sharingLabels.join(' · ')}
-                </span>
+                <div className="mt-3">
+                    <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Open for
+                    </h2>
+                    <div className="mt-2 grid grid-cols-2 gap-2">
+                        {listing.transaction_types.map((type: ListingTransactionType) => (
+                            <TransactionTypePill key={type} type={type} isOwner={isOwner} />
+                        ))}
+                    </div>
+                </div>
+
+                {listing.transaction_types.includes('sell') && listing.price_cents !== null && (
+                    <div className="mt-3">
+                        <LabeledField label="price" value={formatListingPrice(listing.price_cents)} />
+                    </div>
+                )}
 
                 {!isOwner && (
                     listing.status === 'active' ? (
@@ -181,6 +169,17 @@ async function ListingDetailContent({ listingId }: { listingId: string }) {
                         {listing.description}
                     </p>
                 </div>
+
+                {listing.nuance && (
+                    <div className="mt-6">
+                        <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                            Nuance box
+                        </h2>
+                        <p className="mt-2 whitespace-pre-wrap text-foreground">
+                            {listing.nuance}
+                        </p>
+                    </div>
+                )}
 
                 <div className="mt-6 rounded-2xl border border-border p-4">
                     <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">

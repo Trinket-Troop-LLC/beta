@@ -639,6 +639,20 @@ export function ListingForm() {
                 <FieldError id="listing-description-error" message={fieldErrors.description} />
             </label>
 
+            <label className={labelClass}>
+                <span className="font-medium">Nuance box</span>
+                <textarea
+                    name="nuance"
+                    maxLength={500}
+                    rows={2}
+                    placeholder="Any quirky detail that doesn't fit above."
+                    aria-invalid={Boolean(fieldErrors.nuance)}
+                    aria-describedby={fieldErrors.nuance ? 'listing-nuance-error' : undefined}
+                    className={inputClass}
+                />
+                <FieldError id="listing-nuance-error" message={fieldErrors.nuance} />
+            </label>
+
             <div className="grid gap-5 sm:grid-cols-2">
                 <label className={labelClass}>
                     <span className="font-medium">Category *</span>

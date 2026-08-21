@@ -52,6 +52,10 @@ const listingDraftSchema = z
             .trim()
             .min(1, 'Enter a description.')
             .max(3000, 'Keep the description to 3,000 characters or fewer.'),
+        nuance: z
+            .string()
+            .trim()
+            .max(500, 'Keep the nuance note to 500 characters or fewer.'),
         category: z.enum(LISTING_CATEGORIES, {
             error: 'Choose a category from the list.',
         }),
@@ -358,6 +362,11 @@ function getListingConstraintFailure(error: ProviderError) {
             message: 'Enter a visible description of 3,000 characters or fewer.',
         },
         {
+            pattern: 'listings_nuance_check',
+            field: 'nuance',
+            message: 'Keep the nuance note to 500 characters or fewer.',
+        },
+        {
             pattern: 'listings_category_check',
             field: 'category',
             message: 'Choose a category from the list.',
@@ -621,6 +630,7 @@ export async function createListingDraft(
     const validationFields = listingDraftSchema.safeParse({
         title: getText(formData, 'title'),
         description: getText(formData, 'description'),
+        nuance: getText(formData, 'nuance'),
         category: getText(formData, 'category'),
         other_category: getText(formData, 'other_category'),
         condition: getText(formData, 'condition'),
@@ -667,6 +677,7 @@ export async function createListingDraft(
         owner_id: user.id,
         title: listing.title,
         description: listing.description,
+        nuance: listing.nuance || null,
         category: listing.category,
         other_category: listing.category === 'other' ? listing.other_category : null,
         condition: listing.condition,

@@ -1,15 +1,15 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, MessageCircleMore, MessageCircle, SquarePlus, UserRound } from "lucide-react";
 
 const tabs = [
-  { id: "home", label: "Home", icon: Home, href: "/troop" },
-  { id: "thoughts", label: "Thoughts", icon: MessageCircleMore, href: "/thoughts" },
-  { id: "posts", label: "Posts", icon: SquarePlus, href: "/posts" },
-  { id: "messages", label: "Messages", icon: MessageCircle, href: "/messages" },
-  { id: "profile", label: "Profile", icon: UserRound, href: "/profile" },
+  { id: "home", label: "Home", icon: "/icons/nav/home.png", iconActive: "/icons/nav/home-active.png", href: "/troop" },
+  { id: "thoughts", label: "Thoughts", icon: "/icons/nav/thoughts.png", iconActive: "/icons/nav/thoughts-active.png", href: "/thoughts" },
+  { id: "posts", label: "Posts", icon: "/icons/nav/post.png", iconActive: "/icons/nav/post-active.png", href: "/posts" },
+  { id: "messages", label: "Messages", icon: "/icons/nav/messages.png", iconActive: "/icons/nav/messages-active.png", href: "/messages" },
+  { id: "profile", label: "Profile", icon: "/icons/nav/profile.png", iconActive: "/icons/nav/profile-active.png", href: "/profile" },
 ] as const;
 
 export function BetaBottomNav({
@@ -29,7 +29,7 @@ export function BetaBottomNav({
     >
       <div className="w-full max-w-md rounded-full border border-border bg-card/95 p-2 shadow-lg backdrop-blur">
         <div className="flex items-center justify-between gap-1 sm:gap-2">
-          {tabs.map(({ id, label, icon: Icon, href }) => {
+          {tabs.map(({ id, label, icon, iconActive, href }) => {
             const isActive = isTabActive(href);
             const accessibleLabel = id === "messages" && unreadMessageCount > 0
               ? `${label}, ${unreadMessageCount} unread`
@@ -42,13 +42,20 @@ export function BetaBottomNav({
                 aria-label={accessibleLabel}
                 className={`relative flex min-h-12 min-w-0 flex-1 flex-col items-center justify-center rounded-full px-1 py-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:px-3 ${
                   isActive
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    ? "bg-secondary"
+                    : "hover:bg-muted"
                 }`}
                 aria-current={isActive ? "page" : undefined}
               >
-                <span className="relative">
-                  <Icon size={18} aria-hidden="true" />
+                <span className="relative flex size-6 items-center justify-center">
+                  <Image
+                    src={isActive ? iconActive : icon}
+                    alt=""
+                    width={24}
+                    height={24}
+                    aria-hidden="true"
+                    className="size-full object-contain"
+                  />
                   {id === "messages" && unreadMessageCount > 0 && (
                     <span
                       aria-hidden="true"
@@ -58,7 +65,11 @@ export function BetaBottomNav({
                     </span>
                   )}
                 </span>
-                <span className="mt-1 max-w-full truncate text-[10px] font-medium sm:text-[11px]">
+                <span
+                  className={`mt-1 max-w-full truncate text-[10px] font-medium sm:text-[11px] ${
+                    isActive ? "text-foreground" : "text-muted-foreground"
+                  }`}
+                >
                   {label}
                 </span>
               </Link>

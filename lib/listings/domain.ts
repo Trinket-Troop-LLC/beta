@@ -49,6 +49,17 @@ export const LISTING_TRANSACTION_TYPE_LABELS: Record<ListingTransactionType, str
     lend: 'lend',
 }
 
+// Same four types, reframed from a non-owner's perspective (what they'd be
+// doing, not what the owner is offering) -- used on the listing detail page
+// for viewers, while LISTING_TRANSACTION_TYPE_LABELS above still describes
+// the owner's own view of their listing.
+export const LISTING_TRANSACTION_TYPE_VIEWER_LABELS: Record<ListingTransactionType, string> = {
+    sell: 'buying',
+    trade: 'trading',
+    gift: 'gifting',
+    lend: 'borrowing',
+}
+
 export const LISTING_STATUSES = [
     'draft',
     'active',
@@ -85,6 +96,7 @@ export type Listing = {
     transaction_types: ListingTransactionType[]
     price_cents: number | null
     pickup_area: string
+    nuance: string | null
     status: ListingStatus
     // Which selected transaction type the current reservation actually is
     // (a listing can offer several at once, e.g. sell + trade + lend, but
