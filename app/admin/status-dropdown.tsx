@@ -41,7 +41,7 @@ export function StatusDropdown({ applicantId, currentStatus }: { applicantId: st
     <div className="flex min-w-44 flex-col items-center gap-1.5">
       <select
         aria-label="Applicant status"
-        className="w-full rounded-lg border border-[#9aaa90] bg-white px-3 py-2 text-sm text-[#455442] outline-none transition focus:border-[#667b5f] focus:ring-2 focus:ring-[#87977d]/30 disabled:cursor-wait disabled:opacity-60"
+        className="w-full rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/30 disabled:cursor-wait disabled:opacity-60"
         disabled={isPending}
         value={status}
         onChange={(event) => handleStatusChange(event.target.value)}
@@ -54,12 +54,12 @@ export function StatusDropdown({ applicantId, currentStatus }: { applicantId: st
       </select>
 
       {isPending && (
-        <p className="text-xs text-[#7c8072]" role="status">
+        <p className="text-xs text-muted-foreground" role="status">
           {status === 'approved' ? 'Approving and creating account…' : 'Updating status…'}
         </p>
       )}
       {!isPending && message && (
-        <p className="text-xs text-[#5f7258]" role="status">{message}</p>
+        <p className="text-xs text-primary" role="status">{message}</p>
       )}
       {!isPending && error && (
         <p className="max-w-56 text-xs text-red-600" role="alert">{error}</p>

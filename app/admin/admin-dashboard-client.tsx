@@ -75,9 +75,9 @@ export function AdminDashboardClient({
     const [selectedInterest, setSelectedInterest] = useState<GeneralInterest | null>(null)
 
     const thClass =
-        'whitespace-nowrap border-b border-r border-[#ded8cc] px-4 py-3 text-center font-semibold text-[#2c2c2c] last:border-r-0'
+        'whitespace-nowrap border-b border-r border-border px-4 py-3 text-center font-semibold text-foreground last:border-r-0'
     const tdClass =
-        'align-middle border-b border-r border-[#ded8cc] px-4 py-3 text-center text-[#2c2c2c] last:border-r-0'
+        'align-middle border-b border-r border-border px-4 py-3 text-center text-foreground last:border-r-0'
 
     function switchTab(tab: DashboardTab) {
         setActiveTab(tab)
@@ -123,7 +123,7 @@ export function AdminDashboardClient({
     return (
         <div>
             <div
-                className="mb-6 inline-flex rounded-xl border border-[#ded8cc] bg-[#fffdf9] p-1 shadow-sm"
+                className="mb-6 inline-flex rounded-xl border border-border bg-card p-1 shadow-sm"
                 role="tablist"
                 aria-label="Application lists"
             >
@@ -136,8 +136,8 @@ export function AdminDashboardClient({
                     onClick={() => switchTab('beta')}
                     className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
                         activeTab === 'beta'
-                            ? 'bg-[#7c9272] text-white'
-                            : 'text-[#455442] hover:bg-[#f2ede0]'
+                            ? 'bg-primary text-primary-foreground'
+                            : 'text-foreground hover:bg-muted'
                     }`}
                 >
                     Beta Applicants
@@ -154,8 +154,8 @@ export function AdminDashboardClient({
                     onClick={() => switchTab('general-interest')}
                     className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
                         activeTab === 'general-interest'
-                            ? 'bg-[#7c9272] text-white'
-                            : 'text-[#455442] hover:bg-[#f2ede0]'
+                            ? 'bg-primary text-primary-foreground'
+                            : 'text-foreground hover:bg-muted'
                     }`}
                 >
                     General Interest
@@ -176,13 +176,13 @@ export function AdminDashboardClient({
                     ) : (
                         <div className="flex flex-col items-start gap-6 xl:flex-row">
                             <div
-                                className={`overflow-x-auto rounded-2xl border border-[#ded8cc] bg-[#fffdf9] shadow-sm transition-all ${
+                                className={`overflow-x-auto rounded-2xl border border-border bg-card shadow-sm transition-all ${
                                     selectedApplicant ? 'min-w-0 flex-1' : 'w-full'
                                 }`}
                             >
                                 <table className="min-w-full border-collapse text-sm">
                                     <thead>
-                                        <tr className="bg-[#f2ede0]">
+                                        <tr className="bg-muted">
                                             <th className={thClass}>First Name</th>
                                             <th className={thClass}>Last Name</th>
                                             <th className={thClass}>Email</th>
@@ -195,9 +195,9 @@ export function AdminDashboardClient({
                                         {applicants.map((applicant) => (
                                             <tr
                                                 key={applicant.id}
-                                                className={`transition hover:bg-[#f7f3ea] ${
+                                                className={`transition hover:bg-muted/50 ${
                                                     selectedApplicant?.id === applicant.id
-                                                        ? 'bg-[#f2ede0]'
+                                                        ? 'bg-muted'
                                                         : ''
                                                 }`}
                                             >
@@ -209,7 +209,7 @@ export function AdminDashboardClient({
                                                     <button
                                                         type="button"
                                                         onClick={() => setSelectedApplicant(applicant)}
-                                                        className="rounded-lg bg-[#7c9272] px-3 py-1.5 text-sm font-medium text-white transition hover:bg-[#667b5f]"
+                                                        className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
                                                     >
                                                         View Responses
                                                     </button>
@@ -242,14 +242,14 @@ export function AdminDashboardClient({
                     aria-labelledby="general-interest-tab"
                 >
                     <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                        <p className="text-sm text-[#625f58]">
+                        <p className="text-sm text-muted-foreground">
                             Waiting-list signups do not require approval.
                         </p>
                         <button
                             type="button"
                             onClick={exportGeneralInterests}
                             disabled={generalInterests.length === 0}
-                            className="rounded-lg border border-[#7c9272] bg-[#fffdf9] px-4 py-2 text-sm font-medium text-[#455442] transition hover:bg-[#edf0e7] disabled:cursor-not-allowed disabled:opacity-50"
+                            className="rounded-lg border border-primary bg-card px-4 py-2 text-sm font-medium text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             Export CSV
                         </button>
@@ -260,13 +260,13 @@ export function AdminDashboardClient({
                     ) : (
                         <div className="flex flex-col items-start gap-6 xl:flex-row">
                             <div
-                                className={`overflow-x-auto rounded-2xl border border-[#ded8cc] bg-[#fffdf9] shadow-sm transition-all ${
+                                className={`overflow-x-auto rounded-2xl border border-border bg-card shadow-sm transition-all ${
                                     selectedInterest ? 'min-w-0 flex-1' : 'w-full'
                                 }`}
                             >
                                 <table className="min-w-full border-collapse text-sm">
                                     <thead>
-                                        <tr className="bg-[#f2ede0]">
+                                        <tr className="bg-muted">
                                             <th className={thClass}>First Name</th>
                                             <th className={thClass}>Last Name</th>
                                             <th className={thClass}>Email</th>
@@ -279,9 +279,9 @@ export function AdminDashboardClient({
                                         {generalInterests.map((interest) => (
                                             <tr
                                                 key={interest.id}
-                                                className={`transition hover:bg-[#f7f3ea] ${
+                                                className={`transition hover:bg-muted/50 ${
                                                     selectedInterest?.id === interest.id
-                                                        ? 'bg-[#f2ede0]'
+                                                        ? 'bg-muted'
                                                         : ''
                                                 }`}
                                             >
@@ -296,7 +296,7 @@ export function AdminDashboardClient({
                                                     <button
                                                         type="button"
                                                         onClick={() => setSelectedInterest(interest)}
-                                                        className="rounded-lg bg-[#7c9272] px-3 py-1.5 text-sm font-medium text-white transition hover:bg-[#667b5f]"
+                                                        className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
                                                     >
                                                         View Details
                                                     </button>
@@ -323,7 +323,7 @@ export function AdminDashboardClient({
 
 function EmptyState({ message }: { message: string }) {
     return (
-        <div className="rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-10 text-center text-[#7c8072] shadow-sm">
+        <div className="rounded-2xl border border-border bg-card p-10 text-center text-muted-foreground shadow-sm">
             {message}
         </div>
     )
@@ -347,7 +347,7 @@ function ApplicantDetails({
     })
 
     return (
-        <aside className="max-h-[85vh] w-full shrink-0 overflow-y-auto rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-6 shadow-sm xl:sticky xl:top-6 xl:w-[380px]">
+        <aside className="max-h-[85vh] w-full shrink-0 overflow-y-auto rounded-2xl border border-border bg-card p-6 shadow-sm xl:sticky xl:top-6 xl:w-[380px]">
             <DetailsHeader
                 title={`${applicant.first_name} ${applicant.last_name}`}
                 subtitle={`${applicant.email} · ${applicant.phone_number}`}
@@ -361,15 +361,15 @@ function ApplicantDetails({
                     <img
                         src={applicant.profile_picture_url}
                         alt={`${applicant.first_name} ${applicant.last_name}'s profile`}
-                        className="aspect-square w-full rounded-xl border border-[#ded8cc] object-cover"
+                        className="aspect-square w-full rounded-xl border border-border object-cover"
                     />
                 </div>
             )}
 
             <dl className="flex flex-col gap-4">
                 <div>
-                    <dt className="text-sm font-medium text-[#7c8072]">Username</dt>
-                    <dd className="break-words text-[#2c2c2c]">
+                    <dt className="text-sm font-medium text-muted-foreground">Username</dt>
+                    <dd className="break-words text-foreground">
                         {applicant.username || '\u2014'}
                     </dd>
                 </div>
@@ -388,8 +388,8 @@ function ApplicantDetails({
 
                     return (
                         <div key={key}>
-                            <dt className="text-sm font-medium text-[#7c8072]">{label}</dt>
-                            <dd className="whitespace-pre-wrap text-[#2c2c2c]">
+                            <dt className="text-sm font-medium text-muted-foreground">{label}</dt>
+                            <dd className="whitespace-pre-wrap text-foreground">
                                 {String(display)}
                             </dd>
                         </div>
@@ -410,7 +410,7 @@ function GeneralInterestDetails({
     const friendPhoneNumbers = interest.friend_phone_numbers ?? []
 
     return (
-        <aside className="max-h-[85vh] w-full shrink-0 overflow-y-auto rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-6 shadow-sm xl:sticky xl:top-6 xl:w-[380px]">
+        <aside className="max-h-[85vh] w-full shrink-0 overflow-y-auto rounded-2xl border border-border bg-card p-6 shadow-sm xl:sticky xl:top-6 xl:w-[380px]">
             <DetailsHeader
                 title={`${interest.first_name} ${interest.last_name}`}
                 subtitle={`${interest.email} · ${interest.phone_number}`}
@@ -419,18 +419,18 @@ function GeneralInterestDetails({
 
             <dl className="flex flex-col gap-4">
                 <div>
-                    <dt className="text-sm font-medium text-[#7c8072]">Joined</dt>
-                    <dd className="text-[#2c2c2c]">{formatDateLabel(interest.created_at)}</dd>
+                    <dt className="text-sm font-medium text-muted-foreground">Joined</dt>
+                    <dd className="text-foreground">{formatDateLabel(interest.created_at)}</dd>
                 </div>
                 <div>
-                    <dt className="text-sm font-medium text-[#7c8072]">Pain Points</dt>
-                    <dd className="whitespace-pre-wrap text-[#2c2c2c]">
+                    <dt className="text-sm font-medium text-muted-foreground">Pain Points</dt>
+                    <dd className="whitespace-pre-wrap text-foreground">
                         {interest.pain_points}
                     </dd>
                 </div>
                 <div>
-                    <dt className="text-sm font-medium text-[#7c8072]">Friend Phone Numbers</dt>
-                    <dd className="text-[#2c2c2c]">
+                    <dt className="text-sm font-medium text-muted-foreground">Friend Phone Numbers</dt>
+                    <dd className="text-foreground">
                         {friendPhoneNumbers.length > 0 ? friendPhoneNumbers.join(', ') : '—'}
                     </dd>
                 </div>
@@ -453,19 +453,19 @@ function DetailsHeader({
     return (
         <div className="mb-4 flex items-start justify-between gap-3">
             <div>
-                <h2 className="text-lg font-semibold text-[#2c2c2c]">
+                <h2 className="text-lg font-semibold text-foreground">
                     {title}
                     {extra && (
-                        <span className="ml-1 font-normal text-[#7c8072]">{extra}</span>
+                        <span className="ml-1 font-normal text-muted-foreground">{extra}</span>
                     )}
                 </h2>
-                <p className="break-words text-sm text-[#7c8072]">{subtitle}</p>
+                <p className="break-words text-sm text-muted-foreground">{subtitle}</p>
             </div>
             <button
                 type="button"
                 onClick={onClose}
                 aria-label="Close details"
-                className="rounded-lg px-2 py-1 text-[#7c8072] hover:bg-[#f2ede0]"
+                className="rounded-lg px-2 py-1 text-muted-foreground hover:bg-muted"
             >
                 ×
             </button>

@@ -36,9 +36,9 @@ export default async function AdminDashboardContent() {
     const applicantsWithProfilePictures = await addProfilePictureUrls(db, applicants ?? [])
 
     return (
-        <div className="min-h-screen bg-[#faf7f0] px-4 py-10">
+        <div className="min-h-screen bg-background px-4 py-10">
             <div className="mx-auto max-w-[1400px]">
-                <h1 className="mb-6 text-center text-2xl font-bold text-[#2c2c2c]">
+                <h1 className="mb-6 text-center text-2xl font-bold text-foreground">
                     Community Signups
                 </h1>
                 <AdminDashboardClient

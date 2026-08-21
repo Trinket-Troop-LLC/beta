@@ -29,30 +29,30 @@ export default function WaitlistPage() {
     }
 
     const inputClass =
-        'rounded-lg border border-[#d8d1c5] bg-white px-4 py-3 text-black outline-none transition focus:border-[#7c9272] focus:ring-2 focus:ring-[#7c9272]/20'
-    const labelClass = 'flex flex-col gap-2 text-[#2c2c2c]'
+        'rounded-lg border border-input bg-card px-4 py-3 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20'
+    const labelClass = 'flex flex-col gap-2 text-foreground'
 
     return (
-        <div className="min-h-screen bg-[#faf7f0]">
+        <div className="min-h-screen bg-background">
             <GeneralInterestHero />
 
             <main className="mx-auto max-w-3xl px-4 py-12">
                 {submitted ? (
                     <div
-                        className="rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-8 text-center shadow-sm"
+                        className="rounded-2xl border border-border bg-card p-8 text-center shadow-sm"
                         role="status"
                     >
-                        <h2 className="text-xl font-semibold text-[#30392d]">
+                        <h2 className="text-xl font-semibold text-foreground">
                             you're on the waiting list!
                         </h2>
-                        <p className="mt-2 text-[#625f58]">
+                        <p className="mt-2 text-muted-foreground">
                             thank you for your interest in trinket troop. we'll email you when the app is ready to download.
                         </p>
                     </div>
                 ) : (
                     <form
                         action={handleSubmit}
-                        className="flex flex-col gap-6 rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-6 shadow-sm sm:p-8"
+                        className="flex flex-col gap-6 rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8"
                     >
                         <div className="sr-only" aria-hidden="true">
                             <label>
@@ -138,7 +138,7 @@ export default function WaitlistPage() {
                                 rows={3}
                                 className={inputClass}
                             />
-                            <span id="friend-phone-numbers-help" className="text-sm text-[#7c8072]">
+                            <span id="friend-phone-numbers-help" className="text-sm text-muted-foreground">
                                 separate multiple phone numbers with commas or new lines. please only share friends who would be happy to hear from us.
                             </span>
                         </label>
@@ -146,7 +146,7 @@ export default function WaitlistPage() {
                         <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="rounded-lg bg-[#7c9272] px-4 py-3 font-medium text-white transition hover:bg-[#667b5f] disabled:cursor-not-allowed disabled:opacity-60"
+                            className="rounded-lg bg-primary px-4 py-3 font-medium text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                             {isSubmitting ? 'joining...' : 'join the waiting list'}
                         </button>
@@ -159,7 +159,7 @@ export default function WaitlistPage() {
                     </form>
                 )}
 
-                <footer className="mt-10 text-center text-sm text-[#7c8072]">
+                <footer className="mt-10 text-center text-sm text-muted-foreground">
                     <p className="flex flex-wrap items-center justify-center gap-1">
                         Questions? Reach us at
                         <a

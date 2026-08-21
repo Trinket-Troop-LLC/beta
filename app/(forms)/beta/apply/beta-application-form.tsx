@@ -6,9 +6,9 @@ import { compressProfilePicture } from '@/lib/compress-profile-picture'
 import { submitBetaApplication } from './actions'
 
 const inputClass =
-    'rounded-lg border border-[#d8d1c5] bg-white px-4 py-3 text-black outline-none transition focus:border-[#7c9272] focus:ring-2 focus:ring-[#7c9272]/20'
-const labelClass = 'flex flex-col gap-2 text-[#2c2c2c]'
-const checkboxLabelClass = 'flex items-center gap-2 text-[#2c2c2c]'
+    'rounded-lg border border-input bg-card px-4 py-3 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20'
+const labelClass = 'flex flex-col gap-2 text-foreground'
+const checkboxLabelClass = 'flex items-center gap-2 text-foreground'
 
 const categories = [
     { value: 'true', label: 'true trinkets' },
@@ -80,26 +80,26 @@ export function BetaApplicationForm() {
 }
 
     return (
-        <div className="min-h-screen bg-[#faf7f0]">
+        <div className="min-h-screen bg-background">
             <BetaHero />
 
             <main className="mx-auto max-w-3xl px-4 py-12">
                 {submitted ? (
                     <div
-                        className="rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-8 text-center shadow-sm"
+                        className="rounded-2xl border border-border bg-card p-8 text-center shadow-sm"
                         role="status"
                     >
-                        <h2 className="text-xl font-semibold text-[#30392d]">
+                        <h2 className="text-xl font-semibold text-foreground">
                             thank you for submitting your application!
                         </h2>
-                        <p className="mt-2 text-[#625f58]">
+                        <p className="mt-2 text-muted-foreground">
                             your beta application is waiting for approval. keep an eye out for an email from us.
                         </p>
                     </div>
                 ) : (
                     <form
                         action={handleSubmit}
-                        className="flex flex-col gap-6 rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-6 shadow-sm sm:p-8"
+                        className="flex flex-col gap-6 rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8"
                     >
                         <div className="sr-only" aria-hidden="true">
                             <label>
@@ -108,7 +108,7 @@ export function BetaApplicationForm() {
                             </label>
                         </div>
 
-                        <span id="required-indicator" className="text-sm text-[#7c8072]">
+                        <span id="required-indicator" className="text-sm text-muted-foreground">
                             * required
                         </span>
 
@@ -201,9 +201,9 @@ export function BetaApplicationForm() {
                                 required
                                 aria-describedby="profile-picture-help"
                                 onChange={handleProfilePicChange}
-                                className={`${inputClass} file:mr-4 file:rounded-md file:border-0 file:bg-[#7c9272] file:px-3 file:py-2 file:text-white`}
+                                className={`${inputClass} file:mr-4 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-primary-foreground`}
                             />
-                            <span id="profile-picture-help" className="text-sm text-[#7c8072]">
+                            <span id="profile-picture-help" className="text-sm text-muted-foreground">
                                 {isCompressingPhoto
                                     ? 'preparing your photo...'
                                     : 'required; PNG or JPEG — we’ll resize it automatically before uploading'}
@@ -228,7 +228,7 @@ export function BetaApplicationForm() {
                             <FieldError message={fieldErrors.emojis} />
                         </label>
 
-                        <fieldset className="flex flex-col gap-2 text-[#2c2c2c]">
+                        <fieldset className="flex flex-col gap-2 text-foreground">
                             <legend className="mb-1 font-medium">interested in... (select all that apply) *</legend>
                             {categories.map((category) => (
                                 <label key={category.value} className={checkboxLabelClass}>
@@ -236,13 +236,13 @@ export function BetaApplicationForm() {
                                         type="checkbox"
                                         name="categories"
                                         value={category.value}
-                                        className="size-4 accent-[#7c9272]"
+                                        className="size-4 accent-primary"
                                     />
                                     {category.label}
                                 </label>
                             ))}
                             <label className={checkboxLabelClass}>
-                                <input type="checkbox" name="categories" value="other" className="size-4 accent-[#7c9272]" />
+                                <input type="checkbox" name="categories" value="other" className="size-4 accent-primary" />
                                 <span>other:</span>
                                 <input
                                     type="text"
@@ -284,7 +284,7 @@ export function BetaApplicationForm() {
                                 maxLength={500}
                                 className={inputClass}
                             />
-                            <span className="text-sm text-[#7c8072]">
+                            <span className="text-sm text-muted-foreground">
                                 separate multiple phone numbers with commas or new lines. please only share friends who would be happy to hear from us.
                             </span>
                             <FieldError message={fieldErrors.recommended_phone_numbers} />
@@ -293,7 +293,7 @@ export function BetaApplicationForm() {
                         <button
                             type="submit"
                             disabled={isSubmitting || isCompressingPhoto}
-                            className="rounded-lg bg-[#7c9272] px-4 py-3 font-medium text-white transition hover:bg-[#667b5f] disabled:cursor-not-allowed disabled:opacity-60"
+                            className="rounded-lg bg-primary px-4 py-3 font-medium text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                             {isSubmitting ? 'submitting...' : isCompressingPhoto ? 'preparing photo...' : 'submit'}
                         </button>
@@ -306,7 +306,7 @@ export function BetaApplicationForm() {
                     </form>
                 )}
 
-                <footer className="mt-10 text-center text-sm text-[#7c8072]">
+                <footer className="mt-10 text-center text-sm text-muted-foreground">
                     <p className="flex flex-wrap items-center justify-center gap-1">
                         Questions? Reach us at
                         <a href="https://www.instagram.com/trinkettroop/" target="_blank" rel="noreferrer" className="underline">
