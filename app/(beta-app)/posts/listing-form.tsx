@@ -164,7 +164,6 @@ export function ListingForm() {
     const [progress, setProgress] = useState<string | null>(null)
     const mounted = useRef(true)
     const pendingDraftId = useRef<string | null>(null)
-    const photoInputRef = useRef<HTMLInputElement | null>(null)
     const errorSummaryRef = useRef<HTMLDivElement | null>(null)
     const fieldErrorMessages = [...new Set(Object.values(fieldErrors).filter(Boolean))]
     const summaryFieldMessages = fieldErrorMessages.filter(
@@ -202,14 +201,6 @@ export function ListingForm() {
     function replacePreparedPhotos(prepared: File[]) {
         setPhotos(prepared)
         setPhotoPreviews(prepared.map((photo) => URL.createObjectURL(photo)))
-    }
-
-    function clearPreparedPhotos() {
-        replacePreparedPhotos([])
-        if (photoInputRef.current) {
-            photoInputRef.current.value = ''
-        }
-        setFieldErrors((current) => ({ ...current, photos: '' }))
     }
 
     async function handlePhotoChange(event: React.ChangeEvent<HTMLInputElement>) {
@@ -382,13 +373,15 @@ export function ListingForm() {
         setError(null)
         setFieldErrors({})
 
-        if (photos.length > maxPhotoCount) {
+        if (photos.length < 1 || photos.length > maxPhotoCount) {
             setFieldErrors({
-                photos: `Choose no more than ${maxPhotoCount} photos.`,
+                photos: photos.length < 1
+                    ? 'Choose at least one photo.'
+                    : `Choose no more than ${maxPhotoCount} photos.`,
             })
             setError(createPostingError(
                 'PHOTO_COUNT_INVALID',
-                `This listing was not posted because it can include no more than ${maxPhotoCount} photos.`,
+                'This listing was not posted because it needs between 1 and 5 photos.',
             ))
             return
         }
@@ -559,19 +552,18 @@ export function ListingForm() {
             )}
 
             <fieldset className="flex flex-col gap-3 text-left">
-                <legend className="font-medium text-foreground">Photos (optional)</legend>
+                <legend className="font-medium text-foreground">Photos *</legend>
                 <label className="flex cursor-pointer items-center justify-center gap-3 rounded-2xl border border-dashed border-border bg-secondary/60 px-4 py-8 text-center transition hover:bg-secondary has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary has-[:focus-visible]:ring-offset-2">
                     <Images className="size-6 text-primary" />
                     <span>
                         <span className="block font-medium text-foreground">
-                            {photos.length > 0 ? 'Choose different photos' : 'Choose up to 5 photos'}
+                            {photos.length > 0 ? 'Choose different photos' : 'Choose 1–5 photos'}
                         </span>
                         <span className="mt-1 block text-sm text-muted-foreground">
-                            PNG or JPEG; if added, the first photo will be the cover
+                            PNG or JPEG; the first photo will be the cover
                         </span>
                     </span>
                     <input
-                        ref={photoInputRef}
                         type="file"
                         accept="image/png,image/jpeg"
                         multiple
@@ -591,37 +583,27 @@ export function ListingForm() {
                 )}
 
                 {photoPreviews.length > 0 && (
-                    <div className="space-y-3">
-                        <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
-                            {photoPreviews.map((url, index) => (
-                                <div
-                                    key={url}
-                                    className="relative aspect-square overflow-hidden rounded-xl border border-border bg-secondary"
-                                >
-                                    <Image
-                                        src={url}
-                                        alt={`Listing photo ${index + 1} preview`}
-                                        fill
-                                        sizes="(max-width: 640px) 30vw, 120px"
-                                        className="object-cover"
-                                        unoptimized
-                                    />
-                                    {index === 0 && (
-                                        <span className="absolute bottom-1 left-1 rounded-full bg-foreground/80 px-2 py-0.5 text-[10px] font-medium text-background">
-                                            cover
-                                        </span>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                        <button
-                            type="button"
-                            onClick={clearPreparedPhotos}
-                            disabled={isPreparingPhotos || isSubmitting}
-                            className="self-start text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                            Remove all photos
-                        </button>
+                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+                        {photoPreviews.map((url, index) => (
+                            <div
+                                key={url}
+                                className="relative aspect-square overflow-hidden rounded-xl border border-border bg-secondary"
+                            >
+                                <Image
+                                    src={url}
+                                    alt={`Listing photo ${index + 1} preview`}
+                                    fill
+                                    sizes="(max-width: 640px) 30vw, 120px"
+                                    className="object-cover"
+                                    unoptimized
+                                />
+                                {index === 0 && (
+                                    <span className="absolute bottom-1 left-1 rounded-full bg-foreground/80 px-2 py-0.5 text-[10px] font-medium text-background">
+                                        cover
+                                    </span>
+                                )}
+                            </div>
+                        ))}
                     </div>
                 )}
                 <FieldError id="listing-photos-error" message={fieldErrors.photos} />

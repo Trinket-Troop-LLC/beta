@@ -66,13 +66,6 @@ export const LISTING_STATUS_LABELS: Record<ListingStatus, string> = {
     archived: 'archived',
 }
 
-export function formatListingPrice(priceCents: number) {
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-    }).format(priceCents / 100)
-}
-
 export type Listing = {
     id: string
     owner_id: string
