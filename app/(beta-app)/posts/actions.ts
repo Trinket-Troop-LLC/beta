@@ -463,8 +463,7 @@ function hasValidReservations(
 ) {
     const expectedPrefix = `${userId}/${listingId}/`
 
-    return reservations.length >= 1
-        && reservations.length <= 5
+    return reservations.length <= 5
         && reservations.every((reservation, index) => {
             const name = reservation.storage_path.slice(expectedPrefix.length)
             return reservation.position === index
@@ -605,16 +604,16 @@ export async function createListingDraft(
 
     const { user } = member
 
-    const photoCountResult = z.number().int().min(1).max(5).safeParse(photoCount)
+    const photoCountResult = z.number().int().min(0).max(5).safeParse(photoCount)
 
     if (!photoCountResult.success) {
         return {
             success: false,
             error: createPostingError(
                 'PHOTO_COUNT_INVALID',
-                'This listing was not posted because it needs between 1 and 5 photos.',
+                'This listing was not posted because it can have no more than 5 photos.',
             ),
-            fieldErrors: { photos: 'Choose between 1 and 5 photos.' },
+            fieldErrors: { photos: 'Choose no more than 5 photos.' },
         }
     }
 
@@ -698,13 +697,15 @@ export async function createListingDraft(
         }
     }
 
-    const { error: reservationError } = await admin.from('listing_photos').insert(
-        photoPaths.map((storagePath, position) => ({
-            listing_id: listingId,
-            storage_path: storagePath,
-            position,
-        })),
-    )
+    const { error: reservationError } = photoPaths.length > 0
+        ? await admin.from('listing_photos').insert(
+            photoPaths.map((storagePath, position) => ({
+                listing_id: listingId,
+                storage_path: storagePath,
+                position,
+            })),
+        )
+        : { error: null }
 
     if (reservationError) {
         console.warn('Listing photo reservation failed:', reservationError.code)
@@ -845,16 +846,6 @@ export async function finalizeListing(listingId: unknown): Promise<ListingAction
 
     const reservations = reservationRows ?? []
 
-    if (reservations.length === 0) {
-        return {
-            success: false,
-            error: createPostingError(
-                'PHOTO_RESERVATIONS_MISSING',
-                'No photo uploads were prepared for this draft. Nothing was posted; submit the listing again.',
-            ),
-        }
-    }
-
     if (!hasValidReservations(user.id, listing.id, reservations)) {
         return {
             success: false,
@@ -866,7 +857,9 @@ export async function finalizeListing(listingId: unknown): Promise<ListingAction
     }
 
     const expectedPaths = reservations.map((reservation) => reservation.storage_path)
-    const stored = await listStoredPhotoPaths(admin, user.id, listing.id)
+    const stored = expectedPaths.length > 0
+        ? await listStoredPhotoPaths(admin, user.id, listing.id)
+        : { paths: [] as string[], hasUnexpectedEntries: false, error: null }
 
     if (stored.error) {
         return { success: false, error: stored.error }

@@ -1,6 +1,7 @@
 import Image from 'next/image'
-import { ImageIcon, MapPin } from 'lucide-react'
+import { MapPin } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { ListingPlaceholder } from '@/components/listings/listing-placeholder'
 import {
     LISTING_CATEGORY_LABELS,
     LISTING_CONDITION_LABELS,
@@ -57,9 +58,7 @@ export function ListingCard({
                         className={`object-cover ${isReserved ? 'grayscale-[50%] opacity-40' : ''}`}
                     />
                 ) : (
-                    <div className="flex size-full items-center justify-center text-muted-foreground">
-                        <ImageIcon className="size-9" />
-                    </div>
+                    <ListingPlaceholder title={listing.title} category={listing.category} />
                 )}
 
                 {(listing.status !== 'active' || statusLabelOverride) && (

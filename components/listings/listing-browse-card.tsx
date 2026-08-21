@@ -1,12 +1,12 @@
 import Image from 'next/image'
-import { ImageIcon } from 'lucide-react'
+import { ListingPlaceholder } from '@/components/listings/listing-placeholder'
 import {
     LISTING_TRANSACTION_TYPE_LABELS,
     formatListingPrice,
     type Listing,
 } from '@/lib/listings/domain'
 
-export type ListingBrowseCardData = Pick<Listing, 'id' | 'title' | 'transaction_types' | 'price_cents' | 'status'> & {
+export type ListingBrowseCardData = Pick<Listing, 'id' | 'title' | 'category' | 'transaction_types' | 'price_cents' | 'status'> & {
     coverPhotoUrl: string | null
 }
 
@@ -31,9 +31,7 @@ export function ListingBrowseCard({ listing }: { listing: ListingBrowseCardData 
                         className={`object-cover ${isReserved ? 'grayscale-[50%] opacity-40' : ''}`}
                     />
                 ) : (
-                    <div className="flex size-full items-center justify-center text-muted-foreground">
-                        <ImageIcon className="size-9" />
-                    </div>
+                    <ListingPlaceholder title={listing.title} category={listing.category} />
                 )}
             </div>
 

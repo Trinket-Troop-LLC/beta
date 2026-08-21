@@ -1,10 +1,11 @@
 import Image from 'next/image'
 import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
-import { ImageIcon, UserRound } from 'lucide-react'
+import { UserRound } from 'lucide-react'
 import { requireMember } from '@/lib/supabase/require-member'
 import { signProfilePictureUrl } from '@/lib/supabase/profile-pictures'
 import { BetaAppChrome } from '@/components/beta-app-chrome'
+import { ListingPlaceholder } from '@/components/listings/listing-placeholder'
 import {
     LISTING_CATEGORY_LABELS,
     LISTING_CONDITION_LABELS,
@@ -92,9 +93,11 @@ async function ListingDetailContent({ listingId }: { listingId: string }) {
                         </div>
                     ))
                 ) : (
-                    <div className="flex aspect-square w-full flex-none items-center justify-center rounded-2xl bg-secondary text-muted-foreground">
-                        <ImageIcon className="size-12" />
-                    </div>
+                    <ListingPlaceholder
+                        title={listing.title}
+                        category={listing.category}
+                        className="aspect-square w-full flex-none rounded-2xl"
+                    />
                 )}
             </div>
 
