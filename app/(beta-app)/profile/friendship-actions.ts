@@ -6,11 +6,13 @@ import { createNotification } from '@/lib/notifications/create'
 
 type ActionResult = { success: boolean; error?: string }
 
+export type Relationship = 'friend' | 'sent' | 'received' | 'none'
+
 export type SearchResult = {
     id: string
     username: string
     profilePictureUrl: string | null
-    relationship: 'friend' | 'sent' | 'received' | 'none'
+    relationship: Relationship
     friendshipId: string | null
 }
 
@@ -64,6 +66,7 @@ export async function sendFriendRequest(addresseeId: string): Promise<ActionResu
     })
 
     revalidatePath('/profile')
+    revalidatePath('/(beta-app)/profile/[username]', 'page')
     return { success: true }
 }
 
@@ -100,6 +103,7 @@ export async function acceptFriendRequest(friendshipId: string): Promise<ActionR
     })
 
     revalidatePath('/profile')
+    revalidatePath('/(beta-app)/profile/[username]', 'page')
     return { success: true }
 }
 
@@ -122,6 +126,7 @@ export async function removeFriendship(friendshipId: string): Promise<ActionResu
         return { success: false, error: 'Could not complete this action. Please try again.' }
     }
 
+    revalidatePath('/(beta-app)/profile/[username]', 'page')
     revalidatePath('/profile')
     return { success: true }
 }

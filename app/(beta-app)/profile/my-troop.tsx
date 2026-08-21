@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { UserRound } from 'lucide-react'
 import { acceptFriendRequest, removeFriendship, sendFriendRequest, searchUsers, type SearchResult } from './friendship-actions'
 
@@ -24,7 +25,10 @@ function PersonRow({
 }) {
     return (
         <div className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm">
-            <div className="flex items-center gap-3">
+            <Link
+                href={`/profile/${encodeURIComponent(person.username)}`}
+                className="flex min-w-0 items-center gap-3 transition hover:opacity-80"
+            >
                 <div className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-secondary">
                     {person.profilePictureUrl ? (
                         <Image
@@ -38,9 +42,9 @@ function PersonRow({
                         <UserRound className="size-6 text-muted-foreground" />
                     )}
                 </div>
-                <p className="font-medium text-foreground">@{person.username}</p>
-            </div>
-            {children && <div className="flex gap-2">{children}</div>}
+                <p className="truncate font-medium text-foreground">@{person.username}</p>
+            </Link>
+            {children && <div className="flex shrink-0 gap-2">{children}</div>}
         </div>
     )
 }
