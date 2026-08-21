@@ -79,12 +79,12 @@ export async function sendApprovalEmail({
         "The Trinket Troop team",
       ].join("\n"),
       html: `
-        <div style="background:#faf7f0;padding:32px 16px;font-family:Arial,sans-serif;color:#30392d">
-          <div style="margin:0 auto;max-width:560px;border:1px solid #ded8cc;border-radius:20px;background:#fffdf9;padding:40px;box-shadow:0 8px 24px rgba(48,57,45,0.08)">
-            <div style="margin-bottom:24px;display:inline-block;border-radius:999px;background:#e4e8d8;padding:8px 14px;color:#5f7258;font-size:14px;font-weight:600">
+        <div style="background:#fbe9d1;padding:32px 16px;font-family:Arial,sans-serif;color:#877c27">
+          <div style="margin:0 auto;max-width:560px;border:1px solid #e2d8cb;border-radius:20px;background:#fbf7f1;padding:40px;box-shadow:0 8px 24px rgba(135,124,39,0.08)">
+            <div style="margin-bottom:24px;display:inline-block;border-radius:999px;background:#f9c566;padding:8px 14px;color:#877c27;font-size:14px;font-weight:600">
               Beta approved
             </div>
-            <h1 style="margin:0 0 20px;font-size:32px;line-height:1.2;color:#30392d">
+            <h1 style="margin:0 0 20px;font-size:32px;line-height:1.2;color:#877c27">
               Welcome to the troop!
             </h1>
             <p style="margin:0 0 16px;font-size:17px;line-height:1.7">Hi ${safeDisplayName},</p>
@@ -98,14 +98,14 @@ export async function sendApprovalEmail({
               Set up your account to get started:
             </p>
             <p style="margin:0 0 28px;text-align:center">
-              <a href="${inviteLink}" style="display:inline-block;background:#7c9272;color:#fffdf9;padding:14px 28px;border-radius:10px;font-size:16px;font-weight:600;text-decoration:none">
+              <a href="${inviteLink}" style="display:inline-block;background:#cc5c53;color:#fdfaf7;padding:14px 28px;border-radius:10px;font-size:16px;font-weight:600;text-decoration:none">
                 Set up your account
               </a>
             </p>
-            <p style="margin:0 0 28px;font-size:14px;color:#7c8072">
+            <p style="margin:0 0 28px;font-size:14px;color:#87835e">
               This link is just for you — don't share it.
             </p>
-            <p style="margin:0;color:#625f58;font-size:16px;line-height:1.6">
+            <p style="margin:0;color:#87835e;font-size:16px;line-height:1.6">
               Warmly,<br />
               The Trinket Troop team
             </p>

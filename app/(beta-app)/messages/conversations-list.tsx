@@ -21,9 +21,9 @@ export function ConversationsList({ conversations }: { conversations: Conversati
     if (conversations.length === 0) {
         return (
             <div className="w-full max-w-md">
-                <h1 className="mb-6 text-3xl font-semibold text-[#30392d]">Messages</h1>
-                <div className="rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-6 text-left shadow-sm">
-                    <p className="text-sm text-[#625f58]">No conversations yet.</p>
+                <h1 className="mb-6 text-3xl font-semibold text-foreground">Messages</h1>
+                <div className="rounded-2xl border border-border bg-card p-6 text-left shadow-sm">
+                    <p className="text-sm text-muted-foreground">No conversations yet.</p>
                 </div>
             </div>
         )
@@ -31,16 +31,16 @@ export function ConversationsList({ conversations }: { conversations: Conversati
 
     return (
         <div className="w-full max-w-md">
-            <h1 className="mb-6 text-3xl font-semibold text-[#30392d]">Messages</h1>
+            <h1 className="mb-6 text-3xl font-semibold text-foreground">Messages</h1>
 
             <div className="flex flex-col gap-3">
                 {conversations.map((conversation) => (
                     <Link
                         key={conversation.id}
                         href={`/messages/${conversation.id}`}
-                        className="flex items-center gap-3 rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-4 shadow-sm transition hover:bg-[#f5efe5]"
+                        className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm transition hover:bg-muted"
                     >
-                        <div className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#ded8cc] bg-[#f2ede0]">
+                        <div className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-muted">
                             {conversation.otherUser.profilePictureUrl ? (
                                 <Image
                                     src={conversation.otherUser.profilePictureUrl}
@@ -50,25 +50,25 @@ export function ConversationsList({ conversations }: { conversations: Conversati
                                     className="size-full object-cover"
                                 />
                             ) : (
-                                <UserRound className="size-6 text-[#9aaa90]" />
+                                <UserRound className="size-6 text-input" />
                             )}
                         </div>
 
                         <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2">
-                                <p className="font-medium text-[#2c2c2c]">@{conversation.otherUser.username}</p>
+                                <p className="font-medium text-foreground">@{conversation.otherUser.username}</p>
                                 {conversation.status === 'pending' && !conversation.initiatedByMe && (
-                                    <span className="rounded-full bg-[#7c9272] px-2 py-0.5 text-xs font-medium text-white">
+                                    <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground">
                                         New
                                     </span>
                                 )}
                                 {conversation.status === 'pending' && conversation.initiatedByMe && (
-                                    <span className="rounded-full border border-[#ded8cc] px-2 py-0.5 text-xs font-medium text-[#7c8072]">
+                                    <span className="rounded-full border border-border px-2 py-0.5 text-xs font-medium text-muted-foreground">
                                         Pending
                                     </span>
                                 )}
                             </div>
-                            <p className="truncate text-sm text-[#7c8072]">
+                            <p className="truncate text-sm text-muted-foreground">
                                 {conversation.lastMessagePreview ?? 'Say hello!'}
                             </p>
                         </div>

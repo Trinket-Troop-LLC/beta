@@ -48,7 +48,7 @@ export default function WhyUsPage() {
                         Why trinket troop?
                     </h1>
 
-                    <div className="flex flex-col gap-[1em] text-[1.14em] leading-[1.4] text-[#2c2c2c]">
+                    <div className="flex flex-col gap-[1em] text-[1.14em] leading-[1.4] text-foreground">
                         <p>
                             New York City is filled to the brim with interesting things and even more interesting
                             people. So why is the peer-to-peer exchange landscape so bleak? Transactions that flake,

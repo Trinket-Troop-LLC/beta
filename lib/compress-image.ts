@@ -50,7 +50,7 @@ export function compressListingPhoto(file: File) {
         maxDimension: 1600,
         quality: 0.82,
         fallbackName: 'listing-photo',
-        background: '#fffdf9',
+        background: '#fbf7f1',
     })
 }
 
@@ -59,6 +59,6 @@ export function compressBulletinPhoto(file: File) {
         maxDimension: 1600,
         quality: 0.82,
         fallbackName: 'bulletin-photo',
-        background: '#fffdf9',
+        background: '#fbf7f1',
     })
 }

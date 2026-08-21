@@ -32,18 +32,18 @@ const appSections = [
 
 export default function BetaHomePage() {
   return (
-    <main className="min-h-screen bg-[#faf7f0] px-4 py-10 text-[#30392d] sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-background px-4 py-10 text-foreground sm:px-6 lg:px-8">
       <BetaOnboardingModal />
 
       <div className="mx-auto flex max-w-5xl flex-col gap-8">
-        <section className="rounded-3xl border border-[#ded8cc] bg-[#fffdf9] p-8 shadow-sm sm:p-10">
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#5f7258]">
+        <section className="rounded-3xl border border-border bg-card p-8 shadow-sm sm:p-10">
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">
             Beta app home
           </p>
           <h1 className="mt-3 text-3xl font-semibold sm:text-4xl">
             This will become the main home screen for the app.
           </h1>
-          <p className="mt-4 max-w-2xl text-base leading-7 text-[#625f58]">
+          <p className="mt-4 max-w-2xl text-base leading-7 text-muted-foreground">
             The public welcome page can stay in place for sign-ups and interest forms, while this screen becomes the actual app experience later.
           </p>
         </section>
@@ -53,10 +53,10 @@ export default function BetaHomePage() {
             <Link
               key={section.title}
               href={section.href}
-              className="rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-5 shadow-sm transition hover:-translate-y-0.5 hover:bg-[#f5efe5]"
+              className="rounded-2xl border border-border bg-card p-5 shadow-sm transition hover:-translate-y-0.5 hover:bg-muted"
             >
-              <h2 className="text-lg font-semibold text-[#30392d]">{section.title}</h2>
-              <p className="mt-2 text-sm leading-6 text-[#625f58]">{section.description}</p>
+              <h2 className="text-lg font-semibold text-foreground">{section.title}</h2>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">{section.description}</p>
             </Link>
           ))}
         </section>
