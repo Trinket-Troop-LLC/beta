@@ -8,6 +8,16 @@ import type { ListingTransactionType } from '@/lib/listings/domain'
 import { createNotification } from '@/lib/notifications/create'
 import { sendPushNotification } from '@/lib/notifications/push-send'
 
+const LISTING_REQUEST_TRANSACTION_TYPES = ['sell', 'gift', 'lend'] as const
+
+type ListingRequestTransactionType = (typeof LISTING_REQUEST_TRANSACTION_TYPES)[number]
+
+function isListingRequestTransactionType(
+    value: unknown,
+): value is ListingRequestTransactionType {
+    return LISTING_REQUEST_TRANSACTION_TYPES.some((type) => type === value)
+}
+
 async function getCurrentUserId() {
     const db = await createClient()
     const { data: { user } } = await db.auth.getUser()
@@ -23,7 +33,7 @@ async function findExistingConversation(
 ) {
     let query = db
         .from('conversations')
-        .select('id')
+        .select('id, status')
         .or(`and(participant_one_id.eq.${userId},participant_two_id.eq.${otherUserId}),and(participant_one_id.eq.${otherUserId},participant_two_id.eq.${userId})`)
         .neq('status', 'closed')
         .eq('origin_type', originType)
@@ -38,7 +48,7 @@ async function findExistingConversation(
     }
 
     const { data } = await query.maybeSingle()
-    return data?.id ?? null
+    return data ?? null
 }
 
 // Used when a conversation should start immediately usable (e.g. an accepted offer)
@@ -50,10 +60,10 @@ export async function startActiveConversation(
     const { db, userId } = await getCurrentUserId()
     if (!userId) return { success: false, error: 'You must be logged in.' }
 
-    const existingId = await findExistingConversation(db, userId, otherUserId, originType, originId)
-    if (existingId) {
-        await db.from('conversations').update({ status: 'active' }).eq('id', existingId)
-        return { success: true, conversationId: existingId }
+    const existing = await findExistingConversation(db, userId, otherUserId, originType, originId)
+    if (existing) {
+        await db.from('conversations').update({ status: 'active' }).eq('id', existing.id)
+        return { success: true, conversationId: existing.id }
     }
 
     const { data, error } = await db
@@ -89,6 +99,8 @@ export async function requestConversation(
     const { db, userId } = await getCurrentUserId()
     if (!userId) return { success: false, error: 'You must be logged in.' }
 
+    let validatedTransactionType: ListingRequestTransactionType | null = null
+
     // Unlike submitListingOffer, this used to skip re-checking listing status
     // at creation time -- a client could still request a listing that had
     // just been reserved (the page-render gate only hides the button).
@@ -96,19 +108,63 @@ export async function requestConversation(
         const admin = createAdminClient()
         const { data: listing } = await admin
             .from('listings')
-            .select('id, status')
+            .select('id, owner_id, status, transaction_types')
             .eq('id', originId)
             .maybeSingle()
 
         if (!listing || listing.status !== 'active') {
             return { success: false, error: 'This listing is no longer available.' }
         }
+
+        if (listing.owner_id === userId) {
+            return { success: false, error: 'You cannot request your own listing.' }
+        }
+
+        if (listing.owner_id !== otherUserId) {
+            return { success: false, error: 'This listing request could not be verified.' }
+        }
+
+        if (
+            !isListingRequestTransactionType(transactionType)
+            || !listing.transaction_types.includes(transactionType)
+        ) {
+            return { success: false, error: 'This listing does not offer that exchange option.' }
+        }
+
+        validatedTransactionType = transactionType
     }
 
-    const existingId = await findExistingConversation(db, userId, otherUserId, originType, originId)
-    if (existingId) {
+    const existing = await findExistingConversation(db, userId, otherUserId, originType, originId)
+    if (existing) {
+        if (originType === 'listing') {
+            // A member can revisit an active listing and choose a different
+            // offered mode while their request is still pending. Update the
+            // authoritative mode before appending the new message. Requiring
+            // the current member to be the initiator prevents either party
+            // from repurposing someone else's request. Requiring `pending`
+            // also closes the race where the owner accepts between the listing
+            // check above and this update: in that case we do not overwrite
+            // the type that was just accepted.
+            const { data: updatedConversation, error: updateError } = await db
+                .from('conversations')
+                .update({ transaction_type: validatedTransactionType })
+                .eq('id', existing.id)
+                .eq('status', 'pending')
+                .eq('initiated_by', userId)
+                .select('id')
+                .maybeSingle()
+
+            if (updateError) {
+                return { success: false, error: 'Could not update your listing request.' }
+            }
+
+            if (!updatedConversation) {
+                return { success: false, error: 'This listing request is no longer pending.' }
+            }
+        }
+
         const { error: messageError } = await db.from('messages').insert({
-            conversation_id: existingId,
+            conversation_id: existing.id,
             sender_id: userId,
             content: firstMessageContent,
         })
@@ -124,7 +180,7 @@ export async function requestConversation(
         }
 
         revalidatePath('/messages')
-        return { success: true, conversationId: existingId }
+        return { success: true, conversationId: existing.id }
     }
 
     const { data: conversation, error: convError } = await db
@@ -134,7 +190,7 @@ export async function requestConversation(
             participant_two_id: otherUserId,
             origin_type: originType,
             origin_id: originId,
-            transaction_type: transactionType ?? null,
+            transaction_type: validatedTransactionType,
             status: 'pending',
             initiated_by: userId,
         })

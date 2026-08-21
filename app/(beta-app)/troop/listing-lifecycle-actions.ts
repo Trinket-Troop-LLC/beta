@@ -26,6 +26,7 @@ export async function getMyOfferableListings(excludeListingId: string) {
         .select('id, title')
         .eq('owner_id', userId)
         .eq('status', 'active')
+        .contains('transaction_types', ['trade'])
         .neq('id', excludeListingId)
         .order('created_at', { ascending: false })
 
@@ -170,7 +171,7 @@ export async function submitListingOffer(targetListingId: string, offeredListing
 
     const { data: offeredListing } = await admin
         .from('listings')
-        .select('id')
+        .select('id, transaction_types')
         .eq('id', offeredListingId)
         .eq('owner_id', userId)
         .eq('status', 'active')
@@ -180,9 +181,13 @@ export async function submitListingOffer(targetListingId: string, offeredListing
         return { success: false, error: 'That listing is no longer available to offer.' }
     }
 
+    if (!offeredListing.transaction_types.includes('trade')) {
+        return { success: false, error: 'That listing is not available for trade.' }
+    }
+
     const { data: targetListing } = await admin
         .from('listings')
-        .select('id, owner_id, status')
+        .select('id, owner_id, status, transaction_types')
         .eq('id', targetListingId)
         .maybeSingle()
 
@@ -191,6 +196,9 @@ export async function submitListingOffer(targetListingId: string, offeredListing
     }
     if (targetListing.owner_id === userId) {
         return { success: false, error: 'You cannot offer on your own listing.' }
+    }
+    if (!targetListing.transaction_types.includes('trade')) {
+        return { success: false, error: 'This listing is not accepting trades.' }
     }
 
     const { error } = await admin
