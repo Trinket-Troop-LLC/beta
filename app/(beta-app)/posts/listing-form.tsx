@@ -155,6 +155,7 @@ export function ListingForm() {
     const router = useRouter()
     const [category, setCategory] = useState('')
     const [transactionTypes, setTransactionTypes] = useState<ListingTransactionType[]>([])
+    const [idealTradeDescription, setIdealTradeDescription] = useState('')
     const [photos, setPhotos] = useState<File[]>([])
     const [photoPreviews, setPhotoPreviews] = useState<string[]>([])
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
@@ -730,6 +731,30 @@ export function ListingForm() {
                     message={fieldErrors.transaction_types}
                 />
             </fieldset>
+
+            {transactionTypes.includes('trade') && (
+                <label className={labelClass}>
+                    <span className="font-medium">What would your ideal trade look like? (optional)</span>
+                    <textarea
+                        name="ideal_trade_description"
+                        maxLength={1000}
+                        rows={4}
+                        value={idealTradeDescription}
+                        onChange={(event) => setIdealTradeDescription(event.target.value)}
+                        placeholder="Share the kinds of trinkets, styles, or swaps you would be excited about."
+                        aria-invalid={Boolean(fieldErrors.ideal_trade_description)}
+                        aria-describedby={fieldErrors.ideal_trade_description ? 'listing-ideal-trade-error' : 'listing-ideal-trade-hint'}
+                        className={inputClass}
+                    />
+                    <span id="listing-ideal-trade-hint" className="text-sm text-muted-foreground">
+                        This helps other members shape a trade offer. You can still consider anything.
+                    </span>
+                    <FieldError
+                        id="listing-ideal-trade-error"
+                        message={fieldErrors.ideal_trade_description}
+                    />
+                </label>
+            )}
 
             {transactionTypes.includes('sell') && (
                 <label className={labelClass}>

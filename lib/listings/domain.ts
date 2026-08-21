@@ -79,6 +79,7 @@ export type Listing = {
     owner_id: string
     title: string
     description: string
+    ideal_trade_description: string | null
     category: ListingCategory
     other_category: string | null
     condition: ListingCondition

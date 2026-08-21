@@ -16,7 +16,7 @@ async function EditListingContent({ listingId }: { listingId: string }) {
     const { db, user } = await requireMember()
     const { data: listing, error } = await db
         .from('listings')
-        .select('id, title, description, category, other_category, condition, transaction_types, price_cents, pickup_area, status')
+        .select('id, title, description, ideal_trade_description, category, other_category, condition, transaction_types, price_cents, pickup_area, status')
         .eq('id', listingId)
         .eq('owner_id', user.id)
         .maybeSingle()
@@ -54,6 +54,7 @@ async function EditListingContent({ listingId }: { listingId: string }) {
         id: listing.id,
         title: listing.title,
         description: listing.description,
+        ideal_trade_description: listing.ideal_trade_description,
         category: listing.category as ListingCategory,
         other_category: listing.other_category,
         condition: listing.condition as ListingCondition,

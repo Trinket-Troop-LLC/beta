@@ -58,6 +58,10 @@ const listingDraftSchema = z
             .trim()
             .min(1, 'Enter a description.')
             .max(3000, 'Keep the description to 3,000 characters or fewer.'),
+        ideal_trade_description: z
+            .string()
+            .trim()
+            .max(1000, 'Keep your ideal trade to 1,000 characters or fewer.'),
         category: z.enum(LISTING_CATEGORIES, {
             error: 'Choose a category from the list.',
         }),
@@ -92,7 +96,16 @@ const listingDraftSchema = z
         }
 
         const isForSale = listing.transaction_types.includes('sell')
+        const isForTrade = listing.transaction_types.includes('trade')
         const priceCents = parsePriceCents(listing.price)
+
+        if (!isForTrade && listing.ideal_trade_description) {
+            context.addIssue({
+                code: 'custom',
+                message: 'Choose trade to describe your ideal trade.',
+                path: ['ideal_trade_description'],
+            })
+        }
 
         if (isForSale) {
             if (!listing.price) {
@@ -138,6 +151,7 @@ function parseListingFormData(formData: FormData) {
     return listingDraftSchema.safeParse({
         title: getText(formData, 'title'),
         description: getText(formData, 'description'),
+        ideal_trade_description: getText(formData, 'ideal_trade_description'),
         category: getText(formData, 'category'),
         other_category: getText(formData, 'other_category'),
         condition: getText(formData, 'condition'),
@@ -377,6 +391,11 @@ function getListingConstraintFailure(error: ProviderError) {
             pattern: 'listings_description_check',
             field: 'description',
             message: 'Enter a visible description of 3,000 characters or fewer.',
+        },
+        {
+            pattern: 'listings_ideal_trade_description_check',
+            field: 'ideal_trade_description',
+            message: 'Choose trade and keep your ideal trade description to 1,000 visible characters or fewer.',
         },
         {
             pattern: 'listings_category_check',
@@ -681,6 +700,9 @@ export async function createListingDraft(
         owner_id: user.id,
         title: listing.title,
         description: listing.description,
+        ideal_trade_description: listing.transaction_types.includes('trade')
+            ? listing.ideal_trade_description || null
+            : null,
         category: listing.category,
         other_category: listing.category === 'other' ? listing.other_category : null,
         condition: listing.condition,
@@ -905,6 +927,9 @@ export async function updateListingDetails(
         .update({
             title: listing.title,
             description: listing.description,
+            ideal_trade_description: listing.transaction_types.includes('trade')
+                ? listing.ideal_trade_description || null
+                : null,
             category: listing.category,
             other_category: listing.category === 'other' ? listing.other_category : null,
             condition: listing.condition,

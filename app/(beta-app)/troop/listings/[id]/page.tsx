@@ -24,7 +24,7 @@ async function ListingDetailContent({ listingId }: { listingId: string }) {
 
     const { data: listing } = await db
         .from('listings')
-        .select('id, owner_id, title, description, category, other_category, condition, transaction_types, price_cents, pickup_area, status, published_at')
+        .select('id, owner_id, title, description, ideal_trade_description, category, other_category, condition, transaction_types, price_cents, pickup_area, status, published_at')
         .eq('id', listingId)
         .maybeSingle()
 
@@ -153,6 +153,17 @@ async function ListingDetailContent({ listingId }: { listingId: string }) {
                         {listing.description}
                     </p>
                 </div>
+
+                {listing.ideal_trade_description && (
+                    <div className="mt-6 rounded-2xl border border-primary/20 bg-primary/5 p-4">
+                        <h2 className="text-xs font-semibold uppercase tracking-wide text-primary">
+                            Ideal trade
+                        </h2>
+                        <p className="mt-2 whitespace-pre-wrap text-foreground">
+                            {listing.ideal_trade_description}
+                        </p>
+                    </div>
+                )}
 
                 <div className="mt-6 rounded-2xl border border-border p-4">
                     <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
