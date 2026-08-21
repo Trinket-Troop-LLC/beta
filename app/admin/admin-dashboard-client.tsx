@@ -36,6 +36,7 @@ export type Applicant = {
     username: string | null
     status: string
     responses: Record<string, unknown>
+    sms_consent: boolean
     profile_picture_url?: string | null
 }
 
@@ -187,6 +188,7 @@ export function AdminDashboardClient({
                                             <th className={thClass}>Last Name</th>
                                             <th className={thClass}>Email</th>
                                             <th className={thClass}>Phone</th>
+                                            <th className={thClass}>SMS Consent</th>
                                             <th className={thClass}>Responses</th>
                                             <th className={thClass}>Status</th>
                                         </tr>
@@ -205,6 +207,17 @@ export function AdminDashboardClient({
                                                 <td className={tdClass}>{applicant.last_name}</td>
                                                 <td className={tdClass}>{applicant.email}</td>
                                                 <td className={tdClass}>{applicant.phone_number}</td>
+                                                <td className={tdClass}>
+                                                    <span
+                                                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                                                            applicant.sms_consent
+                                                                ? 'bg-[#e7ede0] text-[#455442]'
+                                                                : 'bg-[#f2ede0] text-[#7c8072]'
+                                                        }`}
+                                                    >
+                                                        {applicant.sms_consent ? 'Yes' : 'No'}
+                                                    </span>
+                                                </td>
                                                 <td className={tdClass}>
                                                     <button
                                                         type="button"
@@ -372,6 +385,11 @@ function ApplicantDetails({
                     <dd className="break-words text-[#2c2c2c]">
                         {applicant.username || '\u2014'}
                     </dd>
+                </div>
+
+                <div>
+                    <dt className="text-sm font-medium text-[#7c8072]">SMS Consent</dt>
+                    <dd className="text-[#2c2c2c]">{applicant.sms_consent ? 'Yes' : 'No'}</dd>
                 </div>
 
                 {visibleResponses.map(([key, label]) => {
