@@ -20,8 +20,8 @@ function OriginIcon({ originType }: { originType: string }) {
             <Image
                 src="/icons/listing.png"
                 alt="Listing"
-                width={30}
-                height={30}
+                width={36}
+                height={36}
                 className="absolute right-4 top-2"
             />
         )
@@ -31,8 +31,8 @@ function OriginIcon({ originType }: { originType: string }) {
             <Image
                 src="/icons/bulletin-board.png"
                 alt="Bulletin"
-                width={30}
-                height={30}
+                width={36}
+                height={36}
                 className="absolute right-4 top-2"
             />
         )
@@ -73,11 +73,13 @@ export function ChatCard({
             <div className="flex w-20 shrink-0 flex-col items-center justify-between gap-0.5 text-center">
                 <div className="flex flex-col items-center gap-1">
                     <Avatar username={username} profilePictureUrl={profilePictureUrl} />
-                    <p className="w-full truncate text-xs font-medium text-message-text">@{username}</p>
+                    <div className="flex flex-col items-center gap-0">
+                        <p className="w-full truncate text-body-sm font-normal text-message-text">@{username}</p>
+                        {isActive && (
+                            <p className="-mt-0.5 text-[11px] italic font-light text-message-text">{formatLastActive(lastActiveAt)}</p>
+                        )}
+                    </div>
                 </div>
-                {isActive && (
-                    <p className="text-[10px] text-message-text">{formatLastActive(lastActiveAt)}</p>
-                )}
             </div>
 
             <div className="flex min-w-0 flex-1 flex-col justify-between">
@@ -87,13 +89,13 @@ export function ChatCard({
                             Pending
                         </span>
                     )}
-                    {title && <p className="truncate pr-6 font-medium text-[#2c2c2c]">{title}</p>}
-                    <p className="line-clamp-2 text-sm text-message-text">{lastMessagePreview ?? 'Say hello!'}</p>
+                    {title && <p className="truncate pr-6 font-bold text-h3 text-message-text">{title}</p>}
+                    <p className="line-clamp-2 text-body text-message-text">{lastMessagePreview ?? 'Say hello!'}</p>
                 </div>
 
                 <div className="flex justify-end">
                     {lastMessageAt && (
-                        <span className="shrink-0 text-xs text-message-text">
+                        <span className="shrink-0 italic font-light text-body-sm text-message-text">
                             {formatTimestamp(lastMessageAt)}
                         </span>
                     )}

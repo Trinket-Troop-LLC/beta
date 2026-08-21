@@ -77,6 +77,9 @@
 
 /* text sizes */
 @layer components {
+  .messages-ui {
+    font-family: var(--font-inter);
+  }
   .text-display {
       @apply text-5xl sm:text-6xl; /* 48–60px */
   }
