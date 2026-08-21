@@ -66,7 +66,7 @@ export function ChatCard({
     return (
         <Link
             href={href}
-            className={`relative flex gap-3 rounded-2xl border border-card-border/50 p-4 shadow-sm transition ${cardBackgroundClasses(originType)}`}
+            className={`relative flex gap-3 overflow-hidden rounded-2xl border border-card-border/50 p-4 shadow-sm transition ${cardBackgroundClasses(originType)}`}
         >
             <OriginIcon originType={originType} />
 
@@ -74,7 +74,7 @@ export function ChatCard({
                 <div className="flex flex-col items-center gap-1">
                     <Avatar username={username} profilePictureUrl={profilePictureUrl} />
                     <div className="flex flex-col items-center gap-0">
-                        <p className="w-full truncate text-body-sm font-normal text-message-text">@{username}</p>
+                        <p className="w-full text-body-sm font-normal text-message-text">@{username}</p>
                         {isActive && (
                             <p className="-mt-0.5 text-[11px] italic font-light text-message-text">{formatLastActive(lastActiveAt)}</p>
                         )}
@@ -90,7 +90,7 @@ export function ChatCard({
                         </span>
                     )}
                     {title && <p className="truncate pr-6 font-bold text-h3 text-message-text">{title}</p>}
-                    <p className="line-clamp-2 text-body text-message-text">{lastMessagePreview ?? 'Say hello!'}</p>
+                    <p className="line-clamp-2 break-words text-body text-message-text">{lastMessagePreview ?? 'Say hello!'}</p>
                 </div>
 
                 <div className="flex justify-end">

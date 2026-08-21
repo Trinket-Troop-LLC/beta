@@ -28,10 +28,10 @@ export function NotificationCard({
             <div className="flex gap-3">
                 <Avatar username={username} profilePictureUrl={profilePictureUrl} />
 
-                <div className="flex min-w-0 flex-1 flex-col justify-between">
+                <div className="flex min-w-0 flex-1 flex-col justify-between gap-1">
                     <div>
                         <p className="font-normal text-body-sm text-message-text">@{username}</p>
-                        <p className="line-clamp-2 font-normal text-body text-message-text">{reason}</p>
+                        <p className="line-clamp-2 break-words font-normal text-body text-message-text">{reason}</p>
                     </div>
                     <div className="flex items-end justify-between gap-2">
                         <div className="flex gap-2">
@@ -39,7 +39,7 @@ export function NotificationCard({
                                 type="button"
                                 onClick={onChat}
                                 disabled={isPending}
-                                className="rounded-md border border-black/50 bg-chat-action px-4 py-0.5 text-body font-normal text-chat-action-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                                className="rounded-md border border-black/50 bg-chat-action px-4 py-0 text-body font-normal text-chat-action-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 chat
                             </button>
@@ -47,7 +47,7 @@ export function NotificationCard({
                                 type="button"
                                 onClick={onDecline}
                                 disabled={isPending}
-                                className="rounded-md border border-black/50 bg-decline-action px-4 py-0.5 text-body font-normal text-decline-action-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                                className="rounded-md border border-black/50 bg-decline-action px-4 py-0 text-body font-normal text-decline-action-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 decline
                             </button>
