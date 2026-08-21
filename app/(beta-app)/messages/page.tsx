@@ -36,6 +36,35 @@ async function MessagesContent() {
             .order('created_at', { ascending: false })
         : { data: [] }
 
+    // 'listing' and 'offer' conversations link back to a listing via
+    // origin_id; 'message_board' conversations link back to a bulletin post
+    // the same way. Batch-fetch both so each card can show what it's about.
+    const listingOriginIds = conversations
+        ?.filter((c) => (c.origin_type === 'listing' || c.origin_type === 'offer') && c.origin_id)
+        .map((c) => c.origin_id as string) ?? []
+    const bulletinOriginIds = conversations
+        ?.filter((c) => c.origin_type === 'message_board' && c.origin_id)
+        .map((c) => c.origin_id as string) ?? []
+
+    const { data: originListings } = listingOriginIds.length > 0
+        ? await db.from('listings').select('id, title').in('id', listingOriginIds)
+        : { data: [] }
+    const { data: originBulletinPosts } = bulletinOriginIds.length > 0
+        ? await db.from('bulletin_posts').select('id, content').in('id', bulletinOriginIds)
+        : { data: [] }
+
+    function titleFor(conversation: { origin_type: string; origin_id: string | null }): string | null {
+        if (conversation.origin_type === 'listing' || conversation.origin_type === 'offer') {
+            return originListings?.find((l) => l.id === conversation.origin_id)?.title ?? null
+        }
+        if (conversation.origin_type === 'message_board') {
+            const content = originBulletinPosts?.find((p) => p.id === conversation.origin_id)?.content
+            if (!content) return null
+            return content.length > 60 ? `${content.slice(0, 60)}…` : content
+        }
+        return null
+    }
+
     const conversationsWithDetails = conversations?.map((conversation) => {
         const otherUserId = conversation.participant_one_id === user.id
             ? conversation.participant_two_id
@@ -50,6 +79,8 @@ async function MessagesContent() {
             id: conversation.id,
             status: conversation.status,
             initiatedByMe: conversation.initiated_by === user.id,
+            originType: conversation.origin_type,
+            title: titleFor(conversation),
             otherUser: {
                 id: otherUserId,
                 username: profile?.username ?? 'Unknown',
@@ -59,6 +90,7 @@ async function MessagesContent() {
             lastMessagePreview: lastMessage
                 ? (lastMessage.content ?? (lastMessage.image_path ? 'Sent a photo' : ''))
                 : null,
+            lastMessageAt: lastMessage?.created_at ?? null,
             updatedAt: conversation.updated_at,
         }
     }) ?? []
