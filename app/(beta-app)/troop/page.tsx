@@ -1,7 +1,6 @@
 import { Suspense } from 'react'
 import { requireMember } from '@/lib/supabase/require-member'
 import { BetaOnboardingModal } from '@/components/beta-onboarding-modal'
-import { BetaAppChrome } from '@/components/beta-app-chrome'
 import { getListingsView } from './actionts'
 import { TroopFeed } from './troop-feed'
 
@@ -31,7 +30,6 @@ export default function TroopHome() {
             <Suspense fallback={null}>
                 <TroopHomeContent />
             </Suspense>
-            <BetaAppChrome />
         </main>
     )
 }

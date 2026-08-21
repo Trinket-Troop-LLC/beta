@@ -2,7 +2,6 @@ import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import { requireMember } from '@/lib/supabase/require-member'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { BetaAppChrome } from '@/components/beta-app-chrome'
 import { ReviewForm } from './review-form'
 
 async function ReviewContent({ conversationId }: { conversationId: string }) {
@@ -75,7 +74,6 @@ export default async function ReviewPage({ params }: { params: Promise<{ convers
             <Suspense fallback={null}>
                 <ReviewContent conversationId={conversationId} />
             </Suspense>
-            <BetaAppChrome />
         </main>
     )
 }

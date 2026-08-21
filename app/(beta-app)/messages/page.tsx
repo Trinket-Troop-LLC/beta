@@ -1,7 +1,6 @@
 import { Suspense } from 'react'
 import { requireMember } from '@/lib/supabase/require-member'
 import { signProfilePictureUrls } from '@/lib/supabase/profile-pictures'
-import { BetaAppChrome } from '@/components/beta-app-chrome'
 import { ConversationsList } from './conversations-list'
 import { getAllMyPendingOffers } from '../troop/listing-lifecycle-actions'
 
@@ -107,7 +106,6 @@ export default function MessagesPage() {
             <Suspense fallback={null}>
                 <MessagesContent />
             </Suspense>
-            <BetaAppChrome />
         </main>
     )
 }

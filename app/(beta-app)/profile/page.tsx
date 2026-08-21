@@ -1,7 +1,6 @@
 import { Suspense } from 'react'
 import { requireMember } from '@/lib/supabase/require-member'
 import { signProfilePictureUrl, signProfilePictureUrls } from '@/lib/supabase/profile-pictures'
-import { BetaAppChrome } from '@/components/beta-app-chrome'
 import { PushNotificationToggle } from '@/components/push-notification-toggle'
 import { ProfileSection } from './profile-section'
 import { ProfileViewSwitcher } from './profile-view-switcher'
@@ -169,7 +168,6 @@ export default function ProfilePage({ searchParams }: { searchParams: ProfileSea
                     <ProfileContent searchParams={searchParams} />
                 </div>
             </Suspense>
-            <BetaAppChrome />
         </main>
     )
 }

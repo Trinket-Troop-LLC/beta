@@ -66,16 +66,16 @@ export async function getMyNotifications(): Promise<
 
 // Lightweight count-only query for the bell badge, so rendering it on every
 // page doesn't pull the full actor-joined notification list just to show a
-// number.
-export async function getUnreadNotificationCount(): Promise<number> {
+// number. Takes an already-verified user id (from the (beta-app) layout's
+// single requireMember() call) instead of re-checking auth itself -- this is
+// only ever called after that check has already happened.
+export async function getUnreadNotificationCount(userId: string): Promise<number> {
     const db = await createClient()
-    const { data: { user } } = await db.auth.getUser()
-    if (!user) return 0
 
     const { count } = await db
         .from('notifications')
         .select('id', { count: 'exact', head: true })
-        .eq('recipient_id', user.id)
+        .eq('recipient_id', userId)
         .is('read_at', null)
 
     return count ?? 0

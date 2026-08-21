@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 
@@ -7,12 +8,13 @@ import { createClient } from '@/lib/supabase/server'
  * enough, since /auth/sign-up is still public). Any role gets through; admin
  * is a superset of member access, not a separate account.
  *
- * Call this from inside the Suspense-wrapped async content component of each
- * page, not from a shared layout — Cache Components mode requires dynamic
- * data access to happen inside a Suspense boundary, and layouts aren't
- * automatically wrapped in one.
+ * Wrapped in React's `cache()` so calling this from both the shared
+ * (beta-app) layout and a page's own content component -- which is the
+ * normal pattern, since a layout can't hand fetched data down to `page.tsx`
+ * as props -- collapses to a single auth check and profile query per
+ * request instead of re-running them per call site.
  */
-export async function requireMember() {
+export const requireMember = cache(async function requireMember() {
     const db = await createClient()
     const { data: { user } } = await db.auth.getUser()
 
@@ -37,4 +39,4 @@ export async function requireMember() {
         .then()    
     
     return { db, user, profile }
-}
+})

@@ -1,5 +1,4 @@
 import { Suspense } from 'react'
-import { BetaAppChrome } from '@/components/beta-app-chrome'
 import { requireMember } from '@/lib/supabase/require-member'
 import { ListingForm } from './listing-form'
 
@@ -29,7 +28,6 @@ export default function PostsPage() {
             <Suspense fallback={null}>
                 <PostsContent />
             </Suspense>
-            <BetaAppChrome />
         </main>
     )
 }

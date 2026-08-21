@@ -4,7 +4,6 @@ import { notFound } from 'next/navigation'
 import { ImageIcon, UserRound } from 'lucide-react'
 import { requireMember } from '@/lib/supabase/require-member'
 import { signProfilePictureUrl } from '@/lib/supabase/profile-pictures'
-import { BetaAppChrome } from '@/components/beta-app-chrome'
 import {
     LISTING_CATEGORY_LABELS,
     LISTING_CONDITION_LABELS,
@@ -191,7 +190,6 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
             <Suspense fallback={null}>
                 <ListingDetailContent listingId={id} />
             </Suspense>
-            <BetaAppChrome />
         </main>
     )
 }

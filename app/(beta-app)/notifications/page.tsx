@@ -1,7 +1,6 @@
 import { Suspense } from 'react'
 import { requireMember } from '@/lib/supabase/require-member'
 import { getMyNotifications } from '@/lib/notifications/get'
-import { BetaAppChrome } from '@/components/beta-app-chrome'
 import { NotificationList } from './notification-list'
 
 async function NotificationsContent() {
@@ -21,7 +20,6 @@ export default function NotificationsPage() {
             <Suspense fallback={null}>
                 <NotificationsContent />
             </Suspense>
-            <BetaAppChrome />
         </main>
     )
 }
