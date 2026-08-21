@@ -609,6 +609,7 @@ export async function getAllMyPendingOffers() {
 
         return {
             offerId: offer.id,
+            createdAt: offer.created_at,
             targetListing: {
                 id: offer.listing_id,
                 title: myListingTitleById.get(offer.listing_id) ?? 'A listing',
