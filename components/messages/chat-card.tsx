@@ -29,7 +29,7 @@ function OriginIcon({ originType }: { originType: string }) {
     if (originType === 'message_board') {
         return (
             <Image
-                src="/icons/bulletin.png"
+                src="/icons/bulletin-board.png"
                 alt="Bulletin"
                 width={30}
                 height={30}
@@ -73,10 +73,10 @@ export function ChatCard({
             <div className="flex w-20 shrink-0 flex-col items-center justify-between gap-0.5 text-center">
                 <div className="flex flex-col items-center gap-1">
                     <Avatar username={username} profilePictureUrl={profilePictureUrl} />
-                    <p className="w-full truncate text-xs font-medium text-[#2c2c2c]">@{username}</p>
+                    <p className="w-full truncate text-xs font-medium text-message-text">@{username}</p>
                 </div>
                 {isActive && (
-                    <p className="text-[10px] text-[#9aa494]">{formatLastActive(lastActiveAt)}</p>
+                    <p className="text-[10px] text-message-text">{formatLastActive(lastActiveAt)}</p>
                 )}
             </div>
 
@@ -88,12 +88,12 @@ export function ChatCard({
                         </span>
                     )}
                     {title && <p className="truncate pr-6 font-medium text-[#2c2c2c]">{title}</p>}
-                    <p className="line-clamp-2 text-sm text-[#7c8072]">{lastMessagePreview ?? 'Say hello!'}</p>
+                    <p className="line-clamp-2 text-sm text-message-text">{lastMessagePreview ?? 'Say hello!'}</p>
                 </div>
 
                 <div className="flex justify-end">
                     {lastMessageAt && (
-                        <span className="shrink-0 text-xs text-[#9aa494]">
+                        <span className="shrink-0 text-xs text-message-text">
                             {formatTimestamp(lastMessageAt)}
                         </span>
                     )}

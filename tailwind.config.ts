@@ -69,6 +69,7 @@ export default {
         "bulletin-chat": "hsl(var(--bulletin-chat-bg))",
         "request-card": "hsl(var(--request-card-bg))",
         "card-border": "hsl(var(--card-border))",
+        "message-text": "hsl(var(--message-text))",
       },
       borderRadius: {
         lg: "var(--radius)",

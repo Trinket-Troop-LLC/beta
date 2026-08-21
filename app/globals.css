@@ -40,9 +40,12 @@
 
       /* cards */
     --listing-chat-bg: 39 48% 88%;    /* #FBE9D1 */
-    --bulletin-chat-bg: 12 61% 76%;  /* #FFC4A8 */
-    --request-card-bg: 36 79% 90%; /* currently same as listings */
+    --bulletin-chat-bg: 12 61% 76%;  /* #FFC4A8, there's opacity applied at the use level */
+    --request-card-bg: 39 48% 88%; /* currently same as listings */
     --card-border: 105 15% 28%;
+
+      /* message text */
+    --message-text: 0 0% 0%;
   }
   .dark {
     --background: 0 0% 3.9%;
