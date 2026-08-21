@@ -1,7 +1,6 @@
 import { Suspense } from 'react'
 import { requireMember } from '@/lib/supabase/require-member'
 import { signProfilePictureUrls } from '@/lib/supabase/profile-pictures'
-import { BetaBottomNav } from '@/components/beta-bottom-nav'
 import { ConversationsList } from './conversations-list'
 
 async function MessagesContent() {
@@ -71,7 +70,6 @@ export default function MessagesPage() {
             <Suspense fallback={null}>
                 <MessagesContent />
             </Suspense>
-            <BetaBottomNav />
         </main>
     )
 }

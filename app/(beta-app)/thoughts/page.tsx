@@ -2,7 +2,6 @@
 import { Suspense } from 'react'
 import { requireMember } from '@/lib/supabase/require-member'
 import { signProfilePictureUrls } from '@/lib/supabase/profile-pictures'
-import { BetaBottomNav } from '@/components/beta-bottom-nav'
 import { BulletinView, type BulletinAuthor, type BulletinPost, type BulletinReply } from './bulletin-view'
 
 const POST_PAGE_SIZE = 30
@@ -140,7 +139,6 @@ export default function ThoughtsPage() {
                     <ThoughtsContent />
                 </Suspense>
             </div>
-            <BetaBottomNav />
         </main>
     )
 }
