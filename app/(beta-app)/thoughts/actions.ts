@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { requestConversation } from '@/app/(beta-app)/messages/actions'
+import { createNotification } from '@/lib/notifications/create'
 
 const bulletinPhotosBucket = 'bulletin-photos'
 const maxBulletinPhotoCount = 4
@@ -189,6 +190,16 @@ export async function createBulletinReply(
         }
     }
 
+    const { data: post } = await db.from('bulletin_posts').select('author_id').eq('id', postId).maybeSingle()
+    if (post && post.author_id !== userId) {
+        await createNotification({
+            recipientId: post.author_id,
+            type: 'bulletin_reply',
+            actorId: userId,
+            relatedBulletinPostId: postId,
+        })
+    }
+
     revalidatePath('/thoughts')
     return { success: true, replyId: reply.id, parentReplyId: resolvedParentReplyId }
 }
@@ -233,6 +244,14 @@ export async function requestBulletinMessage(postId: string, message: string): P
     if (!result.success) {
         return { success: false, error: result.error ?? 'Could not send your message.' }
     }
+
+    await createNotification({
+        recipientId: post.author_id,
+        type: 'bulletin_message',
+        actorId: userId,
+        relatedBulletinPostId: post.id,
+        relatedConversationId: result.conversationId,
+    })
 
     return { success: true, conversationId: result.conversationId }
 }

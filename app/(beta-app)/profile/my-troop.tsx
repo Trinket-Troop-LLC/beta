@@ -54,7 +54,7 @@ export function MyTroop({
     outgoingRequests,
     incomingRequests,
 }: {
-    friendsData: FriendsData[]
+    friendsData: RequestData[]
     outgoingRequests: RequestData[]
     incomingRequests: RequestData[]
 }) {
@@ -183,7 +183,14 @@ export function MyTroop({
                     ) : (
                         <div className="flex flex-col gap-3">
                             {friendsData.map((friend) => (
-                                <PersonRow key={friend.id} person={friend} />
+                                <PersonRow key={friend.id} person={friend}>
+                                    <button
+                                        onClick={() => handleRemove(friend.friendshipId)}
+                                        className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground transition hover:bg-secondary"
+                                    >
+                                        Remove
+                                    </button>
+                                </PersonRow>
                             ))}
                         </div>
                     )}

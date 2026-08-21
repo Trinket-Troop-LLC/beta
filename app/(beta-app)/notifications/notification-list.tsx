@@ -19,6 +19,8 @@ function describeNotification(notification: NotificationSummary): string {
             return `${who} accepted your friend request.`
         case 'bulletin_reply':
             return `${who} replied to your post.`
+        case 'bulletin_message':
+            return `${who} sent you a message about your post.`
         case 'exchange_cancelled':
             return `${who} cancelled an exchange.`
         case 'exchange_complete_review_prompt':
@@ -34,9 +36,11 @@ function notificationHref(notification: NotificationSummary): string {
             return notification.relatedListingId ? `/troop/listings/${notification.relatedListingId}` : '/troop'
         case 'friend_request':
         case 'friend_request_accepted':
-            return '/profile'
+            return notification.actor ? `/profile/${encodeURIComponent(notification.actor.username)}` : '/profile'
         case 'bulletin_reply':
             return '/thoughts'
+        case 'bulletin_message':
+            return notification.relatedConversationId ? `/messages/${notification.relatedConversationId}` : '/messages'
         case 'exchange_cancelled':
             return notification.relatedConversationId ? `/messages/${notification.relatedConversationId}` : '/messages'
         case 'exchange_complete_review_prompt':

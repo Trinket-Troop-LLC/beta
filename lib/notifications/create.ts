@@ -7,6 +7,7 @@ export type NotificationType =
     | 'friend_request'
     | 'friend_request_accepted'
     | 'bulletin_reply'
+    | 'bulletin_message'
     | 'exchange_cancelled'
     | 'exchange_complete_review_prompt'
 
@@ -30,6 +31,7 @@ async function buildPushPayload(
     }
     const who = actorUsername ? `@${actorUsername}` : 'Someone'
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? ''
+    const actorProfileUrl = actorUsername ? `${siteUrl}/profile/${encodeURIComponent(actorUsername)}` : `${siteUrl}/profile`
 
     switch (input.type) {
         case 'listing_interest':
@@ -42,19 +44,25 @@ async function buildPushPayload(
             return {
                 title: 'New friend request',
                 body: `${who} sent you a friend request.`,
-                url: `${siteUrl}/profile`,
+                url: actorProfileUrl,
             }
         case 'friend_request_accepted':
             return {
                 title: 'Friend request accepted',
                 body: `${who} accepted your friend request.`,
-                url: `${siteUrl}/profile`,
+                url: actorProfileUrl,
             }
         case 'bulletin_reply':
             return {
                 title: 'New reply',
                 body: `${who} replied to your post.`,
                 url: `${siteUrl}/thoughts`,
+            }
+        case 'bulletin_message':
+            return {
+                title: 'New message about your post',
+                body: `${who} sent you a message about your post.`,
+                url: `${siteUrl}${input.relatedConversationId ? `/messages/${input.relatedConversationId}` : '/messages'}`,
             }
         case 'exchange_cancelled':
             return {
