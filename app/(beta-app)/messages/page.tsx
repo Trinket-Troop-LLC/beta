@@ -3,7 +3,10 @@ import { requireMember } from '@/lib/supabase/require-member'
 import { signProfilePictureUrls } from '@/lib/supabase/profile-pictures'
 import { BetaAppChrome } from '@/components/beta-app-chrome'
 import { ConversationsList } from './conversations-list'
-import { getAllMyPendingOffers } from '../troop/listing-lifecycle-actions'
+import {
+    getAllMyPendingOffers,
+    getMySentPendingOffers,
+} from '../troop/listing-lifecycle-actions'
 
 async function MessagesContent() {
     const { db, user } = await requireMember()
@@ -95,10 +98,24 @@ async function MessagesContent() {
         }
     }) ?? []
 
-    const pendingOffersResult = await getAllMyPendingOffers()
+    const [pendingOffersResult, sentOffersResult] = await Promise.all([
+        getAllMyPendingOffers(),
+        getMySentPendingOffers(),
+    ])
     const offers = pendingOffersResult.success ? pendingOffersResult.offers : []
+    const sentOffers = sentOffersResult.success ? sentOffersResult.offers : []
+    const sentOffersError = sentOffersResult.success
+        ? null
+        : sentOffersResult.error ?? 'Could not load your sent offers.'
 
-    return <ConversationsList conversations={conversationsWithDetails} offers={offers} />
+    return (
+        <ConversationsList
+            conversations={conversationsWithDetails}
+            offers={offers}
+            sentOffers={sentOffers}
+            sentOffersError={sentOffersError}
+        />
+    )
 }
 
 export default function MessagesPage() {

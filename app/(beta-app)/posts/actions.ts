@@ -7,6 +7,8 @@ import {
     LISTING_CATEGORIES,
     LISTING_CONDITIONS,
     LISTING_TRANSACTION_TYPES,
+    LISTING_TRANSACTION_TYPE_LABELS,
+    type ListingTransactionType,
 } from '@/lib/listings/domain'
 import {
     createPostingError,
@@ -35,6 +37,10 @@ export type CreateListingDraftResult =
 export type ListingActionResult =
     | { success: true }
     | { success: false; error: PostingError }
+
+export type UpdateListingResult =
+    | { success: true }
+    | { success: false; error: PostingError; fieldErrors?: FieldErrors }
 
 export type DiscardListingDraftResult =
     | { success: true; state: 'discarded' | 'published' }
@@ -126,6 +132,21 @@ const listingDraftSchema = z
 function getText(formData: FormData, name: string) {
     const value = formData.get(name)
     return typeof value === 'string' ? value : ''
+}
+
+function parseListingFormData(formData: FormData) {
+    return listingDraftSchema.safeParse({
+        title: getText(formData, 'title'),
+        description: getText(formData, 'description'),
+        category: getText(formData, 'category'),
+        other_category: getText(formData, 'other_category'),
+        condition: getText(formData, 'condition'),
+        transaction_types: formData
+            .getAll('transaction_types')
+            .filter((type): type is string => typeof type === 'string'),
+        price: getText(formData, 'price'),
+        pickup_area: getText(formData, 'pickup_area'),
+    })
 }
 
 function buildFieldErrors(error: z.ZodError): FieldErrors {
@@ -378,6 +399,11 @@ function getListingConstraintFailure(error: ProviderError) {
             message: 'Choose one or more of sell, trade, gift, or lend without duplicates.',
         },
         {
+            pattern: 'listings_pending_exchange_types_check',
+            field: 'transaction_types',
+            message: 'Keep every sharing option that is being used by a pending request or trade offer.',
+        },
+        {
             pattern: 'listings_price_check',
             field: 'price',
             message: 'A sale needs a price greater than $0; non-sale listings cannot include a price.',
@@ -617,18 +643,7 @@ export async function createListingDraft(
         }
     }
 
-    const validationFields = listingDraftSchema.safeParse({
-        title: getText(formData, 'title'),
-        description: getText(formData, 'description'),
-        category: getText(formData, 'category'),
-        other_category: getText(formData, 'other_category'),
-        condition: getText(formData, 'condition'),
-        transaction_types: formData
-            .getAll('transaction_types')
-            .filter((type): type is string => typeof type === 'string'),
-        price: getText(formData, 'price'),
-        pickup_area: getText(formData, 'pickup_area'),
-    })
+    const validationFields = parseListingFormData(formData)
 
     if (!validationFields.success) {
         return {
@@ -723,6 +738,260 @@ export async function createListingDraft(
     }
 
     return { success: true, listingId, photoPaths }
+}
+
+export async function updateListingDetails(
+    listingId: unknown,
+    formData: FormData,
+): Promise<UpdateListingResult> {
+    const idValidation = z.string().uuid().safeParse(listingId)
+
+    if (!idValidation.success) {
+        return {
+            success: false,
+            error: createPostingError(
+                'LISTING_ID_INVALID',
+                'This listing could not be identified. Return to My Listings and try again.',
+            ),
+        }
+    }
+
+    if (!(formData instanceof FormData)) {
+        return {
+            success: false,
+            error: createPostingError(
+                'FORM_INVALID',
+                'This edit form could not be read. Refresh the page and try again.',
+                true,
+            ),
+        }
+    }
+
+    const validationFields = parseListingFormData(formData)
+
+    if (!validationFields.success) {
+        return {
+            success: false,
+            error: createPostingError(
+                'LISTING_DETAILS_REJECTED',
+                'This listing was not updated because some details need to be corrected.',
+            ),
+            fieldErrors: buildFieldErrors(validationFields.error),
+        }
+    }
+
+    const member = await getMemberContext()
+
+    if (member.error) {
+        return { success: false, error: member.error }
+    }
+
+    let admin: ReturnType<typeof createAdminClient>
+
+    try {
+        admin = createAdminClient()
+    } catch {
+        return {
+            success: false,
+            error: createPostingError(
+                'POSTING_SETUP_REQUIRED',
+                'Listing edits are unavailable because the server connection is not configured. Contact an administrator.',
+            ),
+        }
+    }
+
+    const listing = validationFields.data
+    const isForSale = listing.transaction_types.includes('sell')
+    const listingIdValue = idValidation.data
+    const { data: ownedListing, error: ownedListingError } = await admin
+        .from('listings')
+        .select('status')
+        .eq('id', listingIdValue)
+        .eq('owner_id', member.user.id)
+        .maybeSingle()
+
+    if (ownedListingError) {
+        console.warn('Listing edit authorization lookup failed:', ownedListingError.code)
+        return {
+            success: false,
+            error: createPostingError(
+                'LISTING_UPDATE_UNAVAILABLE',
+                'The listing service could not confirm whether this listing is editable. Return to My Listings and try again.',
+                true,
+            ),
+        }
+    }
+
+    if (!ownedListing || ownedListing.status !== 'active') {
+        return {
+            success: false,
+            error: createPostingError(
+                'LISTING_UPDATE_LOCKED',
+                ownedListing
+                    ? 'This listing is no longer active, so its details are locked while the exchange is in progress.'
+                    : 'This listing is no longer available to edit.',
+            ),
+        }
+    }
+
+    const [pendingRequestsResult, pendingTradeOffersResult] = await Promise.all([
+        admin
+            .from('conversations')
+            .select('transaction_type')
+            .eq('origin_type', 'listing')
+            .eq('origin_id', listingIdValue)
+            .eq('status', 'pending'),
+        admin
+            .from('listing_offers')
+            .select('id')
+            .eq('status', 'pending')
+            .or(`listing_id.eq.${listingIdValue},offered_listing_id.eq.${listingIdValue}`)
+            .limit(1),
+    ])
+
+    if (pendingRequestsResult.error || pendingTradeOffersResult.error) {
+        console.warn(
+            'Listing pending exchange lookup failed:',
+            pendingRequestsResult.error?.code ?? pendingTradeOffersResult.error?.code,
+        )
+        return {
+            success: false,
+            error: createPostingError(
+                'LISTING_UPDATE_UNAVAILABLE',
+                'The listing service could not confirm which sharing options are already in use. Try saving again shortly.',
+                true,
+            ),
+        }
+    }
+
+    const requiredTransactionTypes = new Set<ListingTransactionType>()
+    for (const request of pendingRequestsResult.data ?? []) {
+        if (
+            request.transaction_type
+            && LISTING_TRANSACTION_TYPES.includes(request.transaction_type as ListingTransactionType)
+        ) {
+            requiredTransactionTypes.add(request.transaction_type as ListingTransactionType)
+        }
+    }
+    if ((pendingTradeOffersResult.data?.length ?? 0) > 0) {
+        requiredTransactionTypes.add('trade')
+    }
+
+    const removedRequiredTypes = [...requiredTransactionTypes].filter(
+        (type) => !listing.transaction_types.includes(type),
+    )
+
+    if (removedRequiredTypes.length > 0) {
+        const labels = removedRequiredTypes.map(
+            (type) => LISTING_TRANSACTION_TYPE_LABELS[type],
+        )
+        const formattedLabels = labels.length === 1
+            ? labels[0]
+            : `${labels.slice(0, -1).join(', ')} and ${labels.at(-1)}`
+        const message = `Keep ${formattedLabels} selected while a pending request or trade offer uses that option.`
+
+        return {
+            success: false,
+            error: createPostingError(
+                'LISTING_DETAILS_REJECTED',
+                'This listing was not updated because a sharing option is in use.',
+            ),
+            fieldErrors: { transaction_types: message },
+        }
+    }
+
+    const { data: updated, error: updateError } = await admin
+        .from('listings')
+        .update({
+            title: listing.title,
+            description: listing.description,
+            category: listing.category,
+            other_category: listing.category === 'other' ? listing.other_category : null,
+            condition: listing.condition,
+            transaction_types: listing.transaction_types,
+            price_cents: isForSale ? parsePriceCents(listing.price) : null,
+            pickup_area: listing.pickup_area,
+        })
+        .eq('id', listingIdValue)
+        .eq('owner_id', member.user.id)
+        .eq('status', 'active')
+        .select('id')
+        .maybeSingle()
+
+    if (updateError) {
+        console.warn('Listing update failed:', updateError.code)
+
+        const constraint = getListingConstraintFailure(updateError)
+        if (constraint) {
+            return {
+                success: false,
+                error: createPostingError(
+                    'LISTING_DETAILS_REJECTED',
+                    `This listing was not updated. ${constraint.message}`,
+                ),
+                fieldErrors: { [constraint.field]: constraint.message },
+            }
+        }
+
+        if (isSetupError(updateError) || updateError.code === '42501') {
+            return {
+                success: false,
+                error: createPostingError(
+                    isSetupError(updateError) ? 'POSTING_SETUP_REQUIRED' : 'POSTING_PERMISSION_DENIED',
+                    isSetupError(updateError)
+                        ? 'Listing edits are unavailable because the listings database has not been set up yet.'
+                        : 'Listing edits are unavailable because the server does not have the required permission. Contact an administrator.',
+                ),
+            }
+        }
+
+        return {
+            success: false,
+            error: createPostingError(
+                'LISTING_UPDATE_UNAVAILABLE',
+                'The listing service could not save these changes. Check your connection and try again.',
+                true,
+            ),
+        }
+    }
+
+    if (!updated) {
+        const { data: current, error: lookupError } = await admin
+            .from('listings')
+            .select('status')
+            .eq('id', listingIdValue)
+            .eq('owner_id', member.user.id)
+            .maybeSingle()
+
+        if (lookupError) {
+            console.warn('Listing update state lookup failed:', lookupError.code)
+            return {
+                success: false,
+                error: createPostingError(
+                    'LISTING_UPDATE_UNAVAILABLE',
+                    'The listing service could not confirm whether this listing is editable. Return to My Listings and try again.',
+                    true,
+                ),
+            }
+        }
+
+        return {
+            success: false,
+            error: createPostingError(
+                'LISTING_UPDATE_LOCKED',
+                current
+                    ? 'This listing is no longer active, so its details are locked while the exchange is in progress.'
+                    : 'This listing is no longer available to edit.',
+            ),
+        }
+    }
+
+    revalidatePath('/profile')
+    revalidatePath('/troop')
+    revalidatePath(`/troop/listings/${listingIdValue}`)
+    revalidatePath('/messages')
+
+    return { success: true }
 }
 
 export async function finalizeListing(listingId: unknown): Promise<ListingActionResult> {

@@ -2,7 +2,6 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { reserveListing } from '@/app/(beta-app)/troop/listing-reservation'
 import { revalidatePath } from 'next/cache'
 import type { ListingTransactionType } from '@/lib/listings/domain'
 import { createNotification } from '@/lib/notifications/create'
@@ -49,39 +48,6 @@ async function findExistingConversation(
 
     const { data } = await query.maybeSingle()
     return data ?? null
-}
-
-// Used when a conversation should start immediately usable (e.g. an accepted offer)
-export async function startActiveConversation(
-    otherUserId: string,
-    originType: 'offer' | 'direct',
-    originId: string | null
-) {
-    const { db, userId } = await getCurrentUserId()
-    if (!userId) return { success: false, error: 'You must be logged in.' }
-
-    const existing = await findExistingConversation(db, userId, otherUserId, originType, originId)
-    if (existing) {
-        await db.from('conversations').update({ status: 'active' }).eq('id', existing.id)
-        return { success: true, conversationId: existing.id }
-    }
-
-    const { data, error } = await db
-        .from('conversations')
-        .insert({
-            participant_one_id: userId,
-            participant_two_id: otherUserId,
-            origin_type: originType,
-            origin_id: originId,
-            status: 'active',
-            initiated_by: userId,
-        })
-        .select('id')
-        .single()
-
-    if (error || !data) return { success: false, error: 'Could not start the conversation.' }
-
-    return { success: true, conversationId: data.id }
 }
 
 // Used when responding to a message board post, or requesting a sell/gift/
@@ -233,8 +199,6 @@ export async function acceptConversationRequest(conversationId: string) {
     const { db, userId } = await getCurrentUserId()
     if (!userId) return { success: false, error: 'You must be logged in.' }
 
-    const admin = createAdminClient()
-
     const { data: conversation } = await db
         .from('conversations')
         .select('id, origin_type, origin_id, transaction_type')
@@ -245,29 +209,37 @@ export async function acceptConversationRequest(conversationId: string) {
 
     if (!conversation) return { success: false, error: 'This conversation request no longer exists.'}
 
-    // for buy / sell / loan requests, don't allow accepting a second request
-    // if there's already a active conversation; i.e listing is reserved.
-    // This must happen before the conversation is flipped to 'active' below --
-    // otherwise a failed reservation would still leave the conversation active.
-    // Stamping active_transaction_type here (not just status) is what lets
-    // the owner's completion UI later tell a lend apart from a sell/gift on
-    // a listing that offers several types at once.
     const isListingRequest = conversation.origin_type === 'listing' && conversation.origin_id !== null
     if (isListingRequest) {
-        const reserved = await reserveListing(admin, conversation.origin_id!, userId)
-        if (!reserved) {
-            return { success: false, error: 'An active conversation about this listing already exists. Mark it as fell through before accepting another request.'}
-        }
-        await admin
-            .from('listings')
-            .update({ active_transaction_type: conversation.transaction_type ?? null })
-            .eq('id', conversation.origin_id!)
-    }
+        const admin = createAdminClient()
+        const { data: acceptedConversationId, error: acceptError } = await admin.rpc(
+            'accept_pending_listing_request',
+            {
+                p_conversation_id: conversation.id,
+                p_owner_id: userId,
+            },
+        )
 
-    await db
-        .from('conversations')
-        .update({ status: 'active' })
-        .eq('id', conversationId)
+        if (acceptError || !acceptedConversationId) {
+            return {
+                success: false,
+                error: 'This listing request changed or the listing is no longer available.',
+            }
+        }
+    } else {
+        const { data: activatedConversation, error: activateError } = await db
+            .from('conversations')
+            .update({ status: 'active' })
+            .eq('id', conversation.id)
+            .eq('status', 'pending')
+            .neq('initiated_by', userId)
+            .select('id')
+            .maybeSingle()
+
+        if (activateError || !activatedConversation) {
+            return { success: false, error: 'This conversation request is no longer available.' }
+        }
+    }
 
     revalidatePath('/messages')
     revalidatePath('/troop')
@@ -278,13 +250,19 @@ export async function declineConversationRequest(conversationId: string) {
     const { db, userId } = await getCurrentUserId()
     if (!userId) return { success: false, error: 'You must be logged in.' }
 
-    const { error } = await db
+    const { data: declinedConversation, error } = await db
         .from('conversations')
         .delete()
         .eq('id', conversationId)
         .eq('status', 'pending')
+        .neq('initiated_by', userId)
+        .select('id')
+        .maybeSingle()
 
     if (error) return { success: false, error: 'Could not decline the request.' }
+    if (!declinedConversation) {
+        return { success: false, error: 'This conversation request is no longer available.' }
+    }
 
     revalidatePath('/messages')
     return { success: true }
