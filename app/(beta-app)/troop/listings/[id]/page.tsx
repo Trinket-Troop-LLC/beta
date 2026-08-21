@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import Link from 'next/link'
 import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import { ImageIcon, UserRound } from 'lucide-react'
@@ -15,6 +16,49 @@ import {
 import { ExchangeActions } from './exchange-actions'
 import { OfferReview } from './offer-review'
 import { getPendingOffersForListing } from '../../listing-lifecycle-actions'
+
+function OwnerCard({
+    isOwner,
+    ownerId,
+    pictureUrl,
+    displayName,
+}: {
+    isOwner: boolean
+    ownerId: string
+    pictureUrl: string | null
+    displayName: string
+}) {
+    const content = (
+        <>
+            {pictureUrl ? (
+                <div className="relative size-11 shrink-0 overflow-hidden rounded-full bg-secondary">
+                    <Image src={pictureUrl} alt={displayName} fill className="object-cover" />
+                </div>
+            ) : (
+                <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-secondary text-muted-foreground">
+                    <UserRound className="size-6" />
+                </div>
+            )}
+            <div className="min-w-0">
+                <p className="text-xs text-muted-foreground">Listed by</p>
+                <p className="truncate font-medium text-foreground">{isOwner ? 'You' : displayName}</p>
+            </div>
+        </>
+    )
+
+    if (isOwner) {
+        return <div className="mt-6 flex items-center gap-3 rounded-2xl border border-border p-4">{content}</div>
+    }
+
+    return (
+        <Link
+            href={`/profile/${ownerId}`}
+            className="mt-6 flex items-center gap-3 rounded-2xl border border-border p-4 transition hover:bg-secondary/50"
+        >
+            {content}
+        </Link>
+    )
+}
 
 async function ListingDetailContent({ listingId }: { listingId: string }) {
     const { db, user } = await requireMember()
@@ -160,23 +204,12 @@ async function ListingDetailContent({ listingId }: { listingId: string }) {
                     </dl>
                 </div>
 
-                <div className="mt-6 flex items-center gap-3 rounded-2xl border border-border p-4">
-                    {ownerPictureUrl ? (
-                        <div className="relative size-11 shrink-0 overflow-hidden rounded-full bg-secondary">
-                            <Image src={ownerPictureUrl} alt={ownerDisplayName} fill className="object-cover" />
-                        </div>
-                    ) : (
-                        <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-secondary text-muted-foreground">
-                            <UserRound className="size-6" />
-                        </div>
-                    )}
-                    <div className="min-w-0">
-                        <p className="text-xs text-muted-foreground">Listed by</p>
-                        <p className="truncate font-medium text-foreground">
-                            {isOwner ? 'You' : ownerDisplayName}
-                        </p>
-                    </div>
-                </div>
+                <OwnerCard
+                    isOwner={isOwner}
+                    ownerId={listing.owner_id}
+                    pictureUrl={ownerPictureUrl}
+                    displayName={ownerDisplayName}
+                />
             </div>
         </div>
     )

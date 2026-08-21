@@ -6,11 +6,13 @@ import { createNotification } from '@/lib/notifications/create'
 
 type ActionResult = { success: boolean; error?: string }
 
+export type Relationship = 'friend' | 'sent' | 'received' | 'none'
+
 export type SearchResult = {
     id: string
     username: string
     profilePictureUrl: string | null
-    relationship: 'friend' | 'sent' | 'received' | 'none'
+    relationship: Relationship
     friendshipId: string | null
 }
 
@@ -64,6 +66,7 @@ export async function sendFriendRequest(addresseeId: string): Promise<ActionResu
     })
 
     revalidatePath('/profile')
+    revalidatePath(`/profile/${addresseeId}`)
     return { success: true }
 }
 
@@ -100,6 +103,7 @@ export async function acceptFriendRequest(friendshipId: string): Promise<ActionR
     })
 
     revalidatePath('/profile')
+    revalidatePath(`/profile/${updated.requester_id}`)
     return { success: true }
 }
 
