@@ -56,50 +56,67 @@ async function ConversationContent({ conversationId }: { conversationId: string 
     // without exposing owner-only controls.
     let listing: {
         id: string
+        title: string
         status: string
         activeTransactionType: string | null
         isOwner: boolean
     } | null = null
+    // For a trade ('offer'), the context card needs both sides of the deal
+    // regardless of which one the current user owns -- "Trading: X and Y" --
+    // unlike `listing` above, which only ever tracks the one they own (for
+    // the owner-only Mark complete / Didn't work out controls).
+    let tradeItems: { itemA: { title: string }; itemB: { title: string } } | null = null
+
     if ((conversation.origin_type === 'listing' || conversation.origin_type === 'offer') && conversation.origin_id) {
         const { data: linkedListing } = await db
             .from('listings')
-            .select('id, owner_id, status, active_transaction_type')
+            .select('id, owner_id, title, status, active_transaction_type')
             .eq('id', conversation.origin_id)
             .maybeSingle()
 
-        if (linkedListing && linkedListing.owner_id === user.id) {
-            listing = {
-                id: linkedListing.id,
-                status: linkedListing.status,
-                activeTransactionType: linkedListing.active_transaction_type,
-                isOwner: true,
-            }
-        } else if (linkedListing && conversation.origin_type === 'offer') {
-            const admin = createAdminClient()
-            const pairedListingId = await findPairedTradeListingId(admin, linkedListing.id)
+        if (linkedListing) {
+            let pairedListing: { id: string; owner_id: string; title: string; status: string; active_transaction_type: string | null } | null = null
 
-            if (pairedListingId) {
-                const { data: pairedListing } = await db
-                    .from('listings')
-                    .select('id, owner_id, status, active_transaction_type')
-                    .eq('id', pairedListingId)
-                    .maybeSingle()
+            if (conversation.origin_type === 'offer') {
+                const admin = createAdminClient()
+                const pairedListingId = await findPairedTradeListingId(admin, linkedListing.id)
+                if (pairedListingId) {
+                    const { data } = await db
+                        .from('listings')
+                        .select('id, owner_id, title, status, active_transaction_type')
+                        .eq('id', pairedListingId)
+                        .maybeSingle()
+                    pairedListing = data
+                }
 
-                if (pairedListing && pairedListing.owner_id === user.id) {
-                    listing = {
-                        id: pairedListing.id,
-                        status: pairedListing.status,
-                        activeTransactionType: pairedListing.active_transaction_type,
-                        isOwner: true,
-                    }
+                tradeItems = {
+                    itemA: { title: linkedListing.title },
+                    itemB: { title: pairedListing?.title ?? 'their item' },
                 }
             }
-        } else if (linkedListing) {
-            listing = {
-                id: linkedListing.id,
-                status: linkedListing.status,
-                activeTransactionType: linkedListing.active_transaction_type,
-                isOwner: false,
+
+            const owned = linkedListing.owner_id === user.id
+                ? linkedListing
+                : pairedListing?.owner_id === user.id
+                    ? pairedListing
+                    : null
+
+            if (owned) {
+                listing = {
+                    id: owned.id,
+                    title: owned.title,
+                    status: owned.status,
+                    activeTransactionType: owned.active_transaction_type,
+                    isOwner: true,
+                }
+            } else {
+                listing = {
+                    id: linkedListing.id,
+                    title: linkedListing.title,
+                    status: linkedListing.status,
+                    activeTransactionType: linkedListing.active_transaction_type,
+                    isOwner: false,
+                }
             }
         }
     }
@@ -118,6 +135,8 @@ async function ConversationContent({ conversationId }: { conversationId: string 
             }}
             initialMessages={messages ?? []}
             listing={listing}
+            tradeItems={tradeItems}
+            requestedTransactionType={conversation.transaction_type ?? null}
             closedReason={conversation.closed_reason ?? null}
             originType={conversation.origin_type}
         />
