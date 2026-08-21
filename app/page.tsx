@@ -41,7 +41,7 @@ export default function WelcomePage() {
                             Reimagining peer-to-peer exchange in New York City
                         </h1>
 
-                        <p className="text-balance text-[length:var(--text-body)] leading-[1.65] text-[#2c2c2c]">
+                        <p className="text-balance text-[length:var(--text-body)] leading-[1.65] text-foreground">
                             &hellip;for city dwellers drowning in their piles of things, for home-based artists and
                             second-hand curators, for upcyclers searching for their next project, for students moving
                             into their first apartment, for adamant downsizers and frugal upsizers, for sweetiepies
@@ -52,7 +52,7 @@ export default function WelcomePage() {
                     {/* Not part of the source design (which has no CTA at all) — kept per request. */}
                     <Link
                         href="/apply"
-                        className="inline-block rounded-lg bg-[#7c9272] px-[1.5em] py-[0.75em] text-[length:var(--text-body)] font-medium text-white transition hover:bg-[#667b5f]"
+                        className="inline-block rounded-lg bg-primary px-[1.5em] py-[0.75em] text-[length:var(--text-body)] font-medium text-primary-foreground transition hover:bg-primary/90"
                     >
                         Join the waiting list
                     </Link>

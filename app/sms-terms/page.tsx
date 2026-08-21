@@ -8,22 +8,22 @@ export const metadata: Metadata = {
 }
 
 const sectionClass = 'flex flex-col gap-3'
-const headingClass = 'text-xl font-semibold text-[#30392d]'
-const bodyClass = 'text-[#625f58]'
-const linkClass = 'text-[#7c9272] underline hover:text-[#5f7258]'
+const headingClass = 'text-xl font-semibold text-foreground'
+const bodyClass = 'text-muted-foreground'
+const linkClass = 'text-primary underline hover:text-primary/90'
 
 export default function SmsTermsPage() {
     return (
-        <div className="min-h-screen bg-[#faf7f0]">
+        <div className="min-h-screen bg-background">
             <MissionLogoHeader />
 
             <main className="mx-auto max-w-3xl px-4 py-12">
-                <article className="flex flex-col gap-8 rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-6 shadow-sm sm:p-10">
+                <article className="flex flex-col gap-8 rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-10">
                     <header className="flex flex-col gap-1">
-                        <h1 className="text-2xl font-semibold text-[#30392d] sm:text-3xl">
+                        <h1 className="text-2xl font-semibold text-foreground sm:text-3xl">
                             Trinket Troop SMS Terms of Service
                         </h1>
-                        <p className="text-sm text-[#7c8072]">Last updated: August 20, 2026</p>
+                        <p className="text-sm text-muted-foreground">Last updated: August 20, 2026</p>
                     </header>
 
                     <div className={sectionClass}>

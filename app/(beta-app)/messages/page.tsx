@@ -66,7 +66,7 @@ async function MessagesContent() {
 
 export default function MessagesPage() {
     return (
-        <main className="relative flex min-h-screen flex-col items-center bg-[#faf7f0] px-4 pb-28 pt-12">
+        <main className="relative flex min-h-screen flex-col items-center bg-background px-4 pb-28 pt-12">
             <Suspense fallback={null}>
                 <MessagesContent />
             </Suspense>

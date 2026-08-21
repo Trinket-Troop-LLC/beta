@@ -128,11 +128,11 @@ export function ChatView({
 
     return (
         <div className="flex min-h-screen flex-col">
-            <div className="flex items-center gap-3 border-b border-[#ded8cc]/70 bg-[#faf7f0]/90 px-4 py-3">
-                <Link href="/messages" className="text-[#625f58] hover:text-[#30392d]">
+            <div className="flex items-center gap-3 border-b border-border/70 bg-background/90 px-4 py-3">
+                <Link href="/messages" className="text-muted-foreground hover:text-foreground">
                     <ArrowLeft size={20} />
                 </Link>
-                <div className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#ded8cc] bg-[#f2ede0]">
+                <div className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-muted">
                     {otherUser.profilePictureUrl ? (
                         <Image
                             src={otherUser.profilePictureUrl}
@@ -142,37 +142,37 @@ export function ChatView({
                             className="size-full object-cover"
                         />
                     ) : (
-                        <UserRound className="size-4 text-[#9aaa90]" />
+                        <UserRound className="size-4 text-input" />
                     )}
                 </div>
-                <p className="font-medium text-[#2c2c2c]">@{otherUser.username}</p>
+                <p className="font-medium text-foreground">@{otherUser.username}</p>
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 py-4">
                 {currentStatus === 'pending' && (
-                    <div className="mb-4 rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-4 text-center shadow-sm">
+                    <div className="mb-4 rounded-2xl border border-border bg-card p-4 text-center shadow-sm">
                         {isPendingForMe ? (
                             <>
-                                <p className="mb-3 text-sm text-[#625f58]">
+                                <p className="mb-3 text-sm text-muted-foreground">
                                     @{otherUser.username} wants to start a conversation with you.
                                 </p>
                                 <div className="flex justify-center gap-2">
                                     <button
                                         onClick={handleAccept}
-                                        className="rounded-lg bg-[#7c9272] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#667b5f]"
+                                        className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
                                     >
                                         Accept
                                     </button>
                                     <button
                                         onClick={handleDecline}
-                                        className="rounded-lg border border-[#ded8cc] px-4 py-2 text-sm font-medium text-[#625f58] transition hover:bg-[#f5efe5]"
+                                        className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted"
                                     >
                                         Decline
                                     </button>
                                 </div>
                             </>
                         ) : (
-                            <p className="text-sm text-[#625f58]">
+                            <p className="text-sm text-muted-foreground">
                                 Waiting for @{otherUser.username} to accept your message.
                             </p>
                         )}
@@ -187,8 +187,8 @@ export function ChatView({
                                 key={message.id}
                                 className={`max-w-[75%] rounded-2xl px-4 py-2 text-sm ${
                                     isMine
-                                        ? 'self-end bg-[#7c9272] text-white'
-                                        : 'self-start border border-[#ded8cc] bg-[#fffdf9] text-[#2c2c2c]'
+                                        ? 'self-end bg-primary text-primary-foreground'
+                                        : 'self-start border border-border bg-card text-foreground'
                                 }`}
                             >
                                 {message.content}
@@ -200,7 +200,7 @@ export function ChatView({
             </div>
 
             {currentStatus === 'active' && (
-                <div className="flex items-center gap-2 border-t border-[#ded8cc]/70 bg-[#faf7f0]/90 px-4 py-3">
+                <div className="flex items-center gap-2 border-t border-border/70 bg-background/90 px-4 py-3">
                     <input
                         type="text"
                         value={draft}
@@ -209,12 +209,12 @@ export function ChatView({
                             if (e.key === 'Enter') handleSend()
                         }}
                         placeholder="Message..."
-                        className="flex-1 rounded-full border border-[#d8d1c5] bg-white px-4 py-2 text-black outline-none transition focus:border-[#7c9272] focus:ring-2 focus:ring-[#7c9272]/20"
+                        className="flex-1 rounded-full border border-input bg-white px-4 py-2 text-black outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                     />
                     <button
                         onClick={handleSend}
                         disabled={isSending || !draft.trim()}
-                        className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#7c9272] text-white transition hover:bg-[#667b5f] disabled:cursor-not-allowed disabled:opacity-50"
+                        className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         <Send size={16} />
                     </button>
