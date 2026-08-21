@@ -14,7 +14,7 @@ import { BetaBottomNav } from '@/components/beta-bottom-nav'
 // requireMember() is cache()-wrapped, so pages that also call it directly
 // for their own db/user/profile reuse this same call instead of re-querying.
 export default async function BetaAppLayout({ children }: { children: React.ReactNode }) {
-    const { user, profile } = await requireMember()
+    const { user } = await requireMember()
 
     const [unreadNotificationCount, unreadMessageCount] = await Promise.all([
         getUnreadNotificationCount(user.id),
@@ -25,7 +25,7 @@ export default async function BetaAppLayout({ children }: { children: React.Reac
         <>
             {children}
             <NotificationBell unreadCount={unreadNotificationCount} />
-            <BetaBottomNav unreadMessageCount={unreadMessageCount} isAdmin={profile.role === 'admin'} />
+            <BetaBottomNav unreadMessageCount={unreadMessageCount} />
         </>
     )
 }

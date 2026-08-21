@@ -1,4 +1,6 @@
 import { Suspense } from 'react'
+import Link from 'next/link'
+import { ChevronRight, ShieldCheck } from 'lucide-react'
 import { requireMember } from '@/lib/supabase/require-member'
 import { signProfilePictureUrl, signProfilePictureUrls } from '@/lib/supabase/profile-pictures'
 import { PushNotificationToggle } from '@/components/push-notification-toggle'
@@ -132,8 +134,21 @@ async function ProfileContent({ searchParams }: { searchParams: ProfileSearchPar
 
     return (
         <>
-            <div className="mb-4 text-left">
+            <div className="mb-4 flex flex-col gap-3 text-left">
                 <PushNotificationToggle />
+
+                {profile.role === 'admin' && (
+                    <Link
+                        href="/admin"
+                        className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4 transition hover:bg-muted"
+                    >
+                        <span className="flex items-center gap-2">
+                            <ShieldCheck className="size-4 text-primary" aria-hidden="true" />
+                            <span className="text-sm font-medium text-foreground">Admin dashboard</span>
+                        </span>
+                        <ChevronRight className="size-4 text-muted-foreground" aria-hidden="true" />
+                    </Link>
+                )}
             </div>
             <ProfileViewSwitcher
                 profileView={

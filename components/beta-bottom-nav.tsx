@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, MessageCircleMore, MessageCircle, ShieldCheck, SquarePlus, UserRound } from "lucide-react";
+import { Home, MessageCircleMore, MessageCircle, SquarePlus, UserRound } from "lucide-react";
 
 const tabs = [
   { id: "home", label: "Home", icon: Home, href: "/troop" },
@@ -12,33 +12,24 @@ const tabs = [
   { id: "profile", label: "Profile", icon: UserRound, href: "/profile" },
 ] as const;
 
-const adminTab = { id: "admin", label: "Admin", icon: ShieldCheck, href: "/admin" } as const;
-
 export function BetaBottomNav({
   unreadMessageCount = 0,
-  isAdmin = false,
 }: {
   unreadMessageCount?: number;
-  isAdmin?: boolean;
 }) {
   const pathname = usePathname();
-  const visibleTabs = isAdmin ? [...tabs, adminTab] : tabs;
   const isTabActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
-  const activeTab = visibleTabs.find((tab) => isTabActive(tab.href)) ?? tabs[0];
+  const activeTab = tabs.find((tab) => isTabActive(tab.href)) ?? tabs[0];
 
   return (
     <nav
       aria-label="Beta app navigation"
       className="fixed inset-x-0 bottom-4 z-40 flex justify-center px-2 sm:px-4"
     >
-      <div
-        className={`w-full rounded-full border border-border bg-card/95 p-2 shadow-lg backdrop-blur ${
-          isAdmin ? "max-w-lg" : "max-w-md"
-        }`}
-      >
+      <div className="w-full max-w-md rounded-full border border-border bg-card/95 p-2 shadow-lg backdrop-blur">
         <div className="flex items-center justify-between gap-1 sm:gap-2">
-          {visibleTabs.map(({ id, label, icon: Icon, href }) => {
+          {tabs.map(({ id, label, icon: Icon, href }) => {
             const isActive = isTabActive(href);
             const accessibleLabel = id === "messages" && unreadMessageCount > 0
               ? `${label}, ${unreadMessageCount} unread`
