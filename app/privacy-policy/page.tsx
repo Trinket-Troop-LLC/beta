@@ -186,8 +186,11 @@ export default function PrivacyPolicyPage() {
                             <li>Our affiliates, in our legitimate interest to run the business</li>
                             <li>
                                 Third parties, in connection with a business transaction (such as a merger), to comply
-                                with legal obligations (subpoenas, warrants, and similar requests), to enforce our
-                                Terms of Service, or to protect the Services, our rights, or the rights of our members
+                                with legal obligations (subpoenas, warrants, and similar requests), to enforce our{' '}
+                                <Link href="/terms-of-service" className={linkClass}>
+                                    Terms of Service
+                                </Link>
+                                , or to protect the Services, our rights, or the rights of our members
                             </li>
                         </ul>
 
