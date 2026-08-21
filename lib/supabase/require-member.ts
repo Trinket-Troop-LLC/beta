@@ -8,29 +8,38 @@ import { createClient } from '@/lib/supabase/server'
  * enough, since /auth/sign-up is still public). Any role gets through; admin
  * is a superset of member access, not a separate account.
  *
- * Wrapped in React's `cache()` so calling this from both the shared
- * (beta-app) layout and a page's own content component -- which is the
- * normal pattern, since a layout can't hand fetched data down to `page.tsx`
- * as props -- collapses to a single auth check and profile query per
- * request instead of re-running them per call site.
+ * Two layered optimizations, since this runs on every navigation:
+ *
+ * - Uses getSession() (reads the cookie locally) instead of getUser() (a
+ *   network round-trip to Supabase's auth server) purely to decide which
+ *   redirect to throw on a cold/tampered session. The actual authorization
+ *   boundary is still the profile query below: it's evaluated by PostgREST
+ *   against the real, signature-verified JWT via RLS (auth.uid() = id), so a
+ *   forged or stale local session can't read another user's row — it just
+ *   comes back empty and falls through to the same redirect as "not logged in."
+ * - Wrapped in React's `cache()` so calling this from both the shared
+ *   (beta-app) layout and a page's own content component -- which is the
+ *   normal pattern, since a layout can't hand fetched data down to `page.tsx`
+ *   as props -- collapses to a single call per request instead of re-running
+ *   it per call site.
  */
 export const requireMember = cache(async function requireMember() {
     const db = await createClient()
-    const { data: { user } } = await db.auth.getUser()
+    const { data: { session } } = await db.auth.getSession()
 
-    if (!user) {
+    if (!session) {
         redirect('/auth/login')
     }
 
     const { data: profile } = await db
         .from('users')
         .select('id, username, role')
-        .eq('id', user.id)
+        .eq('id', session.user.id)
         .maybeSingle()
 
     if (!profile) {
         redirect('/')
     }
 
-    return { db, user, profile }
+    return { db, user: session.user, profile }
 })
