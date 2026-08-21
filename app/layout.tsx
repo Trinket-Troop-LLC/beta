@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Gluten } from "next/font/google";
+import { Geist, Gluten, Inter } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { SerwistProvider } from "@serwist/turbopack/react";
 import { getAppUrl } from "@/lib/utils";
@@ -44,6 +44,11 @@ const gluten = Gluten({
   variable: "--font-gluten",
 });
 
+const inter = Inter({
+    variable: "--font-inter",
+    subsets: ["latin"],
+});
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -51,7 +56,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.className} ${gluten.variable}`}>
+      <body className={`${geistSans.className} ${gluten.variable} ${inter.variable}`}>
         <SerwistProvider swUrl="/serwist/sw.js">
           <ThemeProvider
             attribute="class"
