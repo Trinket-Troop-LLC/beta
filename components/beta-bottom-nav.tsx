@@ -15,16 +15,14 @@ const tabs = [
 export function BetaBottomNav() {
   const pathname = usePathname();
 
-  const activeTab = tabs.find(
-    (tab) => pathname === tab.href || pathname.startsWith(`${tab.href}/`),
-  ) ?? tabs[0];
+  const activeTab = tabs.find((tab) => tab.href === pathname) ?? tabs[0];
 
   return (
     <div className="fixed inset-x-0 bottom-4 z-40 flex justify-center px-4">
       <div className="w-full max-w-md rounded-full border border-[#ded8cc] bg-[#fffdf9]/95 p-2 shadow-lg backdrop-blur">
         <div className="flex items-center justify-between gap-2">
           {tabs.map(({ id, label, icon: Icon, href }) => {
-            const isActive = activeTab.id === id;
+            const isActive = pathname === href;
 
             return (
               <Link

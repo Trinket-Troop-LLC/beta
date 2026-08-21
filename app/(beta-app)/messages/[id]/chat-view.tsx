@@ -2,18 +2,10 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowLeft, UserRound, Send, LoaderCircle } from 'lucide-react'
-import {
-    sendMessage,
-    acceptConversationRequest,
-    declineConversationRequest,
-    markTradeComplete,
-    markTradeNotWorkedOut,
-} from '../actions'
-import { TradeClosedNotice } from '../trade-closed-notice'
+import { ArrowLeft, UserRound, Send } from 'lucide-react'
+import { sendMessage, acceptConversationRequest, declineConversationRequest } from '../actions'
 
 type Message = {
     id: string
@@ -31,10 +23,6 @@ type OtherUser = {
     profilePictureUrl: string | null
 }
 
-type ConversationStatus = 'pending' | 'active' | 'completed' | 'closed'
-
-type TradeAction = 'complete' | 'not-worked-out'
-
 export function ChatView({
     conversationId,
     status,
@@ -42,9 +30,6 @@ export function ChatView({
     currentUserId,
     otherUser,
     initialMessages,
-    originType,
-    listingId,
-    listingTitle,
 }: {
     conversationId: string
     status: 'pending' | 'active'
@@ -52,18 +37,11 @@ export function ChatView({
     currentUserId: string
     otherUser: OtherUser
     initialMessages: Message[]
-    originType: 'offer' | 'message_board' | 'direct'
-    listingId: string | null
-    listingTitle: string | null
 }) {
-    const router = useRouter()
     const [messages, setMessages] = useState(initialMessages)
     const [draft, setDraft] = useState('')
     const [isSending, setIsSending] = useState(false)
-    const [currentStatus, setCurrentStatus] = useState<ConversationStatus>(status)
-    const [confirmingAction, setConfirmingAction] = useState<TradeAction | null>(null)
-    const [tradeActionError, setTradeActionError] = useState<string | null>(null)
-    const [isTradeActionPending, setIsTradeActionPending] = useState(false)
+    const [currentStatus, setCurrentStatus] = useState(status)
     const bottomRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
@@ -97,22 +75,6 @@ export function ChatView({
                             if (prev.some((m) => m.id === newMessage.id)) return prev
                             return [...prev, newMessage]
                         })
-                    }
-                )
-                .on(
-                    'postgres_changes',
-                    {
-                        event: 'UPDATE',
-                        schema: 'public',
-                        table: 'conversations',
-                        filter: `id=eq.${conversationId}`,
-                    },
-                    (payload) => {
-                        const updated = payload.new as { status: ConversationStatus }
-                        // Redirects the participant who *didn't* click Mark complete /
-                        // Didn't work out — the one who clicked already navigates away
-                        // immediately on their own success response.
-                        setCurrentStatus(updated.status)
                     }
                 )
                 .subscribe()
@@ -162,42 +124,7 @@ export function ChatView({
         window.location.href = '/messages'
     }
 
-    function openTradeActionConfirm(action: TradeAction) {
-        setTradeActionError(null)
-        setConfirmingAction(action)
-    }
-
-    function cancelTradeActionConfirm() {
-        if (isTradeActionPending) return
-        setTradeActionError(null)
-        setConfirmingAction(null)
-    }
-
-    async function confirmTradeAction() {
-        if (!confirmingAction) return
-
-        setIsTradeActionPending(true)
-        setTradeActionError(null)
-
-        const result = confirmingAction === 'complete'
-            ? await markTradeComplete(conversationId)
-            : await markTradeNotWorkedOut(conversationId)
-
-        if (!result.success) {
-            setTradeActionError(result.error)
-            setIsTradeActionPending(false)
-            return
-        }
-
-        router.push('/messages')
-    }
-
-    if (currentStatus === 'completed' || currentStatus === 'closed') {
-        return <TradeClosedNotice status={currentStatus} />
-    }
-
     const isPendingForMe = currentStatus === 'pending' && !initiatedByMe
-    const canFinishTrade = currentStatus === 'active' && originType === 'offer' && Boolean(listingId)
 
     return (
         <div className="flex min-h-screen flex-col">
@@ -271,70 +198,6 @@ export function ChatView({
                     <div ref={bottomRef} />
                 </div>
             </div>
-
-            {canFinishTrade && (
-                <div className="border-t border-[#ded8cc]/70 bg-[#faf7f0]/90 px-4 py-3">
-                    {!confirmingAction ? (
-                        <div className="flex justify-center gap-2">
-                            <button
-                                type="button"
-                                onClick={() => openTradeActionConfirm('complete')}
-                                className="rounded-full bg-[#7c9272] px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-[#667b5f]"
-                            >
-                                Mark as complete
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => openTradeActionConfirm('not-worked-out')}
-                                className="rounded-full border border-[#ded8cc] px-3.5 py-2 text-xs font-semibold text-[#625f58] transition hover:bg-[#f5efe5]"
-                            >
-                                Didn&apos;t work out
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-4 text-center shadow-sm">
-                            <p className="text-sm font-semibold text-[#2c2c2c]">
-                                {confirmingAction === 'complete'
-                                    ? `Mark${listingTitle ? ` your trade for "${listingTitle}"` : ' this trade'} complete?`
-                                    : `Say${listingTitle ? ` the trade for "${listingTitle}"` : ' this trade'} didn't work out?`}
-                            </p>
-                            <p className="mt-1 text-xs text-[#7c8072]">
-                                {confirmingAction === 'complete'
-                                    ? 'This closes the chat and marks the listing as fulfilled.'
-                                    : 'This closes the chat and makes the listing active again.'}
-                            </p>
-
-                            {tradeActionError && (
-                                <p className="mt-2 text-xs text-destructive" role="alert">
-                                    {tradeActionError}
-                                </p>
-                            )}
-
-                            <div className="mt-3 flex justify-center gap-2">
-                                <button
-                                    type="button"
-                                    onClick={confirmTradeAction}
-                                    disabled={isTradeActionPending}
-                                    className="inline-flex items-center gap-2 rounded-full bg-[#7c9272] px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-[#667b5f] disabled:cursor-not-allowed disabled:opacity-60"
-                                >
-                                    {isTradeActionPending && (
-                                        <LoaderCircle className="size-3.5 animate-spin" aria-hidden="true" />
-                                    )}
-                                    {isTradeActionPending ? 'Working…' : 'Yes, confirm'}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={cancelTradeActionConfirm}
-                                    disabled={isTradeActionPending}
-                                    className="rounded-full border border-[#ded8cc] px-3.5 py-2 text-xs font-semibold text-[#625f58] transition hover:bg-[#f5efe5] disabled:cursor-not-allowed disabled:opacity-60"
-                                >
-                                    Cancel
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            )}
 
             {currentStatus === 'active' && (
                 <div className="flex items-center gap-2 border-t border-[#ded8cc]/70 bg-[#faf7f0]/90 px-4 py-3">

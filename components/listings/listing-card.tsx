@@ -1,13 +1,11 @@
 import Image from 'next/image'
-import { MapPin } from 'lucide-react'
+import { ImageIcon, MapPin } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { ListingPhotoPlaceholder } from '@/components/listings/listing-photo-placeholder'
 import {
     LISTING_CATEGORY_LABELS,
     LISTING_CONDITION_LABELS,
     LISTING_STATUS_LABELS,
     LISTING_TRANSACTION_TYPE_LABELS,
-    formatListingPrice,
     type Listing,
 } from '@/lib/listings/domain'
 
@@ -27,6 +25,13 @@ export type ListingCardData = Pick<
     coverPhotoUrl: string | null
 }
 
+function formatPrice(priceCents: number) {
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+    }).format(priceCents / 100)
+}
+
 export function ListingCard({
     listing,
     footer,
@@ -38,21 +43,15 @@ export function ListingCard({
 }) {
     const sharingLabels = listing.transaction_types.map((type) =>
         type === 'sell' && listing.price_cents !== null
-            ? formatListingPrice(listing.price_cents)
+            ? formatPrice(listing.price_cents)
             : LISTING_TRANSACTION_TYPE_LABELS[type],
     )
     const categoryLabel = listing.category === 'other'
         ? listing.other_category ?? LISTING_CATEGORY_LABELS.other
         : LISTING_CATEGORY_LABELS[listing.category]
 
-    const isReserved = listing.status === 'reserved'
-
     return (
-        <article
-            className={`overflow-hidden rounded-2xl border border-border bg-card text-left shadow-sm ${
-                isReserved ? 'opacity-60 saturate-50' : ''
-            }`}
-        >
+        <article className="overflow-hidden rounded-2xl border border-border bg-card text-left shadow-sm">
             <div className="relative aspect-square bg-secondary">
                 {listing.coverPhotoUrl ? (
                     <Image
@@ -63,10 +62,9 @@ export function ListingCard({
                         className="object-cover"
                     />
                 ) : (
-                    <ListingPhotoPlaceholder
-                        category={listing.category}
-                        title={listing.title}
-                    />
+                    <div className="flex size-full items-center justify-center text-muted-foreground">
+                        <ImageIcon className="size-9" />
+                    </div>
                 )}
 
                 {(listing.status !== 'active' || statusLabelOverride) && (

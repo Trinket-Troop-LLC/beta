@@ -53,12 +53,3 @@ export function compressListingPhoto(file: File) {
         background: '#fffdf9',
     })
 }
-
-export function compressBulletinPhoto(file: File) {
-    return compressImage(file, {
-        maxDimension: 1600,
-        quality: 0.82,
-        fallbackName: 'bulletin-photo',
-        background: '#fffdf9',
-    })
-}

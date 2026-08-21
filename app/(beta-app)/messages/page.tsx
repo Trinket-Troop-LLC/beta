@@ -11,7 +11,6 @@ async function MessagesContent() {
         .from('conversations')
         .select('*')
         .or(`participant_one_id.eq.${user.id},participant_two_id.eq.${user.id}`)
-        .in('status', ['pending', 'active'])
         .order('updated_at', { ascending: false })
 
     const otherUserIds = conversations?.map((c) =>
