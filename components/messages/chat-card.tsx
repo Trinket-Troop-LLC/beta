@@ -6,12 +6,12 @@ import { Avatar } from '@/components/avatar'
 
 function cardBackgroundClasses(originType: string): string {
     if (originType === 'listing' || originType === 'offer') {
-        return 'border-[#e8dcc0] bg-[#faf3e0] hover:bg-[#f5ecd4]'
+        return 'bg-listing-chat'
     }
     if (originType === 'message_board') {
-        return 'border-rose-200 bg-rose-50 hover:bg-rose-100'
+        return 'bg-bulletin-chat/70'
     }
-    return 'border-[#ded8cc] bg-[#fffdf9] hover:bg-[#f5efe5]'
+    return 'bg-card hover:bg-secondary'
 }
 
 function OriginIcon({ originType }: { originType: string }) {
@@ -29,7 +29,7 @@ function OriginIcon({ originType }: { originType: string }) {
     if (originType === 'message_board') {
         return (
             <Image
-                src="/icons/bulletin.png"
+                src="/icons/bulletin-board.png"
                 alt="Bulletin"
                 width={30}
                 height={30}
@@ -66,17 +66,17 @@ export function ChatCard({
     return (
         <Link
             href={href}
-            className={`relative flex gap-3 rounded-2xl border p-4 shadow-sm transition ${cardBackgroundClasses(originType)}`}
+            className={`relative flex gap-3 rounded-2xl border border-card-border/50 p-4 shadow-sm transition ${cardBackgroundClasses(originType)}`}
         >
             <OriginIcon originType={originType} />
 
             <div className="flex w-20 shrink-0 flex-col items-center justify-between gap-0.5 text-center">
                 <div className="flex flex-col items-center gap-1">
                     <Avatar username={username} profilePictureUrl={profilePictureUrl} />
-                    <p className="w-full truncate text-xs font-medium text-[#2c2c2c]">@{username}</p>
+                    <p className="w-full truncate text-xs font-medium text-message-text">@{username}</p>
                 </div>
                 {isActive && (
-                    <p className="text-[10px] text-[#9aa494]">{formatLastActive(lastActiveAt)}</p>
+                    <p className="text-[10px] text-message-text">{formatLastActive(lastActiveAt)}</p>
                 )}
             </div>
 
@@ -88,12 +88,12 @@ export function ChatCard({
                         </span>
                     )}
                     {title && <p className="truncate pr-6 font-medium text-[#2c2c2c]">{title}</p>}
-                    <p className="line-clamp-2 text-sm text-[#7c8072]">{lastMessagePreview ?? 'Say hello!'}</p>
+                    <p className="line-clamp-2 text-sm text-message-text">{lastMessagePreview ?? 'Say hello!'}</p>
                 </div>
 
                 <div className="flex justify-end">
                     {lastMessageAt && (
-                        <span className="shrink-0 text-xs text-[#9aa494]">
+                        <span className="shrink-0 text-xs text-message-text">
                             {formatTimestamp(lastMessageAt)}
                         </span>
                     )}

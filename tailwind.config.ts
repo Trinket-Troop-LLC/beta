@@ -55,6 +55,21 @@ export default {
           "4": "hsl(var(--chart-4))",
           "5": "hsl(var(--chart-5))",
         },
+
+        // MESSAGES UI
+        "chat-action": {
+        DEFAULT: "hsl(var(--chat-action))",
+        foreground: "hsl(var(--chat-action-foreground))",
+        },
+        "decline-action": {
+            DEFAULT: "hsl(var(--decline-action))",
+            foreground: "hsl(var(--decline-action-foreground))",
+        },
+        "listing-chat": "hsl(var(--listing-chat-bg))",
+        "bulletin-chat": "hsl(var(--bulletin-chat-bg))",
+        "request-card": "hsl(var(--request-card-bg))",
+        "card-border": "hsl(var(--card-border))",
+        "message-text": "hsl(var(--message-text))",
       },
       borderRadius: {
         lg: "var(--radius)",

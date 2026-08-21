@@ -29,6 +29,23 @@
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
+
+    /* messages ui */
+      /* chat button */
+    --chat-action: 54 61% 33%;        /* #877C27 */
+    --chat-action-foreground: 0 0% 100%;
+      /* decline button */
+    --decline-action: 4 55% 58%;      /* #CC5C53 */
+    --decline-action-foreground: 0 0% 100%;
+
+      /* cards */
+    --listing-chat-bg: 39 48% 88%;    /* #FBE9D1 */
+    --bulletin-chat-bg: 12 61% 76%;  /* #FFC4A8, there's opacity applied at the use level */
+    --request-card-bg: 39 48% 88%; /* currently same as listings */
+    --card-border: 105 15% 28%;
+
+      /* message text */
+    --message-text: 0 0% 0%;
   }
   .dark {
     --background: 0 0% 3.9%;
@@ -55,6 +72,34 @@
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+  }
+}
+
+/* text sizes */
+@layer components {
+  .text-display {
+      @apply text-5xl sm:text-6xl; /* 48–60px */
+  }
+  .text-h1 {
+      @apply text-3xl sm:text-4xl; /* 32–36px */
+  }
+  .text-h2 {
+      @apply text-2xl sm:text-[28px]; /* 24–28px */
+  }
+  .text-h3 {
+      @apply text-xl; /* 20px */
+  }
+  .text-body {
+      @apply text-base; /* 16px */
+  }
+  .text-body-sm {
+      @apply text-sm; /* 14px */
+  }
+  .text-caption {
+      @apply text-xs; /* 12px */
+  }
+  .text-button {
+      @apply text-sm sm:text-base; /* 14–16px */
   }
 }
 
