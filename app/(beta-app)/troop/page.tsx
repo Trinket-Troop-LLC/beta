@@ -10,14 +10,14 @@ async function TroopHomeContent() {
 
     return (
         <div className="mx-auto w-full max-w-4xl text-left">
-            <h1 className="mb-4 text-3xl font-semibold text-[#30392d]">
+            <h1 className="mb-4 text-3xl font-semibold text-foreground">
                 Welcome{profile.username ? `, ${profile.username}` : ''}
             </h1>
 
             {result.success ? (
                 <TroopFeed initialListings={result.listings} initialCursor={result.nextCursor} />
             ) : (
-                <p className="text-sm text-[#625f58]">{result.error}</p>
+                <p className="text-sm text-muted-foreground">{result.error}</p>
             )}
         </div>
     )
@@ -25,7 +25,7 @@ async function TroopHomeContent() {
 
 export default function TroopHome() {
     return (
-        <main className="relative min-h-screen bg-[#faf7f0] px-4 py-10 pb-32">
+        <main className="relative min-h-screen bg-background px-4 py-10 pb-32">
             <BetaOnboardingModal />
             <Suspense fallback={null}>
                 <TroopHomeContent />

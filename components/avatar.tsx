@@ -3,7 +3,7 @@ import { UserRound } from 'lucide-react'
 
 export function Avatar({ username, profilePictureUrl }: { username: string; profilePictureUrl: string | null }) {
     return (
-        <div className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#ded8cc] bg-[#f2ede0]">
+        <div className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-muted">
             {profilePictureUrl ? (
                 <Image
                     src={profilePictureUrl}
@@ -13,7 +13,7 @@ export function Avatar({ username, profilePictureUrl }: { username: string; prof
                     className="size-full object-cover"
                 />
             ) : (
-                <UserRound className="size-8 text-[#9aaa90]" />
+                <UserRound className="size-8 text-input" />
             )}
         </div>
     )

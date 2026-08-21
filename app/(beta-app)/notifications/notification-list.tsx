@@ -87,12 +87,12 @@ export function NotificationList({ notifications: initialNotifications }: { noti
     return (
         <div className="w-full max-w-md">
             <div className="mb-6 flex items-center justify-between">
-                <h1 className="text-3xl font-semibold text-[#30392d]">Notifications</h1>
+                <h1 className="text-3xl font-semibold text-foreground">Notifications</h1>
                 {unreadCount > 0 && (
                     <button
                         type="button"
                         onClick={handleMarkAllRead}
-                        className="text-xs font-medium text-[#7c9272] hover:underline"
+                        className="text-xs font-medium text-primary hover:underline"
                     >
                         Mark all read
                     </button>
@@ -100,8 +100,8 @@ export function NotificationList({ notifications: initialNotifications }: { noti
             </div>
 
             {notifications.length === 0 ? (
-                <div className="rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-6 text-left shadow-sm">
-                    <p className="text-sm text-[#625f58]">You&apos;re all caught up.</p>
+                <div className="rounded-2xl border border-border bg-card p-6 text-left shadow-sm">
+                    <p className="text-sm text-muted-foreground">You&apos;re all caught up.</p>
                 </div>
             ) : (
                 <div className="flex flex-col gap-2">
@@ -110,13 +110,13 @@ export function NotificationList({ notifications: initialNotifications }: { noti
                             key={notification.id}
                             href={notificationHref(notification)}
                             onClick={() => handleOpen(notification)}
-                            className={`flex items-center gap-3 rounded-2xl border p-4 text-left shadow-sm transition hover:bg-[#f5efe5] ${
+                            className={`flex items-center gap-3 rounded-2xl border p-4 text-left shadow-sm transition hover:bg-muted ${
                                 notification.readAt
-                                    ? 'border-[#ded8cc] bg-[#fffdf9]'
-                                    : 'border-[#7c9272] bg-[#eef2e6]'
+                                    ? 'border-border bg-card'
+                                    : 'border-primary bg-muted'
                             }`}
                         >
-                            <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#ded8cc] bg-[#f2ede0]">
+                            <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-muted">
                                 {notification.actor?.profilePictureUrl ? (
                                     <Image
                                         src={notification.actor.profilePictureUrl}
@@ -126,15 +126,15 @@ export function NotificationList({ notifications: initialNotifications }: { noti
                                         className="size-full object-cover"
                                     />
                                 ) : (
-                                    <UserRound className="size-5 text-[#9aaa90]" />
+                                    <UserRound className="size-5 text-input" />
                                 )}
                             </div>
                             <div className="min-w-0 flex-1">
-                                <p className="text-sm text-[#2c2c2c]">{describeNotification(notification)}</p>
-                                <p className="mt-0.5 text-xs text-[#7c8072]">{timeAgo(notification.createdAt)}</p>
+                                <p className="text-sm text-foreground">{describeNotification(notification)}</p>
+                                <p className="mt-0.5 text-xs text-muted-foreground">{timeAgo(notification.createdAt)}</p>
                             </div>
                             {!notification.readAt && (
-                                <span className="size-2 shrink-0 rounded-full bg-[#7c9272]" aria-hidden="true" />
+                                <span className="size-2 shrink-0 rounded-full bg-primary" aria-hidden="true" />
                             )}
                         </Link>
                     ))}

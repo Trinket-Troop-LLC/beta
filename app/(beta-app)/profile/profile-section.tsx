@@ -318,7 +318,7 @@ export function ProfileSection({
                         {preferredName && (
                             <p className="text-sm text-muted-foreground">{preferredName}</p>
                         )}
-                        <p className="text-xs text-[#9aa494]">{formatLastActive(lastActive)}</p>
+                        <p className="text-xs text-muted-foreground">{formatLastActive(lastActive)}</p>
                     </div>
                 </div>
 

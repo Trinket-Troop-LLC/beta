@@ -123,8 +123,8 @@ function OfferCard({
             profilePictureUrl={offer.offerer.profilePictureUrl}
             reason={
                 <>
-                    Offered <span className="font-medium text-[#2c2c2c]">{offer.offeredListing.title}</span> for your{' '}
-                    <span className="font-medium text-[#2c2c2c]">{offer.targetListing.title}</span>
+                    Offered <span className="font-medium text-foreground">{offer.offeredListing.title}</span> for your{' '}
+                    <span className="font-medium text-foreground">{offer.targetListing.title}</span>
                 </>
             }
             timestamp={offer.createdAt}
@@ -177,13 +177,13 @@ export function ConversationsList({
 
     return (
         <div className="w-full max-w-md">
-            <h1 className="mb-6 text-3xl font-semibold text-[#30392d]">Messages</h1>
+            <h1 className="mb-6 text-3xl font-semibold text-foreground">Messages</h1>
 
-            <div className="mb-4 flex rounded-full border border-[#ded8cc] bg-[#fffdf9] p-1">
+            <div className="mb-4 flex rounded-full border border-border bg-card p-1">
                 <button
                     onClick={() => setTab('notifications')}
                     className={`flex-1 rounded-full px-3 py-2 text-sm font-medium transition ${
-                        tab === 'notifications' ? 'bg-[#7c9272] text-white' : 'text-[#625f58] hover:bg-[#f5efe5]'
+                        tab === 'notifications' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'
                     }`}
                 >
                     Notifications
@@ -196,7 +196,7 @@ export function ConversationsList({
                 <button
                     onClick={() => setTab('messages')}
                     className={`flex-1 rounded-full px-3 py-2 text-sm font-medium transition ${
-                        tab === 'messages' ? 'bg-[#7c9272] text-white' : 'text-[#625f58] hover:bg-[#f5efe5]'
+                        tab === 'messages' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'
                     }`}
                 >
                     Messages
@@ -205,8 +205,8 @@ export function ConversationsList({
 
             {tab === 'notifications' && (
                 notifications.length === 0 ? (
-                    <div className="rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-6 text-left shadow-sm">
-                        <p className="text-sm text-[#625f58]">No notifications right now.</p>
+                    <div className="rounded-2xl border border-border bg-card p-6 text-left shadow-sm">
+                        <p className="text-sm text-muted-foreground">No notifications right now.</p>
                     </div>
                 ) : (
                     <div className="flex flex-col gap-3">
@@ -227,8 +227,8 @@ export function ConversationsList({
 
             {tab === 'messages' && (
                 messages.length === 0 ? (
-                    <div className="rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-6 text-left shadow-sm">
-                        <p className="text-sm text-[#625f58]">No conversations yet.</p>
+                    <div className="rounded-2xl border border-border bg-card p-6 text-left shadow-sm">
+                        <p className="text-sm text-muted-foreground">No conversations yet.</p>
                     </div>
                 ) : (
                     <div className="flex flex-col gap-3">

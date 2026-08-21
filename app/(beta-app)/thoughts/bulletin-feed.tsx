@@ -26,7 +26,7 @@ function formatRelativeTime(iso: string) {
 
 function Avatar({ author }: { author: BulletinAuthor }) {
     return (
-        <div className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#ded8cc] bg-[#f2ede0]">
+        <div className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-muted">
             {author.profilePictureUrl ? (
                 <Image
                     src={author.profilePictureUrl}
@@ -37,7 +37,7 @@ function Avatar({ author }: { author: BulletinAuthor }) {
                     className="size-full object-cover"
                 />
             ) : (
-                <UserRound className="size-4 text-[#9aaa90]" />
+                <UserRound className="size-4 text-input" />
             )}
         </div>
     )
@@ -51,7 +51,7 @@ function PhotoGrid({ photoUrls }: { photoUrls: string[] }) {
             {photoUrls.map((url, index) => (
                 <div
                     key={url}
-                    className="relative aspect-square overflow-hidden rounded-lg border border-[#ded8cc] bg-[#f2ede0]"
+                    className="relative aspect-square overflow-hidden rounded-lg border border-border bg-muted"
                 >
                     <Image
                         src={url}
@@ -94,18 +94,18 @@ function ReplyItem({
     return (
         <div className="flex gap-2.5">
             <Avatar author={reply.author} />
-            <div className="min-w-0 flex-1 rounded-xl border border-[#ded8cc] bg-[#faf7f0] px-3 py-2">
+            <div className="min-w-0 flex-1 rounded-xl border border-border bg-background px-3 py-2">
                 <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm font-medium text-[#30392d]">@{reply.author.username}</p>
+                    <p className="text-sm font-medium text-foreground">@{reply.author.username}</p>
                     <div className="flex shrink-0 items-center gap-2">
-                        <span className="text-xs text-[#7c8072]">{formatRelativeTime(reply.createdAt)}</span>
+                        <span className="text-xs text-muted-foreground">{formatRelativeTime(reply.createdAt)}</span>
                         {canDelete && (
                             <button
                                 type="button"
                                 onClick={handleDelete}
                                 disabled={isDeleting}
                                 aria-label="Delete reply"
-                                className="text-[#9aaa90] transition hover:text-red-600 disabled:opacity-50"
+                                className="text-input transition hover:text-red-600 disabled:opacity-50"
                             >
                                 <Trash2 size={13} />
                             </button>
@@ -113,9 +113,9 @@ function ReplyItem({
                     </div>
                 </div>
                 {reply.parentAuthorUsername && (
-                    <p className="text-xs text-[#9aaa90]">↳ replying to @{reply.parentAuthorUsername}</p>
+                    <p className="text-xs text-input">↳ replying to @{reply.parentAuthorUsername}</p>
                 )}
-                <p className="mt-0.5 whitespace-pre-wrap text-sm text-[#2c2c2c]">{reply.content}</p>
+                <p className="mt-0.5 whitespace-pre-wrap text-sm text-foreground">{reply.content}</p>
                 {reply.photoUrls.length > 0 && (
                     <div className="mt-2 max-w-[220px]">
                         <PhotoGrid photoUrls={reply.photoUrls} />
@@ -124,7 +124,7 @@ function ReplyItem({
                 <button
                     type="button"
                     onClick={() => onReplyTo(reply)}
-                    className="mt-1 text-xs font-medium text-[#7c9272] transition hover:text-[#5f7258]"
+                    className="mt-1 text-xs font-medium text-primary transition hover:text-primary"
                 >
                     Reply
                 </button>
@@ -181,35 +181,35 @@ function PostItem({
     }
 
     return (
-        <article className="flex flex-col gap-3 rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-4 shadow-sm">
+        <article className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm">
             <div className="flex items-start gap-3">
                 <Avatar author={post.author} />
                 <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5">
-                            <p className="font-medium text-[#30392d]">@{post.author.username}</p>
+                            <p className="font-medium text-foreground">@{post.author.username}</p>
                             {post.visibility === 'troop' && (
-                                <span className="rounded-full bg-[#f2ede0] px-1.5 py-0.5 text-[10px] font-medium text-[#7c9272]">
+                                <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-primary">
                                     Troop
                                 </span>
                             )}
                         </div>
                         <div className="flex shrink-0 items-center gap-2">
-                            <span className="text-xs text-[#7c8072]">{formatRelativeTime(post.createdAt)}</span>
+                            <span className="text-xs text-muted-foreground">{formatRelativeTime(post.createdAt)}</span>
                             {isOwnPost && (
                                 <button
                                     type="button"
                                     onClick={handleDelete}
                                     disabled={isDeleting}
                                     aria-label="Delete post"
-                                    className="text-[#9aaa90] transition hover:text-red-600 disabled:opacity-50"
+                                    className="text-input transition hover:text-red-600 disabled:opacity-50"
                                 >
                                     <Trash2 size={14} />
                                 </button>
                             )}
                         </div>
                     </div>
-                    <p className="mt-1 whitespace-pre-wrap text-[#2c2c2c]">{post.content}</p>
+                    <p className="mt-1 whitespace-pre-wrap text-foreground">{post.content}</p>
                 </div>
             </div>
 
@@ -219,11 +219,11 @@ function PostItem({
                 </div>
             )}
 
-            <div className="flex items-center gap-4 border-t border-[#ded8cc]/70 pt-2">
+            <div className="flex items-center gap-4 border-t border-border/70 pt-2">
                 <button
                     type="button"
                     onClick={() => setShowReplies((current) => !current)}
-                    className="flex items-center gap-1.5 text-sm text-[#625f58] transition hover:text-[#30392d]"
+                    className="flex items-center gap-1.5 text-sm text-muted-foreground transition hover:text-foreground"
                 >
                     <MessageCircle size={15} />
                     {replies.length > 0 ? `${replies.length} ${replies.length === 1 ? 'reply' : 'replies'}` : 'reply'}
@@ -232,7 +232,7 @@ function PostItem({
                     <button
                         type="button"
                         onClick={() => { setReplyTarget({}); setShowReplies(true) }}
-                        className="text-sm font-medium text-[#7c9272] transition hover:text-[#5f7258]"
+                        className="text-sm font-medium text-primary transition hover:text-primary"
                     >
                         Write a reply
                     </button>
@@ -241,7 +241,7 @@ function PostItem({
                     <button
                         type="button"
                         onClick={() => setShowMessageModal(true)}
-                        className="ml-auto flex items-center gap-1.5 text-sm font-medium text-[#7c9272] transition hover:text-[#5f7258]"
+                        className="ml-auto flex items-center gap-1.5 text-sm font-medium text-primary transition hover:text-primary"
                     >
                         <Send size={14} />
                         Message
@@ -324,12 +324,12 @@ export function BulletinFeed({
         <div className="flex flex-col gap-4">
             <BulletinComposer variant="post" currentUser={currentUser} onPosted={handlePosted} />
 
-            <div className="flex rounded-full border border-[#ded8cc] bg-[#fffdf9] p-1">
+            <div className="flex rounded-full border border-border bg-card p-1">
                 <button
                     type="button"
                     onClick={() => setView('all')}
                     className={`flex-1 rounded-full px-3 py-1.5 text-sm font-medium transition ${
-                        view === 'all' ? 'bg-[#7c9272] text-white' : 'text-[#625f58] hover:bg-[#f5efe5]'
+                        view === 'all' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'
                     }`}
                 >
                     All
@@ -338,7 +338,7 @@ export function BulletinFeed({
                     type="button"
                     onClick={() => setView('troop')}
                     className={`flex-1 rounded-full px-3 py-1.5 text-sm font-medium transition ${
-                        view === 'troop' ? 'bg-[#7c9272] text-white' : 'text-[#625f58] hover:bg-[#f5efe5]'
+                        view === 'troop' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'
                     }`}
                 >
                     My Troop
@@ -346,7 +346,7 @@ export function BulletinFeed({
             </div>
 
             {visiblePosts.length === 0 ? (
-                <p className="rounded-2xl border border-dashed border-[#ded8cc] bg-[#fffdf9] p-6 text-center text-sm text-[#625f58]">
+                <p className="rounded-2xl border border-dashed border-border bg-card p-6 text-center text-sm text-muted-foreground">
                     {view === 'troop'
                         ? 'No posts from your troop yet.'
                         : 'No posts yet — be the first to share something with the troop.'}

@@ -85,7 +85,7 @@ export function ChatCard({
             <div className="flex min-w-0 flex-1 flex-col justify-between">
                 <div>
                     {isPending && (
-                        <span className="mb-1 inline-block rounded-full border border-[#ded8cc] px-2 py-0.5 text-xs font-medium text-[#7c8072]">
+                        <span className="mb-1 inline-block rounded-full border border-border px-2 py-0.5 text-xs font-medium text-muted-foreground">
                             Pending
                         </span>
                     )}

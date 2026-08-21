@@ -47,7 +47,7 @@ export function TroopFeed({
 
     if (listings.length === 0) {
         return (
-            <p className="text-sm text-[#625f58]">
+            <p className="text-sm text-muted-foreground">
                 No listings yet — be the first to post a listing!
             </p>
         )
@@ -72,7 +72,7 @@ export function TroopFeed({
                     type="button"
                     onClick={loadMore}
                     disabled={isPending}
-                    className="mt-6 w-full rounded-full border border-[#ded8cc] py-2.5 text-sm font-medium text-[#5f7258] disabled:opacity-60"
+                    className="mt-6 w-full rounded-full border border-border py-2.5 text-sm font-medium text-primary disabled:opacity-60"
                 >
                     {isPending ? 'Loading…' : 'Load more'}
                 </button>

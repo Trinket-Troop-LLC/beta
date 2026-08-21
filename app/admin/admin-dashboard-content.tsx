@@ -37,15 +37,15 @@ export default async function AdminDashboardContent() {
     const applicantsWithProfilePictures = await addProfilePictureUrls(db, applicants ?? [])
 
     return (
-        <div className="min-h-screen bg-[#faf7f0] px-4 py-10">
+        <div className="min-h-screen bg-background px-4 py-10">
             <div className="mx-auto max-w-[1400px]">
                 <div className="mb-6 flex flex-col items-center justify-between gap-4 sm:flex-row">
-                    <h1 className="text-center text-2xl font-bold text-[#2c2c2c] sm:text-left">
+                    <h1 className="text-center text-2xl font-bold text-foreground sm:text-left">
                         Community Signups
                     </h1>
                     <Link
                         href="/troop"
-                        className="rounded-lg border border-[#7c9272] bg-[#fffdf9] px-4 py-2 text-sm font-semibold text-[#455442] transition hover:bg-[#f2ede0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c9272] focus-visible:ring-offset-2"
+                        className="rounded-lg border border-primary bg-card px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                     >
                         Open beta app
                     </Link>

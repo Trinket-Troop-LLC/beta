@@ -13,6 +13,7 @@ export default {
     extend: {
       fontFamily: {
         gluten: ["var(--font-gluten)"],
+        "sophie-chalk": ["var(--font-sophie-chalk)"],
       },
       colors: {
         background: "hsl(var(--background))",

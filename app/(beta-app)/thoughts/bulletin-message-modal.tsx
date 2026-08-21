@@ -46,12 +46,12 @@ export function BulletinMessageModal({
             onClick={onClose}
         >
             <div
-                className="w-full max-w-sm rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-4 shadow-lg"
+                className="w-full max-w-sm rounded-2xl border border-border bg-card p-4 shadow-lg"
                 onClick={(event) => event.stopPropagation()}
             >
                 {sent ? (
                     <div className="flex flex-col items-center gap-3 py-4 text-center">
-                        <p className="text-sm text-[#2c2c2c]">
+                        <p className="text-sm text-foreground">
                             Message request sent to @{recipientUsername}. They&apos;ll need to accept it before you
                             can keep chatting.
                         </p>
@@ -59,14 +59,14 @@ export function BulletinMessageModal({
                             <button
                                 type="button"
                                 onClick={() => router.push('/messages')}
-                                className="rounded-full bg-[#7c9272] px-4 py-1.5 text-sm font-medium text-white transition hover:bg-[#667b5f]"
+                                className="rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
                             >
                                 View in Messages
                             </button>
                             <button
                                 type="button"
                                 onClick={onClose}
-                                className="rounded-full border border-[#ded8cc] px-4 py-1.5 text-sm font-medium text-[#625f58] transition hover:bg-[#f5efe5]"
+                                className="rounded-full border border-border px-4 py-1.5 text-sm font-medium text-muted-foreground transition hover:bg-muted"
                             >
                                 Close
                             </button>
@@ -75,17 +75,17 @@ export function BulletinMessageModal({
                 ) : (
                     <>
                         <div className="mb-2 flex items-center justify-between">
-                            <p className="font-medium text-[#30392d]">Message @{recipientUsername}</p>
+                            <p className="font-medium text-foreground">Message @{recipientUsername}</p>
                             <button
                                 type="button"
                                 onClick={onClose}
                                 aria-label="Close"
-                                className="text-[#9aaa90] transition hover:text-[#30392d]"
+                                className="text-input transition hover:text-foreground"
                             >
                                 <X size={18} />
                             </button>
                         </div>
-                        <p className="mb-2 text-xs text-[#7c8072]">
+                        <p className="mb-2 text-xs text-muted-foreground">
                             This sends a message request. @{recipientUsername} will see it in their Requests and can
                             accept it to start chatting.
                         </p>
@@ -97,7 +97,7 @@ export function BulletinMessageModal({
                             rows={4}
                             disabled={isSending}
                             placeholder={`Say something to @${recipientUsername}...`}
-                            className="w-full resize-none rounded-lg border border-[#d8d1c5] bg-white px-3 py-2 text-sm text-black outline-none transition focus:border-[#7c9272] focus:ring-2 focus:ring-[#7c9272]/20"
+                            className="w-full resize-none rounded-lg border border-input bg-white px-3 py-2 text-sm text-black outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                         />
                         {error && (
                             <p role="alert" className="mt-1 text-sm text-red-600">{error}</p>
@@ -107,7 +107,7 @@ export function BulletinMessageModal({
                                 type="button"
                                 onClick={onClose}
                                 disabled={isSending}
-                                className="rounded-full px-3 py-1.5 text-sm font-medium text-[#625f58] transition hover:bg-[#f5efe5]"
+                                className="rounded-full px-3 py-1.5 text-sm font-medium text-muted-foreground transition hover:bg-muted"
                             >
                                 Cancel
                             </button>
@@ -115,7 +115,7 @@ export function BulletinMessageModal({
                                 type="button"
                                 onClick={handleSend}
                                 disabled={isSending || !content.trim()}
-                                className="inline-flex items-center gap-1.5 rounded-full bg-[#7c9272] px-4 py-1.5 text-sm font-medium text-white transition hover:bg-[#667b5f] disabled:cursor-not-allowed disabled:opacity-60"
+                                className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 {isSending && <LoaderCircle size={14} className="animate-spin" />}
                                 Send

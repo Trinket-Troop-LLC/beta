@@ -40,12 +40,12 @@ export function ReviewForm({
 
     if (submitted) {
         return (
-            <div className="rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-4 text-left">
-                <p className="text-sm text-[#625f58]">Thanks for reviewing @{revieweeUsername}!</p>
+            <div className="rounded-2xl border border-border bg-card p-4 text-left">
+                <p className="text-sm text-muted-foreground">Thanks for reviewing @{revieweeUsername}!</p>
                 <button
                     type="button"
                     onClick={() => router.push('/troop')}
-                    className="mt-3 rounded-lg bg-[#7c9272] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#667b5f]"
+                    className="mt-3 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
                 >
                     Back to browsing
                 </button>
@@ -54,8 +54,8 @@ export function ReviewForm({
     }
 
     return (
-        <div className="rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-4 text-left">
-            <p className="mb-3 text-sm text-[#625f58]">
+        <div className="rounded-2xl border border-border bg-card p-4 text-left">
+            <p className="mb-3 text-sm text-muted-foreground">
                 How was your exchange with @{revieweeUsername}
                 {listingTitle ? ` over "${listingTitle}"` : ''}?
             </p>
@@ -74,8 +74,8 @@ export function ReviewForm({
                         <Star
                             className={`size-7 ${
                                 (hoverRating || rating) >= value
-                                    ? 'fill-[#7c9272] text-[#7c9272]'
-                                    : 'text-[#ded8cc]'
+                                    ? 'fill-primary text-primary'
+                                    : 'text-border'
                             }`}
                         />
                     </button>
@@ -88,7 +88,7 @@ export function ReviewForm({
                 placeholder="Leave a comment (optional)"
                 rows={3}
                 maxLength={1000}
-                className="mt-3 w-full resize-none rounded-lg border border-[#ded8cc] bg-white px-3 py-2 text-sm text-[#2c2c2c] outline-none transition focus:border-[#7c9272] focus:ring-2 focus:ring-[#7c9272]/20"
+                className="mt-3 w-full resize-none rounded-lg border border-border bg-white px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
             />
 
             {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
@@ -97,7 +97,7 @@ export function ReviewForm({
                 type="button"
                 onClick={handleSubmit}
                 disabled={isPending}
-                className="mt-3 w-full rounded-lg bg-[#7c9272] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#667b5f] disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-3 w-full rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
             >
                 {isPending ? 'Submitting…' : 'Submit review'}
             </button>

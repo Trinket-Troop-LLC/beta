@@ -158,7 +158,7 @@ async function ThoughtsContent() {
 
     return (
         <div className="mx-auto w-full max-w-2xl text-left">
-            <h1 className="mb-4 text-3xl font-semibold text-[#30392d]">Thoughts</h1>
+            <h1 className="mb-4 text-3xl font-semibold text-foreground">Thoughts</h1>
             <BulletinFeed initialPosts={feedPosts} currentUser={currentUser} troopAuthorIds={troopAuthorIds} />
         </div>
     )
@@ -166,7 +166,7 @@ async function ThoughtsContent() {
 
 export default function ThoughtsPage() {
     return (
-        <main className="relative min-h-screen bg-[#faf7f0] px-4 py-10 pb-32">
+        <main className="relative min-h-screen bg-background px-4 py-10 pb-32">
             <Suspense fallback={null}>
                 <ThoughtsContent />
             </Suspense>

@@ -110,7 +110,7 @@ export function ExchangeActions({
                                 type="button"
                                 onClick={handleOpenTradePicker}
                                 disabled={isPending || offerSent}
-                                className="w-full rounded-lg bg-[#7c9272] px-4 py-3 font-medium text-white transition hover:bg-[#667b5f] disabled:cursor-not-allowed disabled:opacity-60"
+                                className="w-full rounded-lg bg-primary px-4 py-3 font-medium text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 {offerSent ? 'Offer sent' : 'Offer a trade'}
                             </button>
@@ -132,7 +132,7 @@ export function ExchangeActions({
                                                         key={listing.id}
                                                         className={`flex cursor-pointer items-center gap-2 rounded-lg border p-2 transition ${
                                                             selectedOfferListingId === listing.id
-                                                                ? 'border-[#7c9272] bg-[#e4e8d8]'
+                                                                ? 'border-primary bg-secondary'
                                                                 : 'border-border'
                                                         }`}
                                                     >
@@ -166,7 +166,7 @@ export function ExchangeActions({
                                                 type="button"
                                                 onClick={handleSubmitOffer}
                                                 disabled={!selectedOfferListingId || isPending}
-                                                className="mt-3 w-full rounded-lg bg-[#7c9272] px-3 py-2 text-sm font-medium text-white transition hover:bg-[#667b5f] disabled:cursor-not-allowed disabled:opacity-60"
+                                                className="mt-3 w-full rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
                                             >
                                                 Send offer
                                             </button>
@@ -185,7 +185,7 @@ export function ExchangeActions({
                             type="button"
                             onClick={() => handleRequest(type)}
                             disabled={isPending}
-                            className="rounded-lg bg-[#7c9272] px-4 py-3 font-medium text-white transition hover:bg-[#667b5f] disabled:cursor-not-allowed disabled:opacity-60"
+                            className="rounded-lg bg-primary px-4 py-3 font-medium text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                             {isPending && activeType === type
                                 ? 'Sending…'

@@ -24,12 +24,12 @@ export function MessageComposer({
                         if (e.key === 'Enter') onSend()
                     }}
                     placeholder="trinkets..."
-                    className="flex-1 rounded-full border border-[#d8d1c5] bg-white px-4 py-1.5 text-sm text-black outline-none transition focus:border-[#7c9272] focus:ring-2 focus:ring-[#7c9272]/20"
+                    className="flex-1 rounded-full border border-input bg-white px-4 py-1.5 text-sm text-black outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                 />
                 <button
                     onClick={onSend}
                     disabled={isSending || !draft.trim()}
-                    className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#7c9272] text-white transition hover:bg-[#667b5f] disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                     <Send size={15} />
                 </button>

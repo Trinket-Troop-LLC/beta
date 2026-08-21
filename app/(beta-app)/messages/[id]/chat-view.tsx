@@ -138,19 +138,19 @@ export function ChatView({
                 onEndConversation={handleEndConversation}
             />
             {(endError || listingActionError) && (
-                <p role="alert" className="border-b border-[#ded8cc]/70 bg-[#faf7f0]/90 px-4 py-2 text-sm text-red-600">
+                <p role="alert" className="border-b border-border/70 bg-background/90 px-4 py-2 text-sm text-red-600">
                     {endError ?? listingActionError}
                 </p>
             )}
 
             {listing && (
-                <p className="mx-4 mt-3 truncate text-center text-sm font-semibold text-[#2c2c2c]">
+                <p className="mx-4 mt-3 truncate text-center text-sm font-semibold text-foreground">
                     {exchangeVerb ? `${exchangeVerb}: ${listing.title}` : listing.title}
                 </p>
             )}
 
             {tradeItems && (
-                <p className="mx-4 mt-3 truncate text-center text-sm font-semibold text-[#2c2c2c]">
+                <p className="mx-4 mt-3 truncate text-center text-sm font-semibold text-foreground">
                     Trading: {tradeItems.itemA.title} and {tradeItems.itemB.title}
                 </p>
             )}

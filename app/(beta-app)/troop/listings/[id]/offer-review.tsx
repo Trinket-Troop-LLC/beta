@@ -81,7 +81,7 @@ export function OfferReview({ offers: initialOffers }: { offers: OfferSummary[] 
                                 type="button"
                                 onClick={() => handleAccept(offer.offerId)}
                                 disabled={isPending}
-                                className="rounded-lg bg-[#7c9272] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[#667b5f] disabled:cursor-not-allowed disabled:opacity-60"
+                                className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 {isPending && pendingOfferId === offer.offerId ? '…' : 'Accept'}
                             </button>

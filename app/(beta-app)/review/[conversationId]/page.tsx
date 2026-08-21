@@ -43,15 +43,15 @@ async function ReviewContent({ conversationId }: { conversationId: string }) {
 
     return (
         <div className="w-full max-w-md">
-            <h1 className="mb-2 text-2xl font-semibold text-[#30392d]">Review the exchange</h1>
+            <h1 className="mb-2 text-2xl font-semibold text-foreground">Review the exchange</h1>
 
             {conversation.closed_reason !== 'fulfilled' ? (
-                <div className="rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-4">
-                    <p className="text-sm text-[#625f58]">This exchange isn&apos;t marked complete yet.</p>
+                <div className="rounded-2xl border border-border bg-card p-4">
+                    <p className="text-sm text-muted-foreground">This exchange isn&apos;t marked complete yet.</p>
                 </div>
             ) : existingReview ? (
-                <div className="rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-4">
-                    <p className="text-sm text-[#625f58]">
+                <div className="rounded-2xl border border-border bg-card p-4">
+                    <p className="text-sm text-muted-foreground">
                         You already reviewed @{revieweeUsername} for this exchange. Thanks!
                     </p>
                 </div>
@@ -70,7 +70,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ convers
     const { conversationId } = await params
 
     return (
-        <main className="relative flex min-h-screen flex-col items-center bg-[#faf7f0] px-4 pb-28 pt-12">
+        <main className="relative flex min-h-screen flex-col items-center bg-background px-4 pb-28 pt-12">
             <Suspense fallback={null}>
                 <ReviewContent conversationId={conversationId} />
             </Suspense>

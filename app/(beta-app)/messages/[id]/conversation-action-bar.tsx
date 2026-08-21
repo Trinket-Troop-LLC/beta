@@ -41,8 +41,8 @@ export function ConversationActionBar({
     onEndConversation: () => void
 }) {
     return (
-        <div className="flex flex-wrap items-center gap-2 border-b border-[#ded8cc]/70 bg-[#faf7f0]/90 px-4 py-3">
-            <Link href="/messages" className="shrink-0 text-[#625f58] hover:text-[#30392d]">
+        <div className="flex flex-wrap items-center gap-2 border-b border-border/70 bg-background/90 px-4 py-3">
+            <Link href="/messages" className="shrink-0 text-muted-foreground hover:text-foreground">
                 <ArrowLeft size={20} />
             </Link>
 
@@ -53,14 +53,14 @@ export function ConversationActionBar({
                             <button
                                 onClick={() => onMarkReturned('relist')}
                                 disabled={isUpdatingListing}
-                                className="rounded-full bg-[#7c9272] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[#667b5f] disabled:cursor-not-allowed disabled:opacity-60"
+                                className="rounded-full bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 Relist it
                             </button>
                             <button
                                 onClick={() => onMarkReturned('remove')}
                                 disabled={isUpdatingListing}
-                                className="rounded-full border border-[#ded8cc] px-3 py-1.5 text-xs font-medium text-[#625f58] transition hover:bg-[#f5efe5] disabled:cursor-not-allowed disabled:opacity-60"
+                                className="rounded-full border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 Remove from profile
                             </button>
@@ -70,14 +70,14 @@ export function ConversationActionBar({
                             <button
                                 onClick={() => setShowReturnChoice(true)}
                                 disabled={isUpdatingListing}
-                                className="rounded-full bg-[#7c9272] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[#667b5f] disabled:cursor-not-allowed disabled:opacity-60"
+                                className="rounded-full bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 Item returned
                             </button>
                             <button
                                 onClick={onUnreserve}
                                 disabled={isUpdatingListing}
-                                className="rounded-full border border-[#ded8cc] px-3 py-1.5 text-xs font-medium text-[#625f58] transition hover:bg-[#f5efe5] disabled:cursor-not-allowed disabled:opacity-60"
+                                className="rounded-full border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 Didn&apos;t work out
                             </button>
@@ -90,14 +90,14 @@ export function ConversationActionBar({
                         <button
                             onClick={onMarkFulfilled}
                             disabled={isUpdatingListing}
-                            className="rounded-full bg-[#7c9272] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[#667b5f] disabled:cursor-not-allowed disabled:opacity-60"
+                            className="rounded-full bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                             Mark complete
                         </button>
                         <button
                             onClick={onUnreserve}
                             disabled={isUpdatingListing}
-                            className="rounded-full border border-[#ded8cc] px-3 py-1.5 text-xs font-medium text-[#625f58] transition hover:bg-[#f5efe5] disabled:cursor-not-allowed disabled:opacity-60"
+                            className="rounded-full border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
                         >
                             Didn&apos;t work out
                         </button>
@@ -107,7 +107,7 @@ export function ConversationActionBar({
                 {canEndConversation && status === 'active' && (
                     showEndConfirm ? (
                         <div className="flex shrink-0 items-center gap-2 text-xs">
-                            <span className="text-[#625f58]">End this conversation?</span>
+                            <span className="text-muted-foreground">End this conversation?</span>
                             <button
                                 type="button"
                                 onClick={onEndConversation}
@@ -120,7 +120,7 @@ export function ConversationActionBar({
                                 type="button"
                                 onClick={() => setShowEndConfirm(false)}
                                 disabled={isEnding}
-                                className="rounded-full border border-[#ded8cc] px-2.5 py-1 font-medium text-[#625f58] transition hover:bg-[#f5efe5]"
+                                className="rounded-full border border-border px-2.5 py-1 font-medium text-muted-foreground transition hover:bg-muted"
                             >
                                 Cancel
                             </button>
@@ -129,7 +129,7 @@ export function ConversationActionBar({
                         <button
                             type="button"
                             onClick={() => setShowEndConfirm(true)}
-                            className="shrink-0 rounded-full px-2.5 py-1 text-xs font-medium text-[#7c8072] transition hover:bg-[#f5efe5] hover:text-[#30392d]"
+                            className="shrink-0 rounded-full px-2.5 py-1 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
                         >
                             End conversation
                         </button>

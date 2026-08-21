@@ -33,7 +33,7 @@ export function BetaBottomNav({
       className="fixed inset-x-0 bottom-4 z-40 flex justify-center px-2 sm:px-4"
     >
       <div
-        className={`w-full rounded-full border border-[#ded8cc] bg-[#fffdf9]/95 p-2 shadow-lg backdrop-blur ${
+        className={`w-full rounded-full border border-border bg-card/95 p-2 shadow-lg backdrop-blur ${
           isAdmin ? "max-w-lg" : "max-w-md"
         }`}
       >
@@ -49,10 +49,10 @@ export function BetaBottomNav({
                 key={id}
                 href={href}
                 aria-label={accessibleLabel}
-                className={`relative flex min-h-12 min-w-0 flex-1 flex-col items-center justify-center rounded-full px-1 py-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c9272] focus-visible:ring-offset-2 sm:px-3 ${
+                className={`relative flex min-h-12 min-w-0 flex-1 flex-col items-center justify-center rounded-full px-1 py-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:px-3 ${
                   isActive
-                    ? "bg-[#7c9272] text-white"
-                    : "text-[#625f58] hover:bg-[#f5efe5] hover:text-[#30392d]"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 }`}
                 aria-current={isActive ? "page" : undefined}
               >
@@ -61,7 +61,7 @@ export function BetaBottomNav({
                   {id === "messages" && unreadMessageCount > 0 && (
                     <span
                       aria-hidden="true"
-                      className="absolute -right-2 -top-1.5 flex min-w-[16px] items-center justify-center rounded-full bg-[#c1443f] px-1 text-[9px] font-semibold text-white"
+                      className="absolute -right-2 -top-1.5 flex min-w-[16px] items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-semibold text-white"
                     >
                       {unreadMessageCount > 9 ? "9+" : unreadMessageCount}
                     </span>
@@ -76,7 +76,7 @@ export function BetaBottomNav({
         </div>
       </div>
 
-      <div className="pointer-events-none absolute -top-14 left-1/2 -translate-x-1/2 rounded-full border border-[#ded8cc] bg-[#fffdf9] px-4 py-2 text-sm font-medium text-[#30392d] shadow-sm">
+      <div className="pointer-events-none absolute -top-14 left-1/2 -translate-x-1/2 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground shadow-sm">
         {activeTab.label}
       </div>
     </nav>

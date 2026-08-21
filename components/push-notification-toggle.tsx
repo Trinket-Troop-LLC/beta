@@ -105,17 +105,17 @@ export function PushNotificationToggle() {
     if (status === 'unsupported') return null
 
     return (
-        <div className="rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-4">
+        <div className="rounded-2xl border border-border bg-card p-4">
             <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                     {status === 'subscribed' ? (
-                        <Bell className="size-4 text-[#7c9272]" />
+                        <Bell className="size-4 text-primary" />
                     ) : (
-                        <BellOff className="size-4 text-[#625f58]" />
+                        <BellOff className="size-4 text-muted-foreground" />
                     )}
                     <div>
-                        <p className="text-sm font-medium text-[#2c2c2c]">Push notifications</p>
-                        <p className="text-xs text-[#625f58]">
+                        <p className="text-sm font-medium text-foreground">Push notifications</p>
+                        <p className="text-xs text-muted-foreground">
                             {status === 'denied'
                                 ? 'Blocked in your browser settings.'
                                 : status === 'subscribed'
@@ -130,7 +130,7 @@ export function PushNotificationToggle() {
                         type="button"
                         onClick={status === 'subscribed' ? handleDisable : handleEnable}
                         disabled={status === 'working'}
-                        className="shrink-0 rounded-lg border border-[#ded8cc] px-3 py-1.5 text-xs font-medium text-[#30392d] transition hover:bg-[#f5efe5] disabled:cursor-not-allowed disabled:opacity-60"
+                        className="shrink-0 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
                     >
                         {status === 'working' ? '…' : status === 'subscribed' ? 'Disable' : 'Enable'}
                     </button>

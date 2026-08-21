@@ -215,33 +215,33 @@ export function BulletinComposer(props: BulletinComposerProps) {
             onSubmit={handleSubmit}
             aria-busy={isBusy}
             className={variant === 'post'
-                ? 'flex flex-col gap-3 rounded-2xl border border-[#ded8cc] bg-[#fffdf9] p-4 shadow-sm'
-                : 'flex flex-col gap-2 rounded-xl border border-[#ded8cc] bg-[#faf7f0] p-3'}
+                ? 'flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm'
+                : 'flex flex-col gap-2 rounded-xl border border-border bg-background p-3'}
         >
             {variant === 'reply' && props.replyingToUsername && (
-                <p className="text-xs font-medium text-[#7c9272]">
+                <p className="text-xs font-medium text-primary">
                     Replying to @{props.replyingToUsername}
                 </p>
             )}
 
             {variant === 'post' && (
                 <>
-                    <label className="flex items-center gap-2 text-sm text-[#2c2c2c]">
+                    <label className="flex items-center gap-2 text-sm text-foreground">
                         <input
                             type="checkbox"
                             checked={allowMessages}
                             onChange={(e) => setAllowMessages(e.target.checked)}
-                            className="size-4 accent-[#7c9272]"
+                            className="size-4 accent-primary"
                         />
                         Allow people to message me about this post
                     </label>
 
-                    <label className="flex flex-col gap-1 text-sm text-[#2c2c2c]">
+                    <label className="flex flex-col gap-1 text-sm text-foreground">
                         Who can see this post?
                         <select
                             value={visibility}
                             onChange={(e) => setVisibility(e.target.value as 'public' | 'troop')}
-                            className="rounded-lg border border-[#d8d1c5] bg-white px-4 py-3 text-black outline-none transition focus:border-[#7c9272] focus:ring-2 focus:ring-[#7c9272]/20"
+                            className="rounded-lg border border-input bg-white px-4 py-3 text-black outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                         >
                             <option value="public">Public</option>
                             <option value="troop">Troop only</option>
@@ -249,7 +249,7 @@ export function BulletinComposer(props: BulletinComposerProps) {
                     </label>
 
                     {visibility === 'troop' && (
-                        <p className="text-xs text-[#7c8072]">
+                        <p className="text-xs text-muted-foreground">
                             Only your troop members will be able to see this post. This can&apos;t be changed later.
                         </p>
                     )}
@@ -266,7 +266,7 @@ export function BulletinComposer(props: BulletinComposerProps) {
                     : variant === 'reply' && props.replyingToUsername
                         ? `Reply to @${props.replyingToUsername}...`
                         : 'Write a reply...'}
-                className="resize-none rounded-lg border border-[#d8d1c5] bg-white px-3 py-2 text-sm text-black outline-none transition focus:border-[#7c9272] focus:ring-2 focus:ring-[#7c9272]/20"
+                className="resize-none rounded-lg border border-input bg-white px-3 py-2 text-sm text-black outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
             />
 
             {photos.length > 0 && (
@@ -274,7 +274,7 @@ export function BulletinComposer(props: BulletinComposerProps) {
                     {photos.map((photo, index) => (
                         <div
                             key={photo.previewUrl}
-                            className="relative aspect-square overflow-hidden rounded-lg border border-[#ded8cc] bg-[#f2ede0]"
+                            className="relative aspect-square overflow-hidden rounded-lg border border-border bg-muted"
                         >
                             <Image
                                 src={photo.previewUrl}
@@ -303,7 +303,7 @@ export function BulletinComposer(props: BulletinComposerProps) {
             )}
 
             <div className="flex items-center justify-between gap-2">
-                <label className={`flex cursor-pointer items-center gap-1.5 text-sm text-[#625f58] transition hover:text-[#30392d] ${isBusy || photos.length >= maxPhotoCount ? 'pointer-events-none opacity-50' : ''}`}>
+                <label className={`flex cursor-pointer items-center gap-1.5 text-sm text-muted-foreground transition hover:text-foreground ${isBusy || photos.length >= maxPhotoCount ? 'pointer-events-none opacity-50' : ''}`}>
                     <Images size={16} />
                     photos
                     <input
@@ -323,7 +323,7 @@ export function BulletinComposer(props: BulletinComposerProps) {
                             type="button"
                             onClick={props.onCancel}
                             disabled={isSubmitting}
-                            className="rounded-full px-3 py-1.5 text-sm font-medium text-[#625f58] transition hover:bg-[#f5efe5]"
+                            className="rounded-full px-3 py-1.5 text-sm font-medium text-muted-foreground transition hover:bg-muted"
                         >
                             Cancel
                         </button>
@@ -331,7 +331,7 @@ export function BulletinComposer(props: BulletinComposerProps) {
                     <button
                         type="submit"
                         disabled={isBusy || !content.trim()}
-                        className="inline-flex items-center gap-1.5 rounded-full bg-[#7c9272] px-4 py-1.5 text-sm font-medium text-white transition hover:bg-[#667b5f] disabled:cursor-not-allowed disabled:opacity-60"
+                        className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                         {isBusy && <LoaderCircle size={14} className="animate-spin" />}
                         {progress ?? (variant === 'post' ? 'Post' : 'Reply')}
