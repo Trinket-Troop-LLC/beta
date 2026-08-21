@@ -97,7 +97,7 @@ export function BulletinMessageModal({
                             rows={4}
                             disabled={isSending}
                             placeholder={`Say something to @${recipientUsername}...`}
-                            className="w-full resize-none rounded-lg border border-input bg-white px-3 py-2 text-sm text-black outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                            className="w-full resize-none rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                         />
                         {error && (
                             <p role="alert" className="mt-1 text-sm text-red-600">{error}</p>

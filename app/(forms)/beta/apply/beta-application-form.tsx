@@ -6,7 +6,7 @@ import { compressProfilePicture } from '@/lib/compress-profile-picture'
 import { submitBetaApplication } from './actions'
 
 const inputClass =
-    'rounded-lg border border-input bg-white px-4 py-3 text-black outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20'
+    'rounded-lg border border-input bg-card px-4 py-3 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20'
 const labelClass = 'flex flex-col gap-2 text-foreground'
 const checkboxLabelClass = 'flex items-center gap-2 text-foreground'
 

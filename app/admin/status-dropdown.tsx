@@ -41,7 +41,7 @@ export function StatusDropdown({ applicantId, currentStatus }: { applicantId: st
     <div className="flex min-w-44 flex-col items-center gap-1.5">
       <select
         aria-label="Applicant status"
-        className="w-full rounded-lg border border-input bg-white px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary/90 focus:ring-2 focus:ring-muted-foreground/30 disabled:cursor-wait disabled:opacity-60"
+        className="w-full rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/30 disabled:cursor-wait disabled:opacity-60"
         disabled={isPending}
         value={status}
         onChange={(event) => handleStatusChange(event.target.value)}

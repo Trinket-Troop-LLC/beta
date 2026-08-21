@@ -29,7 +29,7 @@ export default function WaitlistPage() {
     }
 
     const inputClass =
-        'rounded-lg border border-input bg-white px-4 py-3 text-black outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20'
+        'rounded-lg border border-input bg-card px-4 py-3 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20'
     const labelClass = 'flex flex-col gap-2 text-foreground'
 
     return (

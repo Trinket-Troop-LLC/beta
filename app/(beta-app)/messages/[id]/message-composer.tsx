@@ -24,7 +24,7 @@ export function MessageComposer({
                         if (e.key === 'Enter') onSend()
                     }}
                     placeholder="trinkets..."
-                    className="flex-1 rounded-full border border-input bg-white px-4 py-1.5 text-sm text-black outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                    className="flex-1 rounded-full border border-input bg-card px-4 py-1.5 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                 />
                 <button
                     onClick={onSend}

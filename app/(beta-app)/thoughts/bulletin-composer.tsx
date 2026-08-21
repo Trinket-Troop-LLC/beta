@@ -241,7 +241,7 @@ export function BulletinComposer(props: BulletinComposerProps) {
                         <select
                             value={visibility}
                             onChange={(e) => setVisibility(e.target.value as 'public' | 'troop')}
-                            className="rounded-lg border border-input bg-white px-4 py-3 text-black outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                            className="rounded-lg border border-input bg-card px-4 py-3 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                         >
                             <option value="public">Public</option>
                             <option value="troop">Troop only</option>
@@ -266,7 +266,7 @@ export function BulletinComposer(props: BulletinComposerProps) {
                     : variant === 'reply' && props.replyingToUsername
                         ? `Reply to @${props.replyingToUsername}...`
                         : 'Write a reply...'}
-                className="resize-none rounded-lg border border-input bg-white px-3 py-2 text-sm text-black outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                className="resize-none rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
             />
 
             {photos.length > 0 && (
