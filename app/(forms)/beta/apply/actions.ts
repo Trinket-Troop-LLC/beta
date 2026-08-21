@@ -183,6 +183,8 @@ export async function submitBetaApplication(formData: FormData): Promise<SubmitR
         phone_number,
         username,
         status: 'pending',
+        sms_consent,
+        tos_consent,
         responses: {
             neighborhood,
             emojis,
@@ -192,8 +194,6 @@ export async function submitBetaApplication(formData: FormData): Promise<SubmitR
             future_features,
             misc_thoughts: misc_thoughts || null,
             profile_picture_path: profilePicturePath,
-            sms_consent,
-            tos_consent,
         },
     })
 

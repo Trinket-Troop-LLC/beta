@@ -188,8 +188,8 @@ export function BetaApplicationForm() {
                                     className="mt-1 size-4 accent-[#7c9272]"
                                 />
                                 <span>Yes, I would like to receive automated text messages from Trinket Troop
-                                    about account approval, account help, and important updates. I understand I will receive up to BLANK
-                                    messages per month.
+                                    about account approval, account help, and important updates. Message frequency 
+                                    varies.
                                 </span>
                             </label>
                             <p className="text-sm text-[#7c8072]">
@@ -210,7 +210,7 @@ export function BetaApplicationForm() {
                                 />
                                 <span>
                                     I agree to the{' '}
-                                    <a href="https://trinkettroop.com/sms-terms" target="_blank" rel="noreferrer" className="underline">
+                                    <a href="https://trinkettroop.com/terms-of-service" target="_blank" rel="noreferrer" className="underline">
                                         Terms of Service
                                     </a>{' '}
                                     and{' '}

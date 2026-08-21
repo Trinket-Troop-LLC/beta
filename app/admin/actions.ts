@@ -177,7 +177,7 @@ export async function updateApplicantStatus(
 
     const { data: applicant, error: applicantError } = await db
         .from('applicants')
-        .select('id, email, phone_number, first_name, last_name, preferred_name, username, status, responses')
+        .select('id, email, phone_number, first_name, last_name, preferred_name, username, status, responses, sms_consent')
         .eq('id', applicantId)
         .single()
 
@@ -256,12 +256,14 @@ export async function updateApplicantStatus(
             //     preferredName: applicant.preferred_name, 
             //     inviteLink
             // })
-            await sendApprovalText({
-                phoneNumber: applicant.phone_number,
-                firstName: applicant.first_name,
-                preferredName: applicant.preferred_name,
-                inviteLink,
-            })
+            if (applicant.sms_consent) {
+                await sendApprovalText({
+                    phoneNumber: applicant.phone_number,
+                    firstName: applicant.first_name,
+                    preferredName: applicant.preferred_name,
+                    inviteLink,
+                })
+            }
         } catch (error) {
             const admin = createAdminClient()
 
