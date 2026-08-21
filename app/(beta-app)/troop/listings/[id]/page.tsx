@@ -4,7 +4,6 @@ import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
 import { ArrowLeft, UserRound } from 'lucide-react'
 import { z } from 'zod'
-import { BetaBottomNav } from '@/components/beta-bottom-nav'
 import { ListingPhotoPlaceholder } from '@/components/listings/listing-photo-placeholder'
 import { Button } from '@/components/ui/button'
 import {
@@ -312,7 +311,6 @@ export default async function ListingDetailPage({
             <Suspense fallback={<ListingDetailSkeleton />}>
                 <ListingDetailContent listingId={id} />
             </Suspense>
-            <BetaBottomNav />
         </main>
     )
 }

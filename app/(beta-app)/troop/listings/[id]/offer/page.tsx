@@ -3,7 +3,6 @@ import { notFound, redirect } from 'next/navigation'
 import { Suspense } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import { z } from 'zod'
-import { BetaBottomNav } from '@/components/beta-bottom-nav'
 import { LISTING_CATEGORY_LABELS, type ListingCategory } from '@/lib/listings/domain'
 import { requireMember } from '@/lib/supabase/require-member'
 import { OfferForm, type OwnListingOption } from './offer-form'
@@ -120,7 +119,6 @@ export default async function ListingOfferPage({
             <Suspense fallback={null}>
                 <OfferContent listingId={id} />
             </Suspense>
-            <BetaBottomNav />
         </main>
     )
 }

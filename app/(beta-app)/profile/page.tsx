@@ -1,7 +1,6 @@
 import { Suspense } from 'react'
 import { requireMember } from '@/lib/supabase/require-member'
 import { signProfilePictureUrl, signProfilePictureUrls } from '@/lib/supabase/profile-pictures'
-import { BetaBottomNav } from '@/components/beta-bottom-nav'
 import { ProfileSection } from './profile-section'
 import { ProfileViewSwitcher } from './profile-view-switcher'
 import { MyTroop } from './my-troop'
@@ -165,7 +164,6 @@ export default function ProfilePage({ searchParams }: { searchParams: ProfileSea
                     <ProfileContent searchParams={searchParams} />
                 </div>
             </Suspense>
-            <BetaBottomNav />
         </main>
     )
 }

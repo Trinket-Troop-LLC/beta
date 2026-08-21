@@ -1,5 +1,4 @@
 import { Suspense } from 'react'
-import { BetaBottomNav } from '@/components/beta-bottom-nav'
 import { requireMember } from '@/lib/supabase/require-member'
 import { ListingForm } from './listing-form'
 
@@ -29,7 +28,6 @@ export default function PostsPage() {
             <Suspense fallback={null}>
                 <PostsContent />
             </Suspense>
-            <BetaBottomNav />
         </main>
     )
 }
