@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+import Link from 'next/link'
 import { useState } from 'react'
 import { MessageCircle, Send, Trash2, UserRound } from 'lucide-react'
 import { deletePost, deleteReply } from './actions'
@@ -26,7 +27,10 @@ function formatRelativeTime(iso: string) {
 
 function Avatar({ author }: { author: BulletinAuthor }) {
     return (
-        <div className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-muted">
+        <Link
+            href={`/profile/${encodeURIComponent(author.username)}`}
+            className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-muted transition hover:opacity-80"
+        >
             {author.profilePictureUrl ? (
                 <Image
                     src={author.profilePictureUrl}
@@ -39,7 +43,15 @@ function Avatar({ author }: { author: BulletinAuthor }) {
             ) : (
                 <UserRound className="size-4 text-input" />
             )}
-        </div>
+        </Link>
+    )
+}
+
+function AuthorUsername({ author, className }: { author: BulletinAuthor; className: string }) {
+    return (
+        <Link href={`/profile/${encodeURIComponent(author.username)}`} className={`${className} hover:underline`}>
+            @{author.username}
+        </Link>
     )
 }
 
@@ -96,7 +108,7 @@ function ReplyItem({
             <Avatar author={reply.author} />
             <div className="min-w-0 flex-1 rounded-xl border border-border bg-background px-3 py-2">
                 <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm font-medium text-foreground">@{reply.author.username}</p>
+                    <AuthorUsername author={reply.author} className="text-sm font-medium text-foreground" />
                     <div className="flex shrink-0 items-center gap-2">
                         <span className="text-xs text-muted-foreground">{formatRelativeTime(reply.createdAt)}</span>
                         {canDelete && (
@@ -187,7 +199,7 @@ function PostItem({
                 <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5">
-                            <p className="font-medium text-foreground">@{post.author.username}</p>
+                            <AuthorUsername author={post.author} className="font-medium text-foreground" />
                             {post.visibility === 'troop' && (
                                 <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-primary">
                                     Troop
