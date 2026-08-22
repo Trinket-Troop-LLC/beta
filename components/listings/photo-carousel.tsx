@@ -2,15 +2,24 @@
 
 import Image from 'next/image'
 import { useState } from 'react'
-import { ImageIcon } from 'lucide-react'
+import { CategoryPlaceholder } from './category-placeholder'
+import type { ListingCategory } from '@/lib/listings/domain'
 
-export function PhotoCarousel({ photoUrls, title }: { photoUrls: string[]; title: string }) {
+export function PhotoCarousel({
+    photoUrls,
+    title,
+    category,
+}: {
+    photoUrls: string[]
+    title: string
+    category: ListingCategory
+}) {
     const [activeIndex, setActiveIndex] = useState(0)
 
     if (photoUrls.length === 0) {
         return (
-            <div className="flex aspect-square w-full items-center justify-center rounded-2xl bg-secondary text-muted-foreground">
-                <ImageIcon className="size-12" />
+            <div className="aspect-square w-full rounded-2xl bg-secondary">
+                <CategoryPlaceholder category={category} iconClassName="size-12" />
             </div>
         )
     }

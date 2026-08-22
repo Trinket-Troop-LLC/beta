@@ -27,7 +27,7 @@ async function OtherProfileContent({ username }: { username: string }) {
 
     const { data: listingRows } = await db
         .from('listings')
-        .select('id, title, transaction_types, price_cents, status, published_at')
+        .select('id, title, transaction_types, price_cents, status, category, published_at')
         .eq('owner_id', target.id)
         .in('status', ['active', 'reserved'])
         .order('published_at', { ascending: false })
@@ -61,6 +61,7 @@ async function OtherProfileContent({ username }: { username: string }) {
             transaction_types: listing.transaction_types,
             price_cents: listing.price_cents,
             status: listing.status,
+            category: listing.category,
             coverPhotoUrl: coverPath ? signedUrlByPath.get(coverPath) ?? null : null,
         }
     })
