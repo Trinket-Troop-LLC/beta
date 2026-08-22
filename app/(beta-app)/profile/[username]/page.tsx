@@ -101,7 +101,7 @@ export default async function OtherProfilePage({ params }: { params: Promise<{ u
     const { username } = await params
 
     return (
-        <main className="relative flex min-h-screen flex-col items-center justify-center bg-background px-4 pb-28 text-center">
+        <main className="relative flex min-h-screen flex-col items-center justify-center bg-background px-4 pb-40 text-center">
             <Suspense fallback={null}>
                 <div className="w-full max-w-3xl py-10">
                     <OtherProfileContent username={username} />

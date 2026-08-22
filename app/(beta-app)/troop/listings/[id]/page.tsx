@@ -218,7 +218,7 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
     const { id } = await params
 
     return (
-        <main className="relative min-h-screen bg-background px-4 py-10 pb-32">
+        <main className="relative min-h-screen bg-background px-4 py-10 pb-44">
             <Suspense fallback={null}>
                 <ListingDetailContent listingId={id} />
             </Suspense>

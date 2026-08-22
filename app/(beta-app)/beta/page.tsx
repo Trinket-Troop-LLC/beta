@@ -32,7 +32,7 @@ const appSections = [
 
 export default function BetaHomePage() {
   return (
-    <main className="min-h-screen bg-background px-4 py-10 text-foreground sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-background px-4 pt-10 pb-44 text-foreground sm:px-6 lg:px-8">
       <BetaOnboardingModal />
 
       <div className="mx-auto flex max-w-5xl flex-col gap-8">

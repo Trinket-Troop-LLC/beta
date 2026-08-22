@@ -70,7 +70,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ convers
     const { conversationId } = await params
 
     return (
-        <main className="relative flex min-h-screen flex-col items-center bg-background px-4 pb-28 pt-12">
+        <main className="relative flex min-h-screen flex-col items-center bg-background px-4 pb-40 pt-12">
             <Suspense fallback={null}>
                 <ReviewContent conversationId={conversationId} />
             </Suspense>

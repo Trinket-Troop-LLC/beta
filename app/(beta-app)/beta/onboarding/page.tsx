@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export default function BetaOnboardingPage() {
   return (
-    <main className="min-h-screen bg-background px-4 py-10 text-foreground sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-background px-4 pt-10 pb-44 text-foreground sm:px-6 lg:px-8">
       <div className="mx-auto flex max-w-3xl flex-col gap-8 rounded-3xl border border-border bg-card p-8 shadow-sm sm:p-10">
         <div className="space-y-3">
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">
