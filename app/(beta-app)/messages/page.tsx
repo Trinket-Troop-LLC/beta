@@ -102,7 +102,7 @@ async function MessagesContent() {
 
 export default function MessagesPage() {
     return (
-        <main className="messages-ui relative flex flex-1 flex-col items-center px-4 pb-40 pt-12">
+        <main className="messages-ui relative flex flex-1 flex-col items-center px-8 pb-40 pt-12">
             <Suspense fallback={null}>
                 <MessagesContent />
             </Suspense>
