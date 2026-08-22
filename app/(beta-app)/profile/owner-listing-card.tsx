@@ -5,10 +5,14 @@ import { useRouter } from 'next/navigation'
 import { LoaderCircle, Pencil, Trash2 } from 'lucide-react'
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { ListingBrowseCard, type ListingBrowseCardData } from '@/components/listings/listing-browse-card'
-import { LISTING_STATUS_LABELS } from '@/lib/listings/domain'
+import { ListingStatusSticker } from '@/components/listings/listing-status-sticker'
+import type { ListingTransactionType } from '@/lib/listings/domain'
 import { deleteListing } from './listing-actions'
 
-export type ListingCardData = ListingBrowseCardData & { published_at: string | null }
+export type ListingCardData = ListingBrowseCardData & {
+    published_at: string | null
+    active_transaction_type: ListingTransactionType | null
+}
 
 export function OwnerListingCard({
     listing,
@@ -94,12 +98,6 @@ export function OwnerListingCard({
             router.refresh()
         })
     }
-
-    const statusLabel = isDeletionPending
-        ? 'deletion pending'
-        : listing.status !== 'active'
-            ? LISTING_STATUS_LABELS[listing.status]
-            : null
 
     const footer = (
         <div className="mt-3 space-y-3">
@@ -196,11 +194,11 @@ export function OwnerListingCard({
         <div className="relative">
             <ListingBrowseCard listing={listing} />
 
-            {statusLabel && (
-                <span className="absolute -right-2 -top-2 -rotate-6 rounded-[50%] border border-foreground/40 bg-secondary px-3 py-1.5 text-xs font-medium italic text-foreground shadow-sm">
-                    {statusLabel}!
-                </span>
-            )}
+            <ListingStatusSticker
+                status={listing.status}
+                activeTransactionType={listing.active_transaction_type}
+                overrideLabel={isDeletionPending ? 'deletion pending' : undefined}
+            />
 
             {footer}
         </div>

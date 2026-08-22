@@ -2,8 +2,7 @@ import { Suspense } from 'react'
 import { notFound, redirect } from 'next/navigation'
 import { requireMember } from '@/lib/supabase/require-member'
 import { signProfilePictureUrl } from '@/lib/supabase/profile-pictures'
-import type { ListingBrowseCardData } from '@/components/listings/listing-browse-card'
-import { OtherProfileSection } from './other-profile-section'
+import { OtherProfileSection, type OtherProfileListingCardData } from './other-profile-section'
 import type { Relationship } from '../friendship-actions'
 
 async function OtherProfileContent({ username }: { username: string }) {
@@ -27,9 +26,9 @@ async function OtherProfileContent({ username }: { username: string }) {
 
     const { data: listingRows } = await db
         .from('listings')
-        .select('id, title, transaction_types, price_cents, status, category, published_at')
+        .select('id, title, transaction_types, price_cents, status, category, published_at, active_transaction_type')
         .eq('owner_id', target.id)
-        .in('status', ['active', 'reserved'])
+        .in('status', ['active', 'reserved', 'fulfilled'])
         .order('published_at', { ascending: false })
 
     const listingIds = listingRows?.map((listing) => listing.id) ?? []
@@ -53,7 +52,7 @@ async function OtherProfileContent({ username }: { username: string }) {
         signedCoverPhotos?.map((photo) => [photo.path, photo.signedUrl]) ?? [],
     )
 
-    const listings: ListingBrowseCardData[] = (listingRows ?? []).map((listing) => {
+    const listings: OtherProfileListingCardData[] = (listingRows ?? []).map((listing) => {
         const coverPath = coverPathByListingId.get(listing.id)
         return {
             id: listing.id,
@@ -62,6 +61,7 @@ async function OtherProfileContent({ username }: { username: string }) {
             price_cents: listing.price_cents,
             status: listing.status,
             category: listing.category,
+            active_transaction_type: listing.active_transaction_type,
             coverPhotoUrl: coverPath ? signedUrlByPath.get(coverPath) ?? null : null,
         }
     })

@@ -60,6 +60,16 @@ export const LISTING_TRANSACTION_TYPE_VIEWER_LABELS: Record<ListingTransactionTy
     lend: 'borrowing',
 }
 
+// Past tense, for the "how this listing was fulfilled" sticker on a
+// completed listing -- e.g. "traded!" -- once active_transaction_type is
+// preserved (not nulled) through markListingFulfilled.
+export const LISTING_TRANSACTION_TYPE_COMPLETED_LABELS: Record<ListingTransactionType, string> = {
+    sell: 'sold',
+    trade: 'traded',
+    gift: 'gifted',
+    lend: 'lent',
+}
+
 export const LISTING_STATUSES = [
     'draft',
     'active',
@@ -98,9 +108,13 @@ export type Listing = {
     price_cents: number | null
     pickup_area: string
     status: ListingStatus
-    // Which selected transaction type the current reservation actually is
-    // (a listing can offer several at once, e.g. sell + trade + lend, but
-    // only one is ever in play while reserved). Null except while reserved.
+    // Which selected transaction type the current (or just-completed)
+    // reservation actually is (a listing can offer several at once, e.g.
+    // sell + trade + lend, but only one is ever in play at a time). Set while
+    // reserved, and preserved through fulfillment so a completed listing's
+    // sticker knows what it was ("traded!") -- cleared only when a
+    // reservation ends without completing (unreserveListing,
+    // markListingReturned).
     active_transaction_type: ListingTransactionType | null
     published_at: string | null
     created_at: string

@@ -5,13 +5,19 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { PackagePlus, UserRound } from 'lucide-react'
 import { ListingBrowseCard, type ListingBrowseCardData } from '@/components/listings/listing-browse-card'
+import { ListingStatusSticker } from '@/components/listings/listing-status-sticker'
 import { formatLastActive } from '@/lib/last-active'
+import type { ListingTransactionType } from '@/lib/listings/domain'
 import {
     acceptFriendRequest,
     removeFriendship,
     sendFriendRequest,
     type Relationship,
 } from '../friendship-actions'
+
+export type OtherProfileListingCardData = ListingBrowseCardData & {
+    active_transaction_type: ListingTransactionType | null
+}
 
 type Responses = {
     neighborhood?: string
@@ -108,7 +114,7 @@ export function OtherProfileSection({
     profilePictureUrl: string | null
     lastActive: string | null
     responses: Responses
-    listings: ListingBrowseCardData[]
+    listings: OtherProfileListingCardData[]
     relationship: Relationship
     friendshipId: string | null
 }) {
@@ -250,8 +256,12 @@ export function OtherProfileSection({
             ) : listings.length > 0 ? (
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                     {listings.map((listing) => (
-                        <Link key={listing.id} href={`/troop/listings/${listing.id}`}>
+                        <Link key={listing.id} href={`/troop/listings/${listing.id}`} className="relative block">
                             <ListingBrowseCard listing={listing} />
+                            <ListingStatusSticker
+                                status={listing.status}
+                                activeTransactionType={listing.active_transaction_type}
+                            />
                         </Link>
                     ))}
                 </div>
