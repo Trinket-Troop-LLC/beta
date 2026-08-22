@@ -9,7 +9,7 @@ import type { BulletinAuthor, BulletinPost, BulletinReply } from './types'
 const maxPosts = 50
 
 async function ThoughtsContent() {
-    const { db, user } = await requireMember()
+    const { db, user, profile } = await requireMember()
 
     const { data: postRows } = await db
         .from('bulletin_posts')
@@ -48,6 +48,7 @@ async function ThoughtsContent() {
         : { data: [] }
 
     const authorIds = [...new Set([
+        user.id,
         ...posts.map((post) => post.author_id),
         ...replies.map((reply) => reply.author_id),
     ])]
@@ -135,7 +136,7 @@ async function ThoughtsContent() {
 
     const currentUser: BulletinAuthor = authorsById.get(user.id) ?? {
         id: user.id,
-        username: 'you',
+        username: profile.username,
         profilePictureUrl: null,
     }
 
