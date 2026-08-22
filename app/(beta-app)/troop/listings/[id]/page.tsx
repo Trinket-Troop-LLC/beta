@@ -2,7 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
-import { UserRound } from 'lucide-react'
+import { Pencil, UserRound } from 'lucide-react'
 import { requireMember } from '@/lib/supabase/require-member'
 import { signProfilePictureUrl } from '@/lib/supabase/profile-pictures'
 import { PhotoCarousel } from '@/components/listings/photo-carousel'
@@ -13,6 +13,7 @@ import {
     LISTING_CONDITION_LABELS,
     LISTING_STATUS_LABELS,
     formatListingPrice,
+    type ListingCategory,
     type ListingTransactionType,
 } from '@/lib/listings/domain'
 import { ExchangeActions } from './exchange-actions'
@@ -67,7 +68,7 @@ async function ListingDetailContent({ listingId }: { listingId: string }) {
 
     const { data: listing } = await db
         .from('listings')
-        .select('id, owner_id, title, description, category, other_category, condition, transaction_types, price_cents, pickup_area, nuance, status, published_at')
+        .select('id, owner_id, title, description, category, other_category, nuance, condition, transaction_types, price_cents, pickup_area, status, published_at')
         .eq('id', listingId)
         .maybeSingle()
 
@@ -114,16 +115,31 @@ async function ListingDetailContent({ listingId }: { listingId: string }) {
 
     return (
         <div className="mx-auto w-full max-w-2xl text-left">
-            <PhotoCarousel photoUrls={photoUrls} title={listing.title} />
+            <PhotoCarousel
+                photoUrls={photoUrls}
+                title={listing.title}
+                category={listing.category as ListingCategory}
+            />
 
             <div className="mt-5">
                 <div className="flex items-start justify-between gap-3">
                     <h1 className="text-2xl font-semibold text-foreground">{listing.title}</h1>
-                    {(listing.status !== 'active' || isOwner) && (
-                        <span className="shrink-0 rounded-full bg-secondary px-2.5 py-1 text-xs font-medium text-foreground">
-                            {LISTING_STATUS_LABELS[listing.status as keyof typeof LISTING_STATUS_LABELS]}
-                        </span>
-                    )}
+                    <div className="flex shrink-0 items-center gap-2">
+                        {isOwner && (
+                            <Link
+                                href={`/posts/${listing.id}/edit`}
+                                className="inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs font-medium text-foreground transition hover:bg-secondary"
+                            >
+                                <Pencil className="size-3.5" aria-hidden="true" />
+                                Edit
+                            </Link>
+                        )}
+                        {(listing.status !== 'active' || isOwner) && (
+                            <span className="rounded-full bg-secondary px-2.5 py-1 text-xs font-medium text-foreground">
+                                {LISTING_STATUS_LABELS[listing.status as keyof typeof LISTING_STATUS_LABELS]}
+                            </span>
+                        )}
+                    </div>
                 </div>
 
                 <div className="mt-3">

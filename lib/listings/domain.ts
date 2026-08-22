@@ -92,11 +92,11 @@ export type Listing = {
     description: string
     category: ListingCategory
     other_category: string | null
+    nuance: string | null
     condition: ListingCondition
     transaction_types: ListingTransactionType[]
     price_cents: number | null
     pickup_area: string
-    nuance: string | null
     status: ListingStatus
     // Which selected transaction type the current reservation actually is
     // (a listing can offer several at once, e.g. sell + trade + lend, but

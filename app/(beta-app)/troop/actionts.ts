@@ -72,7 +72,7 @@ export async function getListingsView(
 
     let query = db
         .from('listings')
-        .select('id, title, transaction_types, price_cents, status, published_at')
+        .select('id, title, transaction_types, price_cents, status, category, published_at')
         .in('status', ['active', 'reserved'])
         .order('published_at', { ascending: false })
         .order('id', { ascending: false })
@@ -143,6 +143,7 @@ export async function getListingsView(
             transaction_types: listing.transaction_types,
             price_cents: listing.price_cents,
             status: listing.status,
+            category: listing.category,
             coverPhotoUrl: coverPath ? signedUrlByPath.get(coverPath) ?? null : null,
         }
     })
