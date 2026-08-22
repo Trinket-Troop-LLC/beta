@@ -23,9 +23,9 @@ export function BetaBottomNav({
   return (
     <nav
       aria-label="Beta app navigation"
-      className="fixed inset-x-0 bottom-4 z-40 flex justify-center px-2 sm:px-4"
+      className="fixed inset-x-0 bottom-0 z-40 flex justify-center"
     >
-      <div className="flex h-16 w-full max-w-md justify-between gap-1 rounded-2xl border border-border bg-card/95 px-3 shadow-lg backdrop-blur sm:gap-2 sm:px-5">
+      <div className="flex h-16 w-full justify-between gap-1 rounded-t-2xl border-t border-border bg-card/95 px-3 shadow-lg backdrop-blur sm:gap-2 sm:px-5">
         {tabs.map(({ id, label, icon, iconActive, href }) => {
           const isActive = isTabActive(href);
           const accessibleLabel = id === "messages" && unreadMessageCount > 0
