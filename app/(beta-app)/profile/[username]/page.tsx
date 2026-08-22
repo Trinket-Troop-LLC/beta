@@ -5,6 +5,7 @@ import { signProfilePictureUrl } from '@/lib/supabase/profile-pictures'
 import type { ListingBrowseCardData } from '@/components/listings/listing-browse-card'
 import { OtherProfileSection } from './other-profile-section'
 import type { Relationship } from '../friendship-actions'
+import { getProfileThankYouNotes } from '@/lib/reviews/profile-thank-you-notes'
 
 async function OtherProfileContent({ username }: { username: string }) {
     const { db, user } = await requireMember()
@@ -23,7 +24,10 @@ async function OtherProfileContent({ username }: { username: string }) {
         redirect('/profile')
     }
 
-    const profilePictureUrl = await signProfilePictureUrl(db, target.responses?.profile_picture_path)
+    const [profilePictureUrl, thankYouNotes] = await Promise.all([
+        signProfilePictureUrl(db, target.responses?.profile_picture_path),
+        getProfileThankYouNotes(target.id),
+    ])
 
     const { data: listingRows } = await db
         .from('listings')
@@ -91,6 +95,7 @@ async function OtherProfileContent({ username }: { username: string }) {
             lastActive={target.last_active_at}
             responses={target.responses ?? null}
             listings={listings}
+            thankYouNotes={thankYouNotes}
             relationship={relationship}
             friendshipId={friendshipRow?.id ?? null}
         />

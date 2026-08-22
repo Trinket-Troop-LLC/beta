@@ -10,6 +10,10 @@ import { compressProfilePicture } from '@/lib/compress-profile-picture'
 import { OwnerListingCard } from './owner-listing-card'
 import { updateProfile } from './profile-actions'
 import { formatLastActive } from '@/lib/last-active'
+import {
+    ThankYouNotes,
+    type ProfileThankYouNote,
+} from '@/components/profile/thank-you-notes'
 
 type Responses = {
     neighborhood?: string
@@ -55,6 +59,7 @@ export function ProfileSection({
     responses,
     listings,
     listingsLoadError,
+    thankYouNotes,
     initialTab,
 }: {
     username: string
@@ -64,6 +69,7 @@ export function ProfileSection({
     responses: Responses
     listings: ListingCardData[]
     listingsLoadError: boolean
+    thankYouNotes: ProfileThankYouNote[]
     initialTab: 'about' | 'listings'
 }) {
     const router = useRouter()
@@ -377,6 +383,8 @@ export function ProfileSection({
                                 : '—'}
                         </p>
                     </div>
+
+                    <ThankYouNotes notes={thankYouNotes} />
                 </div>
             ) : (
                 <div className="flex flex-col gap-4">

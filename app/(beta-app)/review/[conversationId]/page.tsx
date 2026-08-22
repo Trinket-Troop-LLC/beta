@@ -9,7 +9,7 @@ async function ReviewContent({ conversationId }: { conversationId: string }) {
 
     const { data: conversation } = await db
         .from('conversations')
-        .select('id, participant_one_id, participant_two_id, origin_type, origin_id, closed_reason')
+        .select('id, participant_one_id, participant_two_id, origin_type, origin_id, status, closed_reason')
         .eq('id', conversationId)
         .maybeSingle()
 
@@ -34,10 +34,12 @@ async function ReviewContent({ conversationId }: { conversationId: string }) {
     // Participation is already verified above, so this doesn't leak access.
     const admin = createAdminClient()
     const [{ data: listing }, { data: otherProfile }, { data: existingReview }] = await Promise.all([
-        admin.from('listings').select('id, title, status').eq('id', conversation.origin_id).maybeSingle(),
+        admin.from('listings').select('id, title').eq('id', conversation.origin_id).maybeSingle(),
         db.from('users').select('username').eq('id', otherUserId).maybeSingle(),
         db.from('exchange_reviews').select('rating').eq('conversation_id', conversationId).eq('reviewer_id', user.id).maybeSingle(),
     ])
+
+    if (!listing) notFound()
 
     const revieweeUsername = otherProfile?.username ?? 'this person'
 
@@ -45,7 +47,7 @@ async function ReviewContent({ conversationId }: { conversationId: string }) {
         <div className="w-full max-w-md">
             <h1 className="mb-2 text-2xl font-semibold text-foreground">Review the exchange</h1>
 
-            {conversation.closed_reason !== 'fulfilled' ? (
+            {conversation.status !== 'closed' || conversation.closed_reason !== 'fulfilled' ? (
                 <div className="rounded-2xl border border-border bg-card p-4">
                     <p className="text-sm text-muted-foreground">This exchange isn&apos;t marked complete yet.</p>
                 </div>

@@ -9,6 +9,7 @@ import { ProfileSection } from './profile-section'
 import { ProfileViewSwitcher } from './profile-view-switcher'
 import { MyTroop } from './my-troop'
 import type { ListingCardData } from '@/components/listings/listing-card'
+import { getProfileThankYouNotes } from '@/lib/reviews/profile-thank-you-notes'
 
 type ProfileSearchParams = Promise<{ tab?: string | string[] }>
 
@@ -16,7 +17,7 @@ async function ProfileContent({ searchParams }: { searchParams: ProfileSearchPar
     const { tab } = await searchParams
     const { profile, db, user } = await requireMember()
 
-    // These five only depend on user.id, not on each other — run them together
+    // These six only depend on user.id, not on each other — run them together
     // instead of one round-trip at a time.
     const [
         { data: fullProfile },
@@ -24,6 +25,7 @@ async function ProfileContent({ searchParams }: { searchParams: ProfileSearchPar
         { data: fullMyTroop }, // accepted friendships
         { data: outgoingRequests }, // sent requests — friendship row id kept alongside each person's id
         { data: incomingRequests }, // received requests
+        thankYouNotes,
     ] = await Promise.all([
         db
             .from('users')
@@ -51,6 +53,7 @@ async function ProfileContent({ searchParams }: { searchParams: ProfileSearchPar
             .select('*')
             .eq('addressee_id', user.id)
             .eq('status', 'pending'),
+        getProfileThankYouNotes(user.id),
     ])
 
     const listingIds = listingRows?.map((listing) => listing.id) ?? []
@@ -160,6 +163,7 @@ async function ProfileContent({ searchParams }: { searchParams: ProfileSearchPar
                         responses={fullProfile?.responses ?? null}
                         listings={listings}
                         listingsLoadError={listingsLoadError}
+                        thankYouNotes={thankYouNotes}
                         initialTab={tab === 'listings' ? 'listings' : 'about'}
                     />
                 }
