@@ -102,11 +102,11 @@ export function MyTroop({
 
     return (
         <div>
-            <div className="mb-4 flex">
+            <div className="mb-4 flex gap-6">
                 <button
                     onClick={() => setTab('friends')}
                     aria-pressed={tab === 'friends'}
-                    className={`flex-1 border-b-2 pb-2 text-center text-lg font-medium transition ${
+                    className={`border-b-2 pb-1.5 text-sm font-medium transition ${
                         tab === 'friends'
                             ? 'border-foreground text-foreground'
                             : 'border-secondary text-muted-foreground'
@@ -117,7 +117,7 @@ export function MyTroop({
                 <button
                     onClick={() => setTab('requests')}
                     aria-pressed={tab === 'requests'}
-                    className={`flex-1 border-b-2 pb-2 text-center text-lg font-medium transition ${
+                    className={`border-b-2 pb-1.5 text-sm font-medium transition ${
                         tab === 'requests'
                             ? 'border-foreground text-foreground'
                             : 'border-secondary text-muted-foreground'

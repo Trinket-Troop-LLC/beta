@@ -333,11 +333,11 @@ export function ProfileSection({
                 </button>
             </div>
 
-            <div className="mb-4 flex">
+            <div className="mb-4 flex gap-6">
                 <button
                     onClick={() => selectTab('about')}
                     aria-pressed={tab === 'about'}
-                    className={`flex-1 border-b-2 pb-2 text-center text-lg font-medium transition ${
+                    className={`border-b-2 pb-1.5 text-sm font-medium transition ${
                         tab === 'about'
                             ? 'border-foreground text-foreground'
                             : 'border-secondary text-muted-foreground'
@@ -348,7 +348,7 @@ export function ProfileSection({
                 <button
                     onClick={() => selectTab('listings')}
                     aria-pressed={tab === 'listings'}
-                    className={`flex-1 border-b-2 pb-2 text-center text-lg font-medium transition ${
+                    className={`border-b-2 pb-1.5 text-sm font-medium transition ${
                         tab === 'listings'
                             ? 'border-foreground text-foreground'
                             : 'border-secondary text-muted-foreground'
