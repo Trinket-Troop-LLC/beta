@@ -3,6 +3,7 @@ import Image from 'next/image'
 import { formatLastActive } from '@/lib/last-active'
 import { formatTimestamp } from '@/lib/format-timestamp'
 import { Avatar } from '@/components/avatar'
+import type { ListingTransactionType } from '@/lib/listings/domain'
 
 function cardBackgroundClasses(originType: string): string {
     if (originType === 'listing' || originType === 'offer') {
@@ -40,6 +41,27 @@ function OriginIcon({ originType }: { originType: string }) {
     return null
 }
 
+function emptyMessagePreview(
+    originType: string,
+    transactionType: ListingTransactionType | null,
+    isPending: boolean,
+) {
+    if (originType !== 'listing' || !transactionType || !isPending) {
+        return 'Say hello!'
+    }
+
+    switch (transactionType) {
+        case 'sell':
+            return 'Buy request sent without a message.'
+        case 'gift':
+            return 'Gift request sent without a message.'
+        case 'lend':
+            return 'Borrow request sent without a message.'
+        case 'trade':
+            return 'Trade request sent without a message.'
+    }
+}
+
 export function ChatCard({
     href,
     username,
@@ -48,6 +70,7 @@ export function ChatCard({
     isActive,
     isPending,
     originType,
+    transactionType,
     title,
     lastMessagePreview,
     lastMessageAt,
@@ -59,6 +82,7 @@ export function ChatCard({
     isActive: boolean
     isPending: boolean
     originType: string
+    transactionType: ListingTransactionType | null
     title: string | null
     lastMessagePreview: string | null
     lastMessageAt: string | null
@@ -90,7 +114,9 @@ export function ChatCard({
                         </span>
                     )}
                     {title && <p className="truncate pr-6 font-bold text-h3 text-message-text">{title}</p>}
-                    <p className="line-clamp-2 break-words text-body text-message-text">{lastMessagePreview ?? 'Say hello!'}</p>
+                    <p className="line-clamp-2 break-words text-body text-message-text">
+                        {lastMessagePreview ?? emptyMessagePreview(originType, transactionType, isPending)}
+                    </p>
                 </div>
 
                 <div className="flex justify-end">

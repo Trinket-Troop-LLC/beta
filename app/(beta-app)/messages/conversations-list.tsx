@@ -5,12 +5,14 @@ import { acceptListingOffer, declineListingOffer } from '../troop/listing-lifecy
 import { acceptConversationRequest, declineConversationRequest } from './actions'
 import { NotificationCard } from '@/components/messages/notification-card'
 import { ChatCard } from '@/components/messages/chat-card'
+import type { ListingTransactionType } from '@/lib/listings/domain'
 
 type ConversationSummary = {
     id: string
     status: 'pending' | 'active'
     initiatedByMe: boolean
     originType: string
+    transactionType: ListingTransactionType | null
     title: string | null
     otherUser: {
         id: string
@@ -29,6 +31,24 @@ type OfferSummary = {
     targetListing: { id: string; title: string }
     offerer: { id: string; username: string; profilePictureUrl: string | null }
     offeredListing: { id: string; title: string; coverPhotoUrl: string | null }
+}
+
+function emptyRequestPreview(conversation: ConversationSummary) {
+    if (conversation.originType !== 'listing' || !conversation.transactionType) {
+        return 'Say hello!'
+    }
+
+    const listingLabel = conversation.title ? `"${conversation.title}"` : 'this listing'
+    switch (conversation.transactionType) {
+        case 'sell':
+            return `Buy request for ${listingLabel} (no message included).`
+        case 'gift':
+            return `Gift request for ${listingLabel} (no message included).`
+        case 'lend':
+            return `Borrow request for ${listingLabel} (no message included).`
+        case 'trade':
+            return `Trade request for ${listingLabel} (no message included).`
+    }
 }
 
 function RequestCard({
@@ -70,7 +90,7 @@ function RequestCard({
         <NotificationCard
             username={conversation.otherUser.username}
             profilePictureUrl={conversation.otherUser.profilePictureUrl}
-            reason={conversation.lastMessagePreview ?? 'Say hello!'}
+            reason={conversation.lastMessagePreview ?? emptyRequestPreview(conversation)}
             timestamp={conversation.updatedAt}
             isPending={isPending}
             error={error}
@@ -242,6 +262,7 @@ export function ConversationsList({
                                 isActive={c.status === 'active'}
                                 isPending={c.status === 'pending' && c.initiatedByMe}
                                 originType={c.originType}
+                                transactionType={c.transactionType}
                                 title={c.title}
                                 lastMessagePreview={c.lastMessagePreview}
                                 lastMessageAt={c.lastMessageAt}
