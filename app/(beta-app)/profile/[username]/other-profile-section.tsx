@@ -7,6 +7,10 @@ import { PackagePlus, UserRound } from 'lucide-react'
 import { ListingBrowseCard, type ListingBrowseCardData } from '@/components/listings/listing-browse-card'
 import { formatLastActive } from '@/lib/last-active'
 import {
+    ThankYouNotes,
+    type ProfileThankYouNote,
+} from '@/components/profile/thank-you-notes'
+import {
     acceptFriendRequest,
     removeFriendship,
     sendFriendRequest,
@@ -99,6 +103,7 @@ export function OtherProfileSection({
     lastActive,
     responses,
     listings,
+    thankYouNotes,
     relationship: initialRelationship,
     friendshipId: initialFriendshipId,
 }: {
@@ -109,6 +114,7 @@ export function OtherProfileSection({
     lastActive: string | null
     responses: Responses
     listings: ListingBrowseCardData[]
+    thankYouNotes: ProfileThankYouNote[]
     relationship: Relationship
     friendshipId: string | null
 }) {
@@ -246,6 +252,8 @@ export function OtherProfileSection({
                                 : '—'}
                         </p>
                     </div>
+
+                    <ThankYouNotes notes={thankYouNotes} />
                 </div>
             ) : listings.length > 0 ? (
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
