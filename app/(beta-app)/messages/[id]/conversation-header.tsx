@@ -10,7 +10,7 @@ export function ConversationHeader({ otherUser }: { otherUser: OtherUser }) {
     return (
         <Link
             href={`/profile/${encodeURIComponent(otherUser.username)}`}
-            className="flex flex-col items-center gap-2 px-4 py-4 text-center transition hover:opacity-80"
+            className="flex flex-col items-center gap-2 px-8 py-4 text-center transition hover:opacity-80"
         >
             <div className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-muted">
                 {otherUser.profilePictureUrl ? (

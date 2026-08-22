@@ -41,7 +41,7 @@ export function ConversationActionBar({
     onEndConversation: () => void
 }) {
     return (
-        <div className="flex flex-wrap items-center gap-2 border-b border-border/70 bg-background/90 px-4 py-3">
+        <div className="flex flex-wrap items-center gap-2 border-b border-border/70 bg-background/90 px-8 py-3">
             <Link href="/messages" className="shrink-0 text-muted-foreground hover:text-foreground">
                 <ArrowLeft size={20} />
             </Link>

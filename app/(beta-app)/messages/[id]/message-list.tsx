@@ -30,7 +30,7 @@ export function MessageList({
     }, [messages])
 
     return (
-        <div className="flex-1 overflow-y-auto px-4 py-4">
+        <div className="flex-1 overflow-y-auto px-8 py-4">
             {(listingStatus === 'fulfilled' || (dealFulfilled && listingStatus !== 'archived')) && (
                 <div className="mb-4 rounded-2xl border border-border bg-card p-4 text-center shadow-sm">
                     <p className="text-sm text-muted-foreground">This listing is marked complete.</p>
