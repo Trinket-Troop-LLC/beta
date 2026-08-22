@@ -65,20 +65,11 @@ function OwnerCard({
 async function ListingDetailContent({ listingId }: { listingId: string }) {
     const { db, user } = await requireMember()
 
-    const { data: listing, error: listingError } = await db
+    const { data: listing } = await db
         .from('listings')
         .select('id, owner_id, title, description, category, other_category, condition, transaction_types, price_cents, pickup_area, nuance, status, published_at')
         .eq('id', listingId)
         .maybeSingle()
-
-    if (listingError) {
-        // TEMP DEBUG
-        return (
-            <pre style={{ whiteSpace: 'pre-wrap', padding: 20 }}>
-                {JSON.stringify(listingError, null, 2)}
-            </pre>
-        )
-    }
 
     if (!listing) {
         notFound()
