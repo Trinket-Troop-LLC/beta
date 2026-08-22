@@ -20,8 +20,8 @@ export function ListingBrowseCard({ listing }: { listing: ListingBrowseCardData 
     const isReserved = listing.status === 'reserved'
 
     return (
-        <article className="overflow-hidden rounded-2xl border border-border bg-card text-left shadow-sm">
-            <div className="relative aspect-square bg-secondary">
+        <article className="text-left">
+            <div className="relative aspect-square overflow-hidden rounded-lg bg-secondary">
                 {listing.coverPhotoUrl ? (
                     <Image
                         src={listing.coverPhotoUrl}
@@ -37,7 +37,7 @@ export function ListingBrowseCard({ listing }: { listing: ListingBrowseCardData 
                 )}
             </div>
 
-            <div className="p-3">
+            <div className="pt-2">
                 <h3 className="truncate font-semibold leading-5 text-foreground">
                     {listing.title}
                 </h3>
