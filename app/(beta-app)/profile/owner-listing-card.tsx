@@ -4,8 +4,11 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { LoaderCircle, Pencil, Trash2 } from 'lucide-react'
 import { useEffect, useRef, useState, useTransition } from 'react'
-import { ListingCard, type ListingCardData } from '@/components/listings/listing-card'
+import { ListingBrowseCard, type ListingBrowseCardData } from '@/components/listings/listing-browse-card'
+import { LISTING_STATUS_LABELS } from '@/lib/listings/domain'
 import { deleteListing } from './listing-actions'
+
+export type ListingCardData = ListingBrowseCardData & { published_at: string | null }
 
 export function OwnerListingCard({
     listing,
@@ -92,8 +95,14 @@ export function OwnerListingCard({
         })
     }
 
+    const statusLabel = isDeletionPending
+        ? 'deletion pending'
+        : listing.status !== 'active'
+            ? LISTING_STATUS_LABELS[listing.status]
+            : null
+
     const footer = (
-        <div className="space-y-3">
+        <div className="mt-3 space-y-3">
             <div className="flex flex-wrap gap-2">
                 <Link
                     href={`/posts/${listing.id}/edit`}
@@ -184,10 +193,16 @@ export function OwnerListingCard({
     )
 
     return (
-        <ListingCard
-            listing={listing}
-            footer={footer}
-            statusLabelOverride={isDeletionPending ? 'deletion pending' : undefined}
-        />
+        <div className="relative">
+            <ListingBrowseCard listing={listing} />
+
+            {statusLabel && (
+                <span className="absolute -right-2 -top-2 -rotate-6 rounded-[50%] border border-foreground/40 bg-secondary px-3 py-1.5 text-xs font-medium italic text-foreground shadow-sm">
+                    {statusLabel}!
+                </span>
+            )}
+
+            {footer}
+        </div>
     )
 }

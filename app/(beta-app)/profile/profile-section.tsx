@@ -5,9 +5,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { PackagePlus, UserRound } from 'lucide-react'
 import { useEffect, useState, useTransition } from 'react'
-import type { ListingCardData } from '@/components/listings/listing-card'
 import { compressProfilePicture } from '@/lib/compress-profile-picture'
-import { OwnerListingCard } from './owner-listing-card'
+import { OwnerListingCard, type ListingCardData } from './owner-listing-card'
 import { updateProfile } from './profile-actions'
 import { formatLastActive } from '@/lib/last-active'
 
@@ -397,7 +396,7 @@ export function ProfileSection({
                     )}
 
                     {visibleListings.length > 0 ? (
-                        <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                             {visibleListings.map((listing) => (
                                 <OwnerListingCard
                                     key={listing.id}

@@ -8,7 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { ProfileSection } from './profile-section'
 import { ProfileViewSwitcher } from './profile-view-switcher'
 import { MyTroop } from './my-troop'
-import type { ListingCardData } from '@/components/listings/listing-card'
+import type { ListingCardData } from './owner-listing-card'
 
 type ProfileSearchParams = Promise<{ tab?: string | string[] }>
 
