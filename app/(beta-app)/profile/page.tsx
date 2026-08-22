@@ -8,7 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { ProfileSection } from './profile-section'
 import { ProfileViewSwitcher } from './profile-view-switcher'
 import { MyTroop } from './my-troop'
-import type { ListingCardData } from '@/components/listings/listing-card'
+import type { ListingCardData } from './owner-listing-card'
 
 type ProfileSearchParams = Promise<{ tab?: string | string[] }>
 
@@ -32,9 +32,9 @@ async function ProfileContent({ searchParams }: { searchParams: ProfileSearchPar
             .single(),
         db
             .from('listings')
-            .select('id, title, category, other_category, condition, transaction_types, price_cents, pickup_area, status, published_at')
+            .select('id, title, category, other_category, condition, transaction_types, price_cents, pickup_area, status, published_at, active_transaction_type')
             .eq('owner_id', user.id)
-            .in('status', ['active', 'reserved'])
+            .in('status', ['active', 'reserved', 'fulfilled'])
             .order('published_at', { ascending: false }),
         db
             .from('friendships')

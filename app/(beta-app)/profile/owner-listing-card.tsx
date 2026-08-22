@@ -4,8 +4,15 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { LoaderCircle, Pencil, Trash2 } from 'lucide-react'
 import { useEffect, useRef, useState, useTransition } from 'react'
-import { ListingCard, type ListingCardData } from '@/components/listings/listing-card'
+import { ListingBrowseCard, type ListingBrowseCardData } from '@/components/listings/listing-browse-card'
+import { ListingStatusSticker } from '@/components/listings/listing-status-sticker'
+import type { ListingTransactionType } from '@/lib/listings/domain'
 import { deleteListing } from './listing-actions'
+
+export type ListingCardData = ListingBrowseCardData & {
+    published_at: string | null
+    active_transaction_type: ListingTransactionType | null
+}
 
 export function OwnerListingCard({
     listing,
@@ -93,7 +100,7 @@ export function OwnerListingCard({
     }
 
     const footer = (
-        <div className="space-y-3">
+        <div className="mt-3 space-y-3">
             <div className="flex flex-wrap gap-2">
                 <Link
                     href={`/posts/${listing.id}/edit`}
@@ -184,10 +191,16 @@ export function OwnerListingCard({
     )
 
     return (
-        <ListingCard
-            listing={listing}
-            footer={footer}
-            statusLabelOverride={isDeletionPending ? 'deletion pending' : undefined}
-        />
+        <div className="relative">
+            <ListingBrowseCard listing={listing} />
+
+            <ListingStatusSticker
+                status={listing.status}
+                activeTransactionType={listing.active_transaction_type}
+                overrideLabel={isDeletionPending ? 'deletion pending' : undefined}
+            />
+
+            {footer}
+        </div>
     )
 }
