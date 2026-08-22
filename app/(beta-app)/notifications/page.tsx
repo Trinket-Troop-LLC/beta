@@ -16,7 +16,7 @@ async function NotificationsContent() {
 
 export default function NotificationsPage() {
     return (
-        <main className="relative flex min-h-screen flex-col items-center bg-background px-4 pb-40 pt-12">
+        <main className="relative flex flex-1 flex-col items-center px-4 pb-40 pt-12">
             <Suspense fallback={null}>
                 <NotificationsContent />
             </Suspense>

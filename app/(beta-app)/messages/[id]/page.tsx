@@ -146,7 +146,7 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
     const { id } = await params
 
     return (
-        <main className="relative flex min-h-screen flex-col bg-background pb-40">
+        <main className="relative flex flex-1 flex-col pb-40">
             <Suspense fallback={null}>
                 <ConversationContent conversationId={id} />
             </Suspense>

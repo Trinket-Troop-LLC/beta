@@ -38,7 +38,7 @@ function PostsSkeleton() {
 
 export default function PostsPage() {
     return (
-        <main className="min-h-screen bg-background px-4 py-10 pb-44 sm:px-6">
+        <main className="flex-1 px-4 py-10 pb-44 sm:px-6">
             <Suspense fallback={<PostsSkeleton />}>
                 <PostsContent />
             </Suspense>

@@ -166,7 +166,7 @@ async function ThoughtsContent() {
 
 export default function ThoughtsPage() {
     return (
-        <main className="relative min-h-screen bg-background px-4 py-10 pb-44">
+        <main className="relative flex-1 px-4 py-10 pb-44">
             <Suspense fallback={null}>
                 <ThoughtsContent />
             </Suspense>
