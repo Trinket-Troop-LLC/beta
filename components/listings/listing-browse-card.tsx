@@ -41,7 +41,7 @@ export function ListingBrowseCard({ listing }: { listing: ListingBrowseCardData 
                 <h3 className="truncate font-semibold leading-5 text-foreground">
                     {listing.title}
                 </h3>
-                <span className="mt-1 block break-words text-sm font-semibold text-primary">
+                <span className="mt-0.5 block break-words text-xs text-muted-foreground">
                     {sharingLabels.join(' · ')}
                 </span>
             </div>

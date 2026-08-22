@@ -16,6 +16,8 @@ export type ListingFeedCursor = {
     id: string
 }
 
+export type ListingFeedScope = 'everything' | 'my-troop'
+
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 const timestampPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?(?:Z|[+-]\d{2}:\d{2})$/
 
@@ -39,11 +41,34 @@ type GetListingsViewResult =
 // offset/range query can skip or repeat a row when that happens), and lets
 // postgres seek directly to that point instead of walking past everything
 // before the offset on every request.
-export async function getListingsView(cursor: unknown = null): Promise<GetListingsViewResult> {
+export async function getListingsView(
+    cursor: unknown = null,
+    scope: ListingFeedScope = 'everything',
+): Promise<GetListingsViewResult> {
     const { db, userId } = await getCurrentUserId()
     if (!userId) return { success: false, error: 'You must be logged in to view listings' }
 
     const safeCursor = isValidCursor(cursor) ? cursor : null
+
+    // "My Troop" scopes the feed to accepted friends' listings -- same
+    // accepted-friendships lookup as the My Troop tab on Profile, just
+    // resolved to owner ids here instead of profile cards.
+    let troopOwnerIds: string[] | null = null
+    if (scope === 'my-troop') {
+        const { data: friendships } = await db
+            .from('friendships')
+            .select('requester_id, addressee_id')
+            .eq('status', 'accepted')
+            .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`)
+
+        troopOwnerIds = (friendships ?? []).map((row) =>
+            row.requester_id === userId ? row.addressee_id : row.requester_id,
+        )
+
+        if (troopOwnerIds.length === 0) {
+            return { success: true, listings: [], nextCursor: null }
+        }
+    }
 
     let query = db
         .from('listings')
@@ -52,6 +77,10 @@ export async function getListingsView(cursor: unknown = null): Promise<GetListin
         .order('published_at', { ascending: false })
         .order('id', { ascending: false })
         .limit(PAGE_SIZE + 1)
+
+    if (troopOwnerIds) {
+        query = query.in('owner_id', troopOwnerIds)
+    }
 
     if (safeCursor) {
         query = query.or(
