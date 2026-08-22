@@ -25,7 +25,7 @@ export function BetaBottomNav({
       aria-label="Beta app navigation"
       className="fixed inset-x-0 bottom-4 z-40 flex justify-center px-2 sm:px-4"
     >
-      <div className="flex h-16 w-full max-w-md justify-between gap-1 rounded-full border border-border bg-card/95 px-3 shadow-lg backdrop-blur sm:gap-2 sm:px-5">
+      <div className="flex h-16 w-full max-w-md justify-between gap-1 rounded-2xl border border-border bg-card/95 px-3 shadow-lg backdrop-blur sm:gap-2 sm:px-5">
         {tabs.map(({ id, label, icon, iconActive, href }) => {
           const isActive = isTabActive(href);
           const accessibleLabel = id === "messages" && unreadMessageCount > 0
@@ -37,10 +37,10 @@ export function BetaBottomNav({
               key={id}
               href={href}
               aria-label={accessibleLabel}
-              className="relative flex min-w-0 flex-1 flex-col items-center justify-end rounded-full pb-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              className="relative flex min-w-0 flex-1 flex-col items-center justify-end rounded-xl pb-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               aria-current={isActive ? "page" : undefined}
             >
-              <span className="relative -mt-8 flex size-14 items-center justify-center drop-shadow-md transition hover:scale-105 sm:size-16">
+              <span className="relative -mt-9 flex size-14 items-center justify-center drop-shadow-md transition hover:scale-105 sm:size-16">
                 <Image
                   src={isActive ? iconActive : icon}
                   alt=""
@@ -59,7 +59,7 @@ export function BetaBottomNav({
                 )}
               </span>
               <span
-                className={`mt-0.5 max-w-full truncate text-[10px] font-medium sm:text-[11px] ${
+                className={`max-w-full truncate text-[10px] font-medium sm:text-[11px] ${
                   isActive ? "text-foreground" : "text-muted-foreground"
                 }`}
               >
