@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import { requireMember } from '@/lib/supabase/require-member'
 import { signProfilePictureUrls } from '@/lib/supabase/profile-pictures'
+import type { ListingTransactionType } from '@/lib/listings/domain'
 import { ConversationsList } from './conversations-list'
 import { getAllMyPendingOffers } from '../troop/listing-lifecycle-actions'
 
@@ -79,6 +80,7 @@ async function MessagesContent() {
             status: conversation.status,
             initiatedByMe: conversation.initiated_by === user.id,
             originType: conversation.origin_type,
+            transactionType: (conversation.transaction_type as ListingTransactionType | null) ?? null,
             title: titleFor(conversation),
             otherUser: {
                 id: otherUserId,

@@ -8,6 +8,9 @@ import type { ListingTransactionType } from '@/lib/listings/domain'
 import { createNotification } from '@/lib/notifications/create'
 import { sendPushNotification } from '@/lib/notifications/push-send'
 
+const MAX_INITIAL_MESSAGE_LENGTH = 1000
+const LISTING_REQUEST_TRANSACTION_TYPES: readonly ListingTransactionType[] = ['sell', 'gift', 'lend']
+
 async function getCurrentUserId() {
     const db = await createClient()
     const { data: { user } } = await db.auth.getUser()
@@ -89,30 +92,66 @@ export async function requestConversation(
     const { db, userId } = await getCurrentUserId()
     if (!userId) return { success: false, error: 'You must be logged in.' }
 
+    if (originType !== 'message_board' && originType !== 'listing') {
+        return { success: false, error: 'This conversation request type is not supported.' }
+    }
+
+    if (typeof firstMessageContent !== 'string') {
+        return { success: false, error: 'The message must be text.' }
+    }
+
+    const trimmedFirstMessage = firstMessageContent.trim()
+    if (trimmedFirstMessage.length > MAX_INITIAL_MESSAGE_LENGTH) {
+        return {
+            success: false,
+            error: `Keep your message to ${MAX_INITIAL_MESSAGE_LENGTH.toLocaleString()} characters or fewer.`,
+        }
+    }
+
+    // Listing requests can intentionally carry no first chat message. A
+    // bulletin response is itself a message, so preserve its non-empty rule.
+    if (originType === 'message_board' && !trimmedFirstMessage) {
+        return { success: false, error: 'Write a message to send.' }
+    }
+
+    if (otherUserId === userId) {
+        return { success: false, error: "You can't send a request to yourself." }
+    }
+
     // Unlike submitListingOffer, this used to skip re-checking listing status
     // at creation time -- a client could still request a listing that had
     // just been reserved (the page-render gate only hides the button).
     if (originType === 'listing') {
+        if (!transactionType || !LISTING_REQUEST_TRANSACTION_TYPES.includes(transactionType)) {
+            return { success: false, error: 'Choose a valid way to request this listing.' }
+        }
+
         const admin = createAdminClient()
         const { data: listing } = await admin
             .from('listings')
-            .select('id, status')
+            .select('id, owner_id, status, transaction_types')
             .eq('id', originId)
             .maybeSingle()
 
-        if (!listing || listing.status !== 'active') {
+        if (!listing || listing.owner_id !== otherUserId || listing.status !== 'active') {
             return { success: false, error: 'This listing is no longer available.' }
+        }
+
+        if (!listing.transaction_types.includes(transactionType)) {
+            return { success: false, error: 'That transaction type is not offered for this listing.' }
         }
     }
 
     const existingId = await findExistingConversation(db, userId, otherUserId, originType, originId)
     if (existingId) {
-        const { error: messageError } = await db.from('messages').insert({
-            conversation_id: existingId,
-            sender_id: userId,
-            content: firstMessageContent,
-        })
-        if (messageError) return { success: false, error: 'Could not send your message.' }
+        if (trimmedFirstMessage) {
+            const { error: messageError } = await db.from('messages').insert({
+                conversation_id: existingId,
+                sender_id: userId,
+                content: trimmedFirstMessage,
+            })
+            if (messageError) return { success: false, error: 'Could not send your message.' }
+        }
 
         if (originType === 'listing') {
             await createNotification({
@@ -134,7 +173,7 @@ export async function requestConversation(
             participant_two_id: otherUserId,
             origin_type: originType,
             origin_id: originId,
-            transaction_type: transactionType ?? null,
+            transaction_type: originType === 'listing' ? transactionType : null,
             status: 'pending',
             initiated_by: userId,
         })
@@ -153,12 +192,14 @@ export async function requestConversation(
         return { success: false, error: 'Could not start the conversation.' }
     }
 
-    const { error: messageError } = await db.from('messages').insert({
-        conversation_id: conversation.id,
-        sender_id: userId,
-        content: firstMessageContent,
-    })
-    if (messageError) return { success: false, error: 'Could not send your message.' }
+    if (trimmedFirstMessage) {
+        const { error: messageError } = await db.from('messages').insert({
+            conversation_id: conversation.id,
+            sender_id: userId,
+            content: trimmedFirstMessage,
+        })
+        if (messageError) return { success: false, error: 'Could not send your message.' }
+    }
 
     if (originType === 'listing') {
         await createNotification({
