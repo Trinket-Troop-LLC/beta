@@ -63,8 +63,11 @@ export function ListingCard({
                 )}
 
                 {(listing.status !== 'active' || statusLabelOverride) && (
-                    <span className="absolute right-2 top-2 rounded-full bg-card/90 px-2.5 py-1 text-xs font-medium text-foreground shadow-sm backdrop-blur">
-                        {statusLabelOverride ?? LISTING_STATUS_LABELS[listing.status]}
+                    <span
+                        className="absolute -right-2 -top-2 -rotate-6 rounded-[50%] border border-foreground/40 bg-secondary px-3 py-1.5 text-xs font-medium italic text-foreground shadow-sm"
+                        style={{ fontFamily: 'var(--font-sophie-chalk, inherit)' }}
+                    >
+                        {(statusLabelOverride ?? LISTING_STATUS_LABELS[listing.status]).toLowerCase()}!
                     </span>
                 )}
             </div>

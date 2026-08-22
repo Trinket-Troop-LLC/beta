@@ -2,7 +2,6 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronDown } from 'lucide-react'
 
 export function ProfileViewSwitcher({
     profileView,
@@ -12,41 +11,32 @@ export function ProfileViewSwitcher({
     troopView: React.ReactNode
 }) {
     const [view, setView] = useState<'profile' | 'troop'>('profile')
-    const [menuOpen, setMenuOpen] = useState(false)
 
     return (
         <div>
-            <div className="relative mb-4 inline-block">
+            <div className="mb-6 flex">
                 <button
-                    onClick={() => setMenuOpen((open) => !open)}
-                    className="flex items-center gap-1 text-2xl font-semibold text-foreground"
+                    onClick={() => setView('profile')}
+                    aria-pressed={view === 'profile'}
+                    className={`flex-1 border-b-2 pb-2 text-center text-lg font-medium transition ${
+                        view === 'profile'
+                            ? 'border-foreground text-foreground'
+                            : 'border-secondary text-muted-foreground'
+                    }`}
                 >
-                    {view === 'profile' ? 'My Profile' : 'My Troop'}
-                    <ChevronDown size={20} className={`transition-transform ${menuOpen ? 'rotate-180' : ''}`} />
+                    me
                 </button>
-
-                {menuOpen && (
-                    <div className="absolute left-0 z-10 mt-2 w-40 overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-                        <button
-                            onClick={() => {
-                                setView('profile')
-                                setMenuOpen(false)
-                            }}
-                            className="block w-full px-4 py-2 text-left text-sm text-foreground hover:bg-secondary"
-                        >
-                            My Profile
-                        </button>
-                        <button
-                            onClick={() => {
-                                setView('troop')
-                                setMenuOpen(false)
-                            }}
-                            className="block w-full px-4 py-2 text-left text-sm text-foreground hover:bg-secondary"
-                        >
-                            My Troop
-                        </button>
-                    </div>
-                )}
+                <button
+                    onClick={() => setView('troop')}
+                    aria-pressed={view === 'troop'}
+                    className={`flex-1 border-b-2 pb-2 text-center text-lg font-medium transition ${
+                        view === 'troop'
+                            ? 'border-foreground text-foreground'
+                            : 'border-secondary text-muted-foreground'
+                    }`}
+                >
+                    my troop
+                </button>
             </div>
 
             {view === 'profile' ? profileView : troopView}
