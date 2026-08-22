@@ -299,59 +299,57 @@ export function ProfileSection({
         <div>
             <div className="mb-6 flex items-start justify-between gap-4">
                 <div className="flex items-start gap-4 text-left">
-                    <div className="flex size-32 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-secondary">
+                    <div className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-foreground bg-secondary">
                         {profilePictureUrl ? (
                             <Image
                                 src={profilePictureUrl}
                                 alt={`${username}'s profile picture`}
-                                width={128}
-                                height={128}
+                                width={80}
+                                height={80}
                                 className="size-full object-cover"
                             />
                         ) : (
-                            <UserRound className="size-12 text-muted-foreground" />
+                            <UserRound className="size-8 text-muted-foreground" />
                         )}
                     </div>
 
                     <div className="pt-1">
-                        <p className="text-xl font-semibold text-foreground">@{username}</p>
-                        {preferredName && (
-                            <p className="text-sm text-muted-foreground">{preferredName}</p>
-                        )}
+                        <p className="text-xl font-semibold text-foreground">{preferredName || username}</p>
+                        <p className="text-sm text-muted-foreground">@{username}</p>
                         <p className="text-xs text-muted-foreground">{formatLastActive(lastActive)}</p>
                     </div>
                 </div>
 
                 <button
                     onClick={() => setIsEditing(true)}
-                    className="shrink-0 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition hover:bg-secondary"
+                    className="shrink-0 rounded-lg border border-border bg-secondary px-3 py-1.5 text-sm text-foreground transition hover:bg-muted"
                 >
-                    Edit
+                    edit
                 </button>
             </div>
 
-            <div className="mb-4 flex rounded-full border border-border bg-card p-1">
+            <div className="mb-4 flex">
                 <button
                     onClick={() => selectTab('about')}
                     aria-pressed={tab === 'about'}
-                    className={`flex-1 rounded-full px-4 py-2 text-sm font-medium transition ${
+                    className={`flex-1 border-b-2 pb-2 text-center text-lg font-medium transition ${
                         tab === 'about'
-                            ? 'bg-primary text-primary-foreground'
-                            : 'text-muted-foreground hover:bg-secondary'
+                            ? 'border-foreground text-foreground'
+                            : 'border-secondary text-muted-foreground'
                     }`}
                 >
-                    About
+                    info
                 </button>
                 <button
                     onClick={() => selectTab('listings')}
                     aria-pressed={tab === 'listings'}
-                    className={`flex-1 rounded-full px-4 py-2 text-sm font-medium transition ${
+                    className={`flex-1 border-b-2 pb-2 text-center text-lg font-medium transition ${
                         tab === 'listings'
-                            ? 'bg-primary text-primary-foreground'
-                            : 'text-muted-foreground hover:bg-secondary'
+                            ? 'border-foreground text-foreground'
+                            : 'border-secondary text-muted-foreground'
                     }`}
                 >
-                    Listings
+                    trinkets
                 </button>
             </div>
 
