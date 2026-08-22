@@ -217,7 +217,7 @@ function ProfileSkeleton() {
 
 export default function ProfilePage({ searchParams }: { searchParams: ProfileSearchParams }) {
     return (
-        <main className="relative flex min-h-screen flex-col items-center justify-center bg-background px-4 pb-40 text-center">
+        <main className="relative flex flex-1 flex-col items-center justify-center px-8 pb-40 text-center">
             <Suspense fallback={<ProfileSkeleton />}>
                 <div className="w-full max-w-3xl py-10">
                     <ProfileContent searchParams={searchParams} />

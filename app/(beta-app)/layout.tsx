@@ -23,7 +23,9 @@ export default async function BetaAppLayout({ children }: { children: React.Reac
 
     return (
         <>
-            {children}
+            <div className="flex min-h-screen flex-col bg-background">
+                {children}
+            </div>
             <NotificationBell unreadCount={unreadNotificationCount} />
             <BetaBottomNav unreadMessageCount={unreadMessageCount} />
         </>

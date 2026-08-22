@@ -21,7 +21,7 @@ async function TroopHomeContent() {
 
 export default function TroopHome() {
     return (
-        <main className="relative min-h-screen bg-background px-4 py-10 pb-44">
+        <main className="relative flex-1 px-8 py-10 pb-44">
             <BetaOnboardingModal />
             <Suspense fallback={null}>
                 <TroopHomeContent />

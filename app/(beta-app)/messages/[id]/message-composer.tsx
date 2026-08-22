@@ -14,7 +14,7 @@ export function MessageComposer({
     onSend: () => void
 }) {
     return (
-        <div className="flex justify-center px-4 py-3">
+        <div className="flex justify-center px-8 py-3">
             <div className="flex w-full max-w-xs items-center gap-2">
                 <input
                     type="text"
