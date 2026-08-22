@@ -6,6 +6,12 @@ import { useState, useTransition } from 'react'
 import { UserRound } from 'lucide-react'
 import { markNotificationRead, markAllNotificationsRead } from '@/lib/notifications/mark-read'
 import type { NotificationSummary } from '@/lib/notifications/get'
+import {
+    RequestCard,
+    OfferCard,
+    type ConversationRequestSummary,
+    type OfferSummary,
+} from '@/components/messages/request-offer-cards'
 
 function describeNotification(notification: NotificationSummary): string {
     const who = notification.actor ? `@${notification.actor.username}` : 'Someone'
@@ -61,11 +67,29 @@ function timeAgo(isoDate: string): string {
     return `${days}d ago`
 }
 
-export function NotificationList({ notifications: initialNotifications }: { notifications: NotificationSummary[] }) {
+export function NotificationList({
+    notifications: initialNotifications,
+    requests: initialRequests,
+    offers: initialOffers,
+}: {
+    notifications: NotificationSummary[]
+    requests: ConversationRequestSummary[]
+    offers: OfferSummary[]
+}) {
     const [notifications, setNotifications] = useState(initialNotifications)
+    const [requests, setRequests] = useState(initialRequests)
+    const [offers, setOffers] = useState(initialOffers)
     const [, startTransition] = useTransition()
 
     const unreadCount = notifications.filter((n) => !n.readAt).length
+
+    function handleRequestResolved(conversationId: string) {
+        setRequests((current) => current.filter((r) => r.id !== conversationId))
+    }
+
+    function handleOfferResolved(offerId: string) {
+        setOffers((current) => current.filter((o) => o.offerId !== offerId))
+    }
 
     function handleOpen(notification: NotificationSummary) {
         if (notification.readAt) return
@@ -99,10 +123,26 @@ export function NotificationList({ notifications: initialNotifications }: { noti
                 )}
             </div>
 
-            {notifications.length === 0 ? (
-                <div className="rounded-2xl border border-border bg-card p-6 text-left shadow-sm">
-                    <p className="text-sm text-muted-foreground">You&apos;re all caught up.</p>
+            {(requests.length > 0 || offers.length > 0) && (
+                <div className="mb-6 flex flex-col gap-3">
+                    <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                        Needs your response
+                    </h2>
+                    {requests.map((request) => (
+                        <RequestCard key={request.id} conversation={request} onResolved={handleRequestResolved} />
+                    ))}
+                    {offers.map((offer) => (
+                        <OfferCard key={offer.offerId} offer={offer} onResolved={handleOfferResolved} />
+                    ))}
                 </div>
+            )}
+
+            {notifications.length === 0 ? (
+                requests.length === 0 && offers.length === 0 && (
+                    <div className="rounded-2xl border border-border bg-card p-6 text-left shadow-sm">
+                        <p className="text-sm text-muted-foreground">You&apos;re all caught up.</p>
+                    </div>
+                )
             ) : (
                 <div className="flex flex-col gap-2">
                     {notifications.map((notification) => (

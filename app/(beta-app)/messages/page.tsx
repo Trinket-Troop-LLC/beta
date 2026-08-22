@@ -2,7 +2,6 @@ import { Suspense } from 'react'
 import { requireMember } from '@/lib/supabase/require-member'
 import { signProfilePictureUrls } from '@/lib/supabase/profile-pictures'
 import { ConversationsList } from './conversations-list'
-import { getAllMyPendingOffers } from '../troop/listing-lifecycle-actions'
 
 async function MessagesContent() {
     const { db, user } = await requireMember()
@@ -94,10 +93,14 @@ async function MessagesContent() {
         }
     }) ?? []
 
-    const pendingOffersResult = await getAllMyPendingOffers()
-    const offers = pendingOffersResult.success ? pendingOffersResult.offers : []
+    // Conversations still needing this user's response (someone else messaged
+    // them and it's pending) now surface on the notifications page instead --
+    // this list is just active threads and ones this user themselves started.
+    const activeConversations = conversationsWithDetails.filter(
+        (c) => c.status === 'active' || c.initiatedByMe,
+    )
 
-    return <ConversationsList conversations={conversationsWithDetails} offers={offers} />
+    return <ConversationsList conversations={activeConversations} />
 }
 
 export default function MessagesPage() {
