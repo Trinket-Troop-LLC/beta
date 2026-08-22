@@ -5,15 +5,11 @@ import { getListingsView } from './actionts'
 import { TroopFeed } from './troop-feed'
 
 async function TroopHomeContent() {
-    const { profile } = await requireMember()
+    await requireMember()
     const result = await getListingsView(null)
 
     return (
         <div className="mx-auto w-full max-w-4xl text-left">
-            <h1 className="mb-4 text-3xl font-semibold text-foreground">
-                Welcome{profile.username ? `, ${profile.username}` : ''}
-            </h1>
-
             {result.success ? (
                 <TroopFeed initialListings={result.listings} initialCursor={result.nextCursor} />
             ) : (
