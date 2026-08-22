@@ -4,9 +4,9 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { PackagePlus, UserRound } from 'lucide-react'
-import { useEffect, useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import type { ListingCardData } from '@/components/listings/listing-card'
-import { compressProfilePicture } from '@/lib/compress-profile-picture'
+import { ProfilePictureCropper } from '@/components/profile-picture-cropper'
 import { OwnerListingCard } from './owner-listing-card'
 import { updateProfile } from './profile-actions'
 import { formatLastActive } from '@/lib/last-active'
@@ -70,8 +70,9 @@ export function ProfileSection({
     const [tab, setTab] = useState<'about' | 'listings'>(initialTab)
     const [isEditing, setIsEditing] = useState(false)
     const [isPending, startTransition] = useTransition()
-    const [isCompressingPhoto, setIsCompressingPhoto] = useState(false)
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+    const [pendingCropFile, setPendingCropFile] = useState<File | null>(null)
+    const fileInputRef = useRef<HTMLInputElement>(null)
     const [error, setError] = useState<string | null>(null)
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
     const [deletedListingIds, setDeletedListingIds] = useState<string[]>([])
@@ -96,33 +97,32 @@ export function ProfileSection({
         setListingStatusMessage(`“${title}” and all of its photos were permanently deleted.`)
     }
 
-    async function handleProfilePicChange(event: React.ChangeEvent<HTMLInputElement>) {
-        const input = event.currentTarget
-        const file = input.files?.[0]
-
+    function handleProfilePicChange(event: React.ChangeEvent<HTMLInputElement>) {
+        const file = event.currentTarget.files?.[0]
         if (!file) return
+        setFieldErrors((prev) => ({ ...prev, profile_pic: '' }))
+        setPendingCropFile(file)
+    }
 
-        setIsCompressingPhoto(true)
-        try {
-            const compressed = await compressProfilePicture(file)
+    function handleCropCancelled() {
+        setPendingCropFile(null)
+        if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+
+    function handleCropConfirmed(cropped: File) {
+        setPendingCropFile(null)
+        if (fileInputRef.current) {
             const transfer = new DataTransfer()
-            transfer.items.add(compressed)
-            input.files = transfer.files
-            setPreviewUrl(URL.createObjectURL(compressed))
-        } catch {
-            input.value = ''
-            setFieldErrors((prev) => ({
-                ...prev,
-                profile_pic: 'We could not process that image. Please try a different photo.',
-            }))
-        } finally {
-            setIsCompressingPhoto(false)
+            transfer.items.add(cropped)
+            fileInputRef.current.files = transfer.files
         }
+        setPreviewUrl(URL.createObjectURL(cropped))
     }
 
     function handleCancel() {
         setIsEditing(false)
         setPreviewUrl(null)
+        setPendingCropFile(null)
         setError(null)
         setFieldErrors({})
     }
@@ -170,18 +170,24 @@ export function ProfileSection({
                     <label className="flex flex-col gap-2 text-foreground">
                         <span className="text-sm font-medium">Profile picture</span>
                         <input
+                            ref={fileInputRef}
                             type="file"
                             name="profile_pic"
                             accept="image/png,image/jpeg"
                             onChange={handleProfilePicChange}
                             className="text-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-primary-foreground"
                         />
-                        {isCompressingPhoto && (
-                            <span className="text-sm text-muted-foreground">preparing photo...</span>
-                        )}
                         <FieldError message={fieldErrors.profile_pic} />
                     </label>
                 </div>
+
+                {pendingCropFile && (
+                    <ProfilePictureCropper
+                        file={pendingCropFile}
+                        onCancel={handleCropCancelled}
+                        onCropped={handleCropConfirmed}
+                    />
+                )}
 
                 <label className={labelClass}>
                     <span>Preferred name</span>
@@ -271,7 +277,7 @@ export function ProfileSection({
                 <div className="flex gap-3">
                     <button
                         type="submit"
-                        disabled={isPending || isCompressingPhoto}
+                        disabled={isPending}
                         className="rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                         {isPending ? 'saving...' : 'save'}

@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { BetaHero } from '@/components/landing/beta-hero'
-import { compressProfilePicture } from '@/lib/compress-profile-picture'
+import { ProfilePictureCropper } from '@/components/profile-picture-cropper'
 import { submitBetaApplication } from './actions'
 
 const inputClass =
@@ -29,30 +29,28 @@ export function BetaApplicationForm() {
     const [error, setError] = useState<string | null>(null)
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
     const [isSubmitting, setIsSubmitting] = useState(false)
-    const [isCompressingPhoto, setIsCompressingPhoto] = useState(false)
     const [photoError, setPhotoError] = useState<string | null>(null)
+    const [pendingCropFile, setPendingCropFile] = useState<File | null>(null)
+    const fileInputRef = useRef<HTMLInputElement>(null)
 
-    async function handleProfilePicChange(event: React.ChangeEvent<HTMLInputElement>) {
-        const input = event.currentTarget
-        const file = input.files?.[0]
-
-        if (!file) {
-            return
-        }
-
+    function handleProfilePicChange(event: React.ChangeEvent<HTMLInputElement>) {
+        const file = event.currentTarget.files?.[0]
+        if (!file) return
         setPhotoError(null)
-        setIsCompressingPhoto(true)
+        setPendingCropFile(file)
+    }
 
-        try {
-            const compressed = await compressProfilePicture(file)
+    function handleCropCancelled() {
+        setPendingCropFile(null)
+        if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+
+    function handleCropConfirmed(cropped: File) {
+        setPendingCropFile(null)
+        if (fileInputRef.current) {
             const transfer = new DataTransfer()
-            transfer.items.add(compressed)
-            input.files = transfer.files
-        } catch {
-            input.value = ''
-            setPhotoError('We could not process that image. Please try a different photo.')
-        } finally {
-            setIsCompressingPhoto(false)
+            transfer.items.add(cropped)
+            fileInputRef.current.files = transfer.files
         }
     }
 
@@ -239,6 +237,7 @@ export function BetaApplicationForm() {
                         <label className={labelClass}>
                             <span>upload a profile picture *</span>
                             <input
+                                ref={fileInputRef}
                                 type="file"
                                 name="profile_pic"
                                 accept="image/png,image/jpeg"
@@ -248,14 +247,19 @@ export function BetaApplicationForm() {
                                 className={`${inputClass} file:mr-4 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-primary-foreground`}
                             />
                             <span id="profile-picture-help" className="text-sm text-muted-foreground">
-                                {isCompressingPhoto
-                                    ? 'preparing your photo...'
-                                    : 'required; PNG or JPEG — we’ll resize it automatically before uploading'}
+                                required; PNG or JPEG — you&apos;ll be able to crop it before uploading
                             </span>
                             {photoError && (
                                 <span className="text-sm text-red-600">{photoError}</span>
                             )}
                             <FieldError message={fieldErrors.profile_pic} />
+                            {pendingCropFile && (
+                                <ProfilePictureCropper
+                                    file={pendingCropFile}
+                                    onCancel={handleCropCancelled}
+                                    onCropped={handleCropConfirmed}
+                                />
+                            )}
                         </label>
 
                         <label className={labelClass}>
@@ -336,10 +340,10 @@ export function BetaApplicationForm() {
 
                         <button
                             type="submit"
-                            disabled={isSubmitting || isCompressingPhoto}
+                            disabled={isSubmitting}
                             className="rounded-lg bg-primary px-4 py-3 font-medium text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                            {isSubmitting ? 'submitting...' : isCompressingPhoto ? 'preparing photo...' : 'submit'}
+                            {isSubmitting ? 'submitting...' : 'submit'}
                         </button>
 
                         {error && (
