@@ -25,7 +25,7 @@ export function BetaBottomNav({
       aria-label="Beta app navigation"
       className="fixed inset-x-0 bottom-0 z-40 flex justify-center"
     >
-      <div className="flex h-12 w-full justify-between gap-1 rounded-t-2xl border-t border-border bg-card/95 px-3 shadow-lg backdrop-blur sm:gap-2 sm:px-5">
+      <div className="flex h-12 w-full justify-between gap-1 border-t border-border bg-card/95 px-3 shadow-lg backdrop-blur sm:gap-2 sm:px-5">
         {tabs.map(({ id, label, icon, iconActive, href }) => {
           const isActive = isTabActive(href);
           const accessibleLabel = id === "messages" && unreadMessageCount > 0
