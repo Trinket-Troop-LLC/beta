@@ -2,13 +2,6 @@
 
 import Link from 'next/link'
 import { useState, useTransition } from 'react'
-import { Check, ChevronDown } from 'lucide-react'
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { ListingBrowseCard, type ListingBrowseCardData } from '@/components/listings/listing-browse-card'
 import { getListingsView, type ListingFeedCursor, type ListingFeedScope } from './actionts'
 
@@ -84,20 +77,23 @@ export function TroopFeed({
 
     return (
         <div>
-            <DropdownMenu>
-                <DropdownMenuTrigger className="mb-4 inline-flex items-center gap-1 text-lg font-semibold text-foreground focus-visible:outline-none">
-                    {scopeLabels[scope]}
-                    <ChevronDown className="size-4 text-muted-foreground" />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                    {(Object.keys(scopeLabels) as ListingFeedScope[]).map((option) => (
-                        <DropdownMenuItem key={option} onSelect={() => switchScope(option)}>
-                            <Check className={`mr-2 size-4 ${option === scope ? 'opacity-100' : 'opacity-0'}`} />
-                            {scopeLabels[option]}
-                        </DropdownMenuItem>
-                    ))}
-                </DropdownMenuContent>
-            </DropdownMenu>
+            <div className="mb-6 flex">
+                {(Object.keys(scopeLabels) as ListingFeedScope[]).map((option) => (
+                    <button
+                        key={option}
+                        type="button"
+                        onClick={() => switchScope(option)}
+                        aria-pressed={option === scope}
+                        className={`flex-1 border-b-2 pb-2 text-center text-lg font-medium transition ${
+                            option === scope
+                                ? 'border-foreground text-foreground'
+                                : 'border-secondary text-muted-foreground'
+                        }`}
+                    >
+                        {scopeLabels[option]}
+                    </button>
+                ))}
+            </div>
 
             {listings.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{emptyStateMessage[scope]}</p>
