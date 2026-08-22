@@ -336,12 +336,15 @@ export function BulletinFeed({
         <div className="flex flex-col gap-4">
             <BulletinComposer variant="post" currentUser={currentUser} onPosted={handlePosted} />
 
-            <div className="flex rounded-full border border-border bg-card p-1">
+            <div className="flex">
                 <button
                     type="button"
                     onClick={() => setView('all')}
-                    className={`flex-1 rounded-full px-3 py-1.5 text-sm font-medium transition ${
-                        view === 'all' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'
+                    aria-pressed={view === 'all'}
+                    className={`flex-1 border-b-2 pb-2 text-center text-lg font-medium transition ${
+                        view === 'all'
+                            ? 'border-foreground text-foreground'
+                            : 'border-secondary text-muted-foreground'
                     }`}
                 >
                     All
@@ -349,8 +352,11 @@ export function BulletinFeed({
                 <button
                     type="button"
                     onClick={() => setView('troop')}
-                    className={`flex-1 rounded-full px-3 py-1.5 text-sm font-medium transition ${
-                        view === 'troop' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'
+                    aria-pressed={view === 'troop'}
+                    className={`flex-1 border-b-2 pb-2 text-center text-lg font-medium transition ${
+                        view === 'troop'
+                            ? 'border-foreground text-foreground'
+                            : 'border-secondary text-muted-foreground'
                     }`}
                 >
                     My Troop
