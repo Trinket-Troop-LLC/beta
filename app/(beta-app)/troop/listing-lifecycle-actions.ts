@@ -341,9 +341,14 @@ export async function markListingFulfilled(listingId: string) {
     if (!userId) return { success: false, error: 'You must be logged in.' }
 
     const admin = createAdminClient()
+    // active_transaction_type is deliberately kept (not nulled) through this
+    // transition -- it's how the profile "trinkets" grid knows which sticker
+    // to show on a completed listing (sold!/traded!/gifted!). It only gets
+    // nulled by unreserveListing/markListingReturned, where the reservation
+    // genuinely ended without completing.
     const { data, error } = await admin
         .from('listings')
-        .update({ status: 'fulfilled', active_transaction_type: null })
+        .update({ status: 'fulfilled' })
         .eq('id', listingId)
         .eq('owner_id', userId)
         .eq('status', 'reserved')
@@ -358,7 +363,7 @@ export async function markListingFulfilled(listingId: string) {
     if (pairedListingId) {
         await admin
             .from('listings')
-            .update({ status: 'fulfilled', active_transaction_type: null })
+            .update({ status: 'fulfilled' })
             .eq('id', pairedListingId)
             .eq('status', 'reserved')
         revalidatePath(`/troop/listings/${pairedListingId}`)
