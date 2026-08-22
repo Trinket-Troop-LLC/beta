@@ -102,24 +102,30 @@ export function MyTroop({
 
     return (
         <div>
-            <div className="mb-4 flex rounded-full border border-border bg-card p-1">
+            <div className="mb-4 flex">
                 <button
                     onClick={() => setTab('friends')}
-                    className={`flex-1 rounded-full px-4 py-2 text-sm font-medium transition ${
-                        tab === 'friends' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-secondary'
+                    aria-pressed={tab === 'friends'}
+                    className={`flex-1 border-b-2 pb-2 text-center text-lg font-medium transition ${
+                        tab === 'friends'
+                            ? 'border-foreground text-foreground'
+                            : 'border-secondary text-muted-foreground'
                     }`}
                 >
                     Friends
                 </button>
                 <button
                     onClick={() => setTab('requests')}
-                    className={`flex-1 rounded-full px-4 py-2 text-sm font-medium transition ${
-                        tab === 'requests' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-secondary'
+                    aria-pressed={tab === 'requests'}
+                    className={`flex-1 border-b-2 pb-2 text-center text-lg font-medium transition ${
+                        tab === 'requests'
+                            ? 'border-foreground text-foreground'
+                            : 'border-secondary text-muted-foreground'
                     }`}
                 >
                     Requests
                     {incomingRequests.length > 0 && (
-                        <span className="ml-1.5 rounded-full bg-white/30 px-1.5 text-xs">
+                        <span className="ml-1.5 rounded-full bg-primary px-1.5 text-xs text-primary-foreground">
                             {incomingRequests.length}
                         </span>
                     )}
