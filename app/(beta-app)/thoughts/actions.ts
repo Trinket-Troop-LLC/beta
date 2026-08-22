@@ -117,22 +117,24 @@ export async function createBulletinPost(
 // A parent reply must belong to the same post as the reply being created.
 // If it doesn't (or was deleted between page load and submit), the new
 // reply is still created — just without the "replying to" attribution —
-// rather than failing the whole submission over a stale target.
-async function resolveParentReplyId(
+// rather than failing the whole submission over a stale target. Returns the
+// author too, since a reply-to-a-reply notifies that person instead of the
+// post author (see createBulletinReply).
+async function resolveParentReply(
     db: Awaited<ReturnType<typeof createClient>>,
     postId: string,
     parentReplyId: string | null | undefined,
-): Promise<string | null> {
+): Promise<{ id: string; authorId: string } | null> {
     if (!parentReplyId) return null
 
     const { data: parent } = await db
         .from('bulletin_replies')
-        .select('id')
+        .select('id, author_id')
         .eq('id', parentReplyId)
         .eq('post_id', postId)
         .maybeSingle()
 
-    return parent?.id ?? null
+    return parent ? { id: parent.id, authorId: parent.author_id } : null
 }
 
 export async function createBulletinReply(
@@ -157,7 +159,7 @@ export async function createBulletinReply(
         return { success: false, error: 'Your photos could not be attached. Please try uploading them again.' }
     }
 
-    const resolvedParentReplyId = await resolveParentReplyId(db, postId, parentReplyId)
+    const parentReply = await resolveParentReply(db, postId, parentReplyId)
 
     const { data: reply, error: replyError } = await db
         .from('bulletin_replies')
@@ -165,7 +167,7 @@ export async function createBulletinReply(
             post_id: postId,
             author_id: userId,
             content: trimmedContent,
-            parent_reply_id: resolvedParentReplyId,
+            parent_reply_id: parentReply?.id ?? null,
         })
         .select('id')
         .single()
@@ -190,10 +192,20 @@ export async function createBulletinReply(
         }
     }
 
-    const { data: post } = await db.from('bulletin_posts').select('author_id').eq('id', postId).maybeSingle()
-    if (post && post.author_id !== userId) {
+    // Notify only the person being replied to directly -- the post author
+    // for a top-level reply, or the parent reply's author for a reply to a
+    // reply -- not everyone else already in the thread.
+    let notifyRecipientId: string | null
+    if (parentReply) {
+        notifyRecipientId = parentReply.authorId
+    } else {
+        const { data: post } = await db.from('bulletin_posts').select('author_id').eq('id', postId).maybeSingle()
+        notifyRecipientId = post?.author_id ?? null
+    }
+
+    if (notifyRecipientId && notifyRecipientId !== userId) {
         await createNotification({
-            recipientId: post.author_id,
+            recipientId: notifyRecipientId,
             type: 'bulletin_reply',
             actorId: userId,
             relatedBulletinPostId: postId,
@@ -201,7 +213,7 @@ export async function createBulletinReply(
     }
 
     revalidatePath('/thoughts')
-    return { success: true, replyId: reply.id, parentReplyId: resolvedParentReplyId }
+    return { success: true, replyId: reply.id, parentReplyId: parentReply?.id ?? null }
 }
 
 type RequestMessageResult =
